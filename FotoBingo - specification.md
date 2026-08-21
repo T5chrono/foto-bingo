@@ -413,7 +413,7 @@ Załatwia to `npm run drive:init`. Ta sama zasada jest też gwarancją prywatno�
 nie widzi reszty Dysku Pary Młodej.
 
 ```
-FotoBingo 2026/                          ← folder root, tworzony przez aplikację
+FotoBingo/                               ← folder root, tworzony przez aplikację
 ├── Anna Kowalska/
 │   ├── R1K1_selfie-z-para-mloda__anna-kowalska__20260815-193045.jpg
 │   ├── R1K3_ognisko-z-iskrami__anna-kowalska__20260815-201233.heic
@@ -615,7 +615,7 @@ SUPABASE_BUCKET=fotobingo
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REFRESH_TOKEN=...             # z scripts/google-auth.mjs, jednorazowo
-DRIVE_ROOT_FOLDER_ID=...             # identyfikator folderu "FotoBingo 2026"
+DRIVE_ROOT_FOLDER_ID=...             # identyfikator folderu "FotoBingo"
 
 PANEL_PIN=...                        # 6 cyfr, do panelu Pary Młodej
 SESSION_SECRET=...                   # losowy, do podpisywania ciasteczka panelu
@@ -763,7 +763,7 @@ runbook weekendowy, próba generalna.
   otwórz ponownie → wszystkie trzy muszą dojść. Powtórz na **zainstalowanej** aplikacji.
 - **Instalacja.** Fizyczny Android (Chrome) i fizyczny iPhone (Safari → Udostępnij). Na iOS
   instaluj z linku osobistego `/g/…`.
-- **Dysk.** Po pierwszej wysyłce sprawdź, że powstał `FotoBingo 2026/Imię Nazwisko/` i nazwa
+- **Dysk.** Po pierwszej wysyłce sprawdź, że powstał `FotoBingo/Imię Nazwisko/` i nazwa
   pliku zgadza się ze wzorem z sekcji 9.
 - **Odporność na awarię Google.** Podmień `GOOGLE_REFRESH_TOKEN` na śmieciowy → wysyłka podglądu
   musi się udać, a wiersz dostać `drive_status='pending'`. Przywróć token → „Wyślij zaległe" domyka.

@@ -12,7 +12,7 @@ Podgląd trafia do Supabase i natychmiast zapełnia kafelek. Oryginał w pełnej
 w tle na Dysk Google Pary Młodej, do folderu gościa, pod nazwą kodującą kategorię:
 
 ```
-FotoBingo 2026/Anna Kowalska/R1K3_ognisko-z-iskrami__anna-kowalska__20260815-201233.heic
+FotoBingo/Anna Kowalska/R1K3_ognisko-z-iskrami__anna-kowalska__20260815-201233.heic
 ```
 
 Dwa magazyny, bo każdy robi co innego: Supabase serwuje zdjęcia na rzutnik w ułamku sekundy,

@@ -12,7 +12,7 @@ import { config as loadEnv } from "dotenv";
 
 loadEnv();
 
-const ROOT_NAME = "FotoBingo 2026";
+const ROOT_NAME = "FotoBingo";
 const init = process.argv.includes("--init");
 
 const need = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"];
@@ -46,7 +46,7 @@ const POTRZEBA = 4.8 * 1024 ** 3;
 if (limit && free < POTRZEBA) {
   console.log(
     `\n  UWAGA: na 1200 oryginalow trzeba okolo ${gb(POTRZEBA)}, a wolnego jest ${gb(free)}.` +
-      `\n  Google One 100 GB kosztuje 8,99 zl/mies. i zamyka temat.`,
+      `\n  Zwolnij miejsce albo powieksz plan przed weselem.`,
   );
 }
 

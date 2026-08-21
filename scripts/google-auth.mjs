@@ -94,9 +94,8 @@ const server = createServer(async (req, res) => {
 
   Sprawdzenie na zywym API: ${who}
 
-  Nastepny krok: utworz na Dysku folder "FotoBingo 2026", wejdz do niego
-  i skopiuj identyfikator z adresu (.../folders/TO_JEST_ID) do
-  DRIVE_ROOT_FOLDER_ID w .env.
+  Nastepny krok: npm run drive:init — folder glowny tworzy aplikacja,
+  bo zakres drive.file nie widzi folderow zalozonych recznie w Dysku.
 `);
     server.close();
     process.exit(0);
