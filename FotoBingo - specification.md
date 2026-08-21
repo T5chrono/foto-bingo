@@ -32,14 +32,21 @@ Aplikacja sama pilnuje, co jest zebrane, i sama wykrywa bingo.
 
 | Wielkość | Wartość |
 |---|---|
-| Goście | 48 |
+| Goście | 40 |
+| Kodów QR — goście plus zapas | **48** |
 | Kategorii na planszy | 25 |
+| Plansz maksymalnie | 48 |
 | Zdjęć maksymalnie | **1200** |
 | Okres zbierania | ~72 godziny |
 | Szczyt ruchu | ceremonia i pierwszy taniec — kilkanaście wysyłek naraz |
 
-Realnie planszy nie zapełni każdy, więc 1200 to sufit, nie prognoza. Wszystkie liczby poniżej
-liczone są jednak od sufitu — zapas ma być zapasem, nie nadzieją.
+Gości jest 40, ale kodów drukujemy 48. Osiem zapasowych pokrywa zgubione winietki, nieplanowane
+osoby towarzyszące i dzieci, które zechcą grać na własnej planszy — czyli wszystko, czego nie da
+się przewidzieć w piątek. Zapasowy kod nie zajmuje miejsca, dopóki ktoś go nie użyje.
+
+**Wszystkie budżety poniżej liczone są od sufitu 48 plansz**, a nie od 40 realnych gości — i to
+przy założeniu, że każdy zapełni wszystkie 25 pól. Realnie będzie znacznie mniej. Zapas ma być
+zapasem, nie nadzieją.
 
 ---
 
@@ -53,7 +60,7 @@ a nie inaczej. Kolejność chronologiczna.
 **Wybrano:** instalowalna strona (Progressive Web App) hostowana na Vercelu.
 
 **Odrzucono:** aplikacja z Google Play. Wymaga konta developerskiego, przeglądu, publikacji,
-a goście musieliby jej szukać w sklepie. Dla 48 osób i jednego weekendu to absurdalny narzut.
+a goście musieliby jej szukać w sklepie. Dla 40 osób i jednego weekendu to absurdalny narzut.
 
 **Dlaczego to działa:** gość skanuje QR, otwiera stronę, dodaje ją do ekranu głównego dwoma
 dotknięciami. Dostaje ikonę, pełny ekran bez paska adresu i działanie offline. Aktualizacja
@@ -81,7 +88,7 @@ Aplikacja widzi wyłącznie pliki, które sama utworzyła — nie ma dostępu do
 **Wybrano:** jeden refresh token konta Pary Młodej, przechowywany w zmiennej środowiskowej
 na Vercelu. Serwer wysyła pliki w imieniu wszystkich gości.
 
-**Odrzucono:** logowanie gości do Google. 48 osób przechodzących przez ekran zgody Google,
+**Odrzucono:** logowanie gości do Google. 40 osób przechodzących przez ekran zgody Google,
 część bez konta pod ręką, część na iOS gdzie flow bywa kapryśny — plus pliki lądowałyby
 na ich Dyskach, a nie na naszym.
 
@@ -121,7 +128,7 @@ bezpieczne w Supabase. Kopiowanie ponawiamy choćby następnego dnia i nikt tego
 darmowego Supabase, albo za mała jako archiwum.
 
 **Odrzucono:** proszenie gości o oryginały po weselu. To była realna alternatywa (oryginały i tak
-zostają w telefonach), ale Para Młoda nie chce po weselu ścigać 48 osób. Decyzja świadoma,
+zostają w telefonach), ale Para Młoda nie chce po weselu ścigać 40 osób. Decyzja świadoma,
 podjęta ze znajomością kosztu: ~110 MB transferu na gościa i ~5 GB na Dysku.
 
 **Gwarancja bezpieczeństwa:** jeśli oryginał nigdy nie dojdzie, **nic nie jest stracone**.
@@ -441,7 +448,7 @@ Wszystko pod `/api/*`, jedna funkcja, router Hono.
 liczone w bazie; po 10 nietrafieniach panel blokuje się na godzinę.
 
 **Limity zdroworozsądkowe:** maksymalnie 3 zdjęcia na kafelek (podmiany) i 120 wysyłek na gościa.
-Przy 48 gościach nie ma zagrożenia nadużyciem — te limity chronią przed zapętloną kolejką
+Przy 40 gościach nie ma zagrożenia nadużyciem — te limity chronią przed zapętloną kolejką
 w zepsutym telefonie, nie przed złośliwym gościem.
 
 ---
@@ -461,7 +468,7 @@ Status wysyłki pokazywany wprost: **w kolejce → wysyłanie → zapisane ✓**
 **oryginał w drodze → oryginał na Dysku ✓**.
 
 **Instalacja.** Android przez `beforeinstallprompt` i własny baner. iOS nie wspiera promptu —
-dostaje osobną instrukcję „Udostępnij → Dodaj do ekranu początkowego". Przy 48 gościach iPhone'ów
+dostaje osobną instrukcję „Udostępnij → Dodaj do ekranu początkowego". Przy 40 gościach iPhone'ów
 będzie sporo, więc ta ścieżka jest równorzędna, nie awaryjna.
 
 **Pułapka iOS, którą trzeba obsłużyć:** zainstalowana aplikacja dostaje na iOS własny magazyn
@@ -566,10 +573,14 @@ który jest w `.gitignore`. Repozytorium zawiera tylko `.env.example` z wartośc
 
 ## 16. Repozytorium
 
-Publiczne repo na GitHubie, struktura odwzorowana ze SplitDeca.
+**https://github.com/T5chrono/foto-bingo** — publiczne, struktura odwzorowana ze SplitDeca.
+
+Projekt nazywa się `foto-bingo` w trzech miejscach naraz: repozytorium na GitHubie, projekt
+na Vercelu i projekt w Supabase. Jedna nazwa wszędzie — żaden z tych paneli nie każe się
+zastanawiać, czy patrzysz na właściwą rzecz.
 
 ```
-FotoBingo/
+foto-bingo/
 ├── .github/
 │   ├── dependabot.yml
 │   └── workflows/
@@ -714,7 +725,7 @@ runbook weekendowy, próba generalna.
 - [ ] Spike S1 rozstrzygnięty, wynik zapisany w `CLAUDE.md`.
 - [ ] Domena ustalona i podpięta. **Winietki drukujemy dopiero po tym** — zmiana adresu
       po druku unieważnia wszystkie kody.
-- [ ] Winietki z QR wydrukowane, 48 sztuk plus kilka zapasowych.
+- [ ] Winietki z QR wydrukowane: **40 imiennych plus 8 zapasowych bez imienia**.
 - [ ] Instrukcja na stołach: „Zeskanuj → Dodaj do ekranu początkowego → graj".
 - [ ] Hasło do Wi-Fi ośrodka na winietce albo na instrukcji.
 - [ ] PIN do panelu zna ktoś jeszcze poza Panem Młodym — w sobotę będzie zajęty.
