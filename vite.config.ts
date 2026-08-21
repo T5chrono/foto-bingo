@@ -4,6 +4,31 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // W dev front stoi na :5173, a funkcja API na :8787. Proxy sprawia, ze
+  // aplikacja wola /api tak samo jak w produkcji, gdzie vercel.json przepisuje
+  // to na funkcje — jeden adres, zero CORS-u, jedna sciezka do debugowania.
+  server: {
+    proxy: { "/api": { target: "http://localhost:8787", changeOrigin: true } },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Jawna lista, nie "wszystko z node_modules". To jest runtime, ktorego
+        // pierwszy ekran potrzebuje w calosci, wiec deploy dotykajacy samego
+        // kodu aplikacji zostawia go w cache'u telefonu. supabase-js celowo
+        // TU NIE MA — wchodzi leniwie dopiero przy pierwszej wysylce.
+        manualChunks: {
+          vendor: [
+            "react",
+            "react-dom",
+            "react-dom/client",
+            "react-router-dom",
+            "@tanstack/react-query",
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),

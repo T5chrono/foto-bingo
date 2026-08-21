@@ -1,51 +1,50 @@
-import { useState } from "react";
-import { BoardGrid } from "./components/BoardGrid";
-import { SIZE } from "./lib/board";
-import { completedLines, countFilled, isFullCard, lineLabel } from "./lib/bingo";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-/**
- * Etap 1: plansza działa lokalnie, bez sieci i bez zdjęć. Dotknięcie kafelka
- * przełącza go, żeby dało się przejść całą logikę bingo palcem na telefonie,
- * zanim powstanie wysyłka. Etap 2 podmienia to na prawdziwe zdjęcia.
- */
-export default function App() {
-  const [filled, setFilled] = useState<ReadonlySet<number>>(new Set());
+import BoardPage from "./pages/BoardPage";
+import JoinPage from "./pages/JoinPage";
+import NoTokenPage from "./pages/NoTokenPage";
+import { GuestTokenProvider, useGuestToken } from "./hooks/useGuestToken";
 
-  const toggle = (id: number) =>
-    setFilled((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
+const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 
-  const done = countFilled(filled);
-  const lines = completedLines(filled);
+const client = new QueryClient({
+  defaultOptions: {
+    queries: { refetchOnWindowFocus: true, staleTime: 30_000 },
+  },
+});
+
+function Screens() {
+  const { token } = useGuestToken();
 
   return (
-    <main className="mx-auto flex min-h-full max-w-md flex-col gap-4 px-3 py-5">
-      <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold text-brand-800">Foto Bingo</h1>
-        <p className="text-sm text-ink/60" aria-live="polite">
-          {done} / {SIZE * SIZE}
-        </p>
-      </header>
+    <Suspense fallback={<p className="p-8 text-center text-ink/50">Chwileczkę…</p>}>
+      <Routes>
+        {/* /g/:token działa zawsze — to jedyna droga zdobycia tożsamości. */}
+        <Route path="/g/:token" element={<JoinPage />} />
+        {token ? (
+          <>
+            <Route path="/" element={<BoardPage />} />
+            <Route path="/kategoria/:id" element={<CategoryPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        ) : (
+          <Route path="*" element={<NoTokenPage />} />
+        )}
+      </Routes>
+    </Suspense>
+  );
+}
 
-      <BoardGrid filled={filled} onPick={(cat) => toggle(cat.id)} />
-
-      {lines.length > 0 && (
-        <p
-          className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800"
-          role="status"
-        >
-          {isFullCard(filled)
-            ? "Pełna karta! Wszystkie 25 pól."
-            : `Bingo: ${lines.map(lineLabel).join(", ")}`}
-        </p>
-      )}
-
-      <p className="mt-auto text-center text-xs text-ink/40">
-        Etap 1 — plansza bez wysyłania zdjęć
-      </p>
-    </main>
+export default function App() {
+  return (
+    <QueryClientProvider client={client}>
+      <GuestTokenProvider>
+        <BrowserRouter>
+          <Screens />
+        </BrowserRouter>
+      </GuestTokenProvider>
+    </QueryClientProvider>
   );
 }

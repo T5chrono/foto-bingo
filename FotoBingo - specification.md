@@ -206,6 +206,22 @@ się fatalnie — przy stałej jakości potrafią wyjść trzy razy większe ni�
 A wesele to głównie zdjęcia nocne. Przy stałej jakości budżet miejsca z sekcji 5 byłby
 prognozą; przy budżecie bajtowym jest gwarancją.
 
+### D11 — Kolejka trzyma surowe bajty, nie obiekty Blob
+
+**Wybrano:** zdjęcia czekają w IndexedDB jako `ArrayBuffer` plus zapamiętany typ MIME.
+Blob powstaje z powrotem dopiero tuż przed wysłaniem.
+
+**Odrzucono:** trzymanie `Blob` wprost, co jest wersją krótszą i bardziej oczywistą.
+
+**Dlaczego:** iOS Safari ma udokumentowaną historię gubienia zawartości blobów po zamknięciu
+strony. To jest dokładnie ten scenariusz, na którym stoi cała obietnica „zdjęcie dojdzie samo":
+gość wybiera zdjęcie na spacerze bez zasięgu, zamyka aplikację, wraca do budynku następnego
+dnia. Surowe bajty nie mają tej klasy problemów. Efekt uboczny: kolejka da się przetestować,
+bo `Blob` nie przechodzi przez `structuredClone` w środowisku testowym.
+
+**Konsekwencja:** oryginał zapisujemy do kolejki od razu przy wyborze zdjęcia, a nie dopiero
+na Etapie 3 — galeria telefonu może go do tego czasu przemielić, a drugi raz gość go nie wybierze.
+
 ---
 
 ## 4. Gdzie mieszkają dane
