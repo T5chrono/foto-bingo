@@ -96,10 +96,23 @@ const server = createServer(async (req, res) => {
   }
 });
 
+// Staly port i "localhost", nie losowy i nie 127.0.0.1. Powody sa dwa:
+// Google nie akceptuje adresu 127.0.0.1 dla klientow typu "Aplikacja
+// internetowa" (dla "Aplikacji komputerowej" oba dzialaja), a staly port
+// daje sie zarejestrowac recznie, gdyby klient okazal sie tego pierwszego
+// typu. Losowy port nie da sie zarejestrowac z definicji.
+const PORT = 8765;
+
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE") {
+    fail(`Port ${PORT} jest zajety. Zamknij to, co go trzyma, i sprobuj ponownie.`);
+  } else fail(String(e));
+});
+
 let port;
-server.listen(0, "127.0.0.1", () => {
-  port = server.address().port;
-  const redirectUri = `http://127.0.0.1:${port}`;
+server.listen(PORT, "127.0.0.1", () => {
+  port = PORT;
+  const redirectUri = `http://localhost:${port}`;
 
   const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   auth.searchParams.set("client_id", CLIENT_ID);
@@ -132,7 +145,7 @@ async function exchange(code) {
       code,
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
-      redirect_uri: `http://127.0.0.1:${port}`,
+      redirect_uri: `http://localhost:${port}`,
       grant_type: "authorization_code",
       code_verifier: verifier,
     }),
