@@ -39,6 +39,17 @@ export default defineConfig({
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        // Manrope wchodzi z pięcioma podzbiorami znaków. Przeglądarka i tak
+        // pobiera tylko te, których potrzebuje (unicode-range), ale precache
+        // service workera bierze wszystko jak leci — czyli 32 KB cyrylicy,
+        // greki i wietnamskiego na pierwsze wejście, przy weselu w górach.
+        // Gdyby czyjeś imię ich jednak wymagało, dociągną się z sieci albo
+        // spadną na czcionkę systemową.
+        globIgnores: [
+          "**/manrope-cyrillic*",
+          "**/manrope-greek*",
+          "**/manrope-vietnamese*",
+        ],
       },
     }),
   ],
