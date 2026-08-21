@@ -16,7 +16,9 @@
     "api": "node --experimental-strip-types scripts/dev-api.mjs",
     "google-auth": "node scripts/google-auth.mjs",
     "add-guest": "node --experimental-strip-types scripts/add-guest.mjs",
-    "google-auth:reset": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Output \"port 8765 zwolniony\"\""
+    "google-auth:reset": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Output \"port 8765 zwolniony\"\"",
+    "drive:check": "node scripts/drive-check.mjs",
+    "drive:init": "node scripts/drive-check.mjs --init"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

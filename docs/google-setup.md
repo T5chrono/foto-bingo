@@ -66,7 +66,7 @@ W stanie *Testowanie* Google unieważnia refresh token **po 7 dniach**. Token wy
 stanie już taki zostaje — opublikowanie aplikacji później go nie naprawi. Aplikacja działałaby
 przez tydzień testów i przestała dokładnie w weekend wesela.
 
-**Dlatego ten krok musi być przed krokiem 7.**
+**Dlatego ten krok musi być przed krokiem 8.**
 
 Google może pokazać notkę o niezweryfikowanej aplikacji. Przy samym `drive.file` jest bez
 znaczenia — przez ten ekran przechodzi tylko jedna osoba, raz.
@@ -85,39 +85,54 @@ Skopiuj **Identyfikator klienta** (*Client ID*) i **Tajny klucz klienta** (*Clie
 Typ *Aplikacja komputerowa* jest tu właściwy, mimo że aplikacja jest webowa: przez ten flow
 przechodzi jednorazowo skrypt na Twoim komputerze, a nie goście w przeglądarce.
 
-## 7. Folder na Dysku
-
-[drive.google.com](https://drive.google.com) → **Nowy** → **Nowy folder** → `FotoBingo 2026`.
-
-Wejdź do niego i skopiuj identyfikator z adresu:
-
-```
-drive.google.com/drive/folders/1a2B3cD4eF5gH6iJ7kL8mN
-                               ^^^^^^^^^^^^^^^^^^^^^^ to
-```
-
-## 8. Trzy wklejki do `.env`
+## 7. Dwie wklejki do `.env`
 
 ```
 GOOGLE_CLIENT_ID=<z kroku 6>
 GOOGLE_CLIENT_SECRET=<z kroku 6>
-DRIVE_ROOT_FOLDER_ID=<z kroku 7>
 ```
 
-`GOOGLE_REFRESH_TOKEN` zostaw pusty — wypełni się sam w następnym kroku.
+`GOOGLE_REFRESH_TOKEN` i `DRIVE_ROOT_FOLDER_ID` zostaw puste — wypełnią się same.
 
-## 9. Refresh token — jedna komenda
+## 8. Refresh token — jedna komenda
 
 ```
 npm run google-auth
 ```
 
 Otworzy przeglądarkę. Zaloguj się **kontem, na którego Dysku mają lądować zdjęcia**,
-i zezwól na dostęp.
+i zezwól na dostęp. Skrypt zapisuje token prosto do `.env`, żeby nie przechodził przez
+schowek ani przez historię terminala.
 
-Skrypt zapisuje token prosto do `.env`, żeby nie przechodził przez schowek ani przez historię
-terminala. Na koniec odpytuje Drive API i wypisuje adres konta oraz **ile masz wolnego
-miejsca** — lepiej dowiedzieć się teraz niż w sobotę.
+## 9. Folder główny — **tworzy go aplikacja, nie Ty**
+
+```
+npm run drive:init
+```
+
+**Nie zakładaj tego folderu ręcznie w przeglądarce.** Zakres `drive.file` daje dostęp
+**wyłącznie do plików, które aplikacja sama utworzyła**. Folder założony kliknięciem
+w Dysku jest dla niej niewidoczny — nawet jeśli to Twój własny Dysk i widzisz go na oczy.
+Próba zapisu kończy się wtedy błędem 404, który wygląda na problem z uprawnieniami,
+a jest zwykłą konsekwencją minimalnego zakresu.
+
+To zresztą dobra wiadomość: ta sama zasada oznacza, że aplikacja **nie widzi reszty
+Twojego Dysku**. Nie ma dostępu do dokumentów, zdjęć ani niczego, czego sama tam
+nie położyła.
+
+Folder pojawi się na Twoim Dysku jak każdy inny, a jego identyfikator wyląduje do `.env`.
+
+## 10. Sprawdzenie
+
+```
+npm run drive:check
+```
+
+Odświeża token, wypisuje konto i wolne miejsce, po czym **naprawdę zapisuje i kasuje
+plik testowy** w folderze głównym. To jedyny sposób, żeby wiedzieć, że uprawnienia
+działają, a nie tylko wyglądają na działające.
+
+Ta sama komenda jest w checkliście przedweselnej — uruchom ją w czwartek przed weselem.
 
 ---
 
@@ -134,8 +149,11 @@ którą sam napisałeś, dla własnego konta.
 **`redirect_uri_mismatch`** — klient został utworzony jako *Aplikacja internetowa*
 (*Web application*) zamiast *Aplikacja komputerowa*. Utwórz nowy, właściwego typu.
 
-**Wolne miejsce poniżej ~6 GB** — 1200 oryginałów to około 4,8 GB, a limit 15 GB dzielisz
-z Gmailem i Zdjęciami. Google One 100 GB kosztuje 8,99 zł miesięcznie i zamyka temat.
+**404 przy zapisie do folderu** — folder został założony ręcznie zamiast przez
+`npm run drive:init`. Patrz krok 9.
+
+**Wolne miejsce poniżej ~6 GB** — 1200 oryginałów to około 4,8 GB. `npm run drive:check`
+sam ostrzeże, jeśli miejsca brakuje.
 
 ---
 

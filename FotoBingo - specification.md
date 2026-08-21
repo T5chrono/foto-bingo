@@ -276,9 +276,10 @@ Full HD (1920×1080). Większy plik nic by tam nie zmienił, a archiwum i tak tr
 1200 oryginałów × ~4 MB ≈ **4,8 GB**. Zakres zależy od telefonów: iPhone w HEIC daje ~2,5 MB,
 Android w trybie 50 MP potrafi dać 10 MB. Realistyczny przedział: **3–10 GB**.
 
-**Google One 100 GB (8,99 zł/mies.) jest wymagany**, nie opcjonalny. Darmowe 15 GB jest dzielone
-z Gmailem i Zdjęciami — wchodzenie w ten limit z kilkoma gigabajtami zdjęć weselnych to proszenie
-się o `storageQuotaExceeded` w sobotę wieczorem. Za dziewięć złotych problem znika całkowicie.
+**Miejsce jest niepotrzebnym zmartwieniem: konto ma plan 5 TB, z czego ~5005 GB wolnego**
+(sprawdzone `npm run drive:check`, sierpień 2026). Wcześniejsza wersja tej specyfikacji
+wymagała wykupienia Google One 100 GB — to założenie było błędne i zostało wycofane.
+`drive:check` sam ostrzega, gdyby wolnego miejsca spadło poniżej potrzebnych ~4,8 GB.
 
 ### Transfer po stronie gościa
 
@@ -403,6 +404,13 @@ Numeracja `R{wiersz}K{kolumna}`, kolumny zgodnie z oryginalną listą Pary Młod
 ---
 
 ## 9. Nazwy plików i struktura Dysku
+
+**Folder główny musi utworzyć aplikacja, nie człowiek.** Zakres `drive.file` daje dostęp
+wyłącznie do plików, które aplikacja sama utworzyła — folder założony kliknięciem w Dysku jest
+dla niej **niewidoczny**, mimo że należy do tego samego konta. Próba zapisu kończy się wtedy
+404, co wygląda na problem z uprawnieniami, a jest zwykłą konsekwencją minimalnego zakresu.
+Załatwia to `npm run drive:init`. Ta sama zasada jest też gwarancją prywatności: aplikacja
+nie widzi reszty Dysku Pary Młodej.
 
 ```
 FotoBingo 2026/                          ← folder root, tworzony przez aplikację
@@ -577,14 +585,16 @@ Najbardziej podatny na błąd fragment całego projektu. Kolejność ma znaczeni
    aplikacji, co dla jednego konta (Waszego) jest bez znaczenia.
 5. Utwórz OAuth client typu **Desktop app**. Uruchom raz `node scripts/google-auth.mjs`, przejdź
    flow z `access_type=offline` i `prompt=consent`, zapisz `refresh_token`.
-6. Utwórz na Dysku folder `FotoBingo 2026`, skopiuj jego identyfikator z adresu URL.
-7. Wgraj zmienne na Vercela (sekcja 15).
+6. `npm run drive:init` — **folder główny tworzy aplikacja**, nie Ty kliknięciem w Dysku
+   (patrz sekcja 9). Identyfikator zapisuje się sam.
+7. `npm run drive:check` — potwierdzenie, że zapis naprawdę działa.
+8. Wgraj zmienne na Vercela (sekcja 15).
 
 **Kiedy refresh token mimo produkcji przestaje działać:** gdy cofniesz dostęp w ustawieniach
 konta Google, gdy zmienisz hasło do konta, albo gdy nie użyjesz go przez 6 miesięcy. Żaden
 z tych przypadków nie dotyczy weekendu wesela, ale warto o nich wiedzieć.
 
-**Wykup Google One 100 GB** przed weselem (sekcja 5).
+Miejsce na Dysku: patrz sekcja 5 — konto ma plan 5 TB, więc nie ma tu nic do zrobienia.
 
 ---
 
@@ -765,7 +775,8 @@ runbook weekendowy, próba generalna.
 
 ## 20. Checklista przedweselna
 
-- [ ] **Google One 100 GB wykupione.**
+- [ ] **`npm run drive:check` przechodzi** — token, konto, wolne miejsce
+      i realny zapis pliku testowego do folderu głównego.
 - [ ] OAuth consent screen w statusie **„In production"**, nie „Testing".
 - [ ] Refresh token wygenerowany, wgrany na Vercela, testowa wysyłka przechodzi.
 - [ ] Spike S1 rozstrzygnięty, wynik zapisany w `CLAUDE.md`.
