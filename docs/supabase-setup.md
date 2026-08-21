@@ -48,14 +48,24 @@ o krótkiej ważności.
 | Co | Gdzie trafia | Jawny? |
 |---|---|---|
 | Project URL | `VITE_SUPABASE_URL` i `SUPABASE_URL` | tak |
-| Publishable key (`sb_publishable_…`) | `VITE_SUPABASE_ANON_KEY` | tak, ląduje w przeglądarce |
-| `service_role` key (pod „Reveal") | `SUPABASE_SERVICE_ROLE_KEY` | **NIE — sekret** |
+| Publishable key (`sb_publishable_…`) | `VITE_SUPABASE_PUBLISHABLE_KEY` | tak, ląduje w przeglądarce |
+| Secret key (`sb_secret_…`) | `SUPABASE_SECRET_KEY` | **NIE — sekret** |
 
-`service_role` omija RLS i wszystkie zabezpieczenia bazy. Wolno mu żyć wyłącznie w lokalnym
+**Bierz nowe klucze, nie te z działki „Legacy API keys".** Stary `service_role` działa tak samo,
+ale jest JWT podpisanym sekretem projektu — żeby go zrotować, trzeba zrotować sekret JWT, co
+unieważnia wszystko naraz. Nowe klucze tworzy się i unieważnia pojedynczo.
+
+Klucz sekretny omija RLS i wszystkie zabezpieczenia bazy. Wolno mu żyć wyłącznie w lokalnym
 `.env` (jest w `.gitignore`) i w zmiennych środowiskowych funkcji na Vercelu. Nigdy w kodzie,
 nigdy w commicie, nigdy w komunikatorze.
 
 To jedyny klucz, którego nie da się pobrać przez API Supabase — trzeba go skopiować z panelu ręcznie.
+
+**Sprawdzenie, że jedno i drugie działa jak trzeba** — zapytanie do `/rest/v1/guests`:
+kluczem sekretnym musi zwrócić `HTTP 200 []`, a kluczem publishable **`HTTP 401
+permission denied for table guests`**. Drugi wynik jest ważniejszy od pierwszego: klucz
+publishable siedzi w kodzie każdej zainstalowanej aplikacji gościa, więc 200 w tym miejscu
+oznaczałoby, że każdy gość czyta cudze plansze.
 
 ## 4. Migracja schematu
 

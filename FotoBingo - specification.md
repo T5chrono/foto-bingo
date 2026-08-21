@@ -161,14 +161,20 @@ Zostaje jako awaryjna ścieżka w panelu, obsługiwana ręcznie przez Parę Mło
 
 ### D8 — Dostęp do bazy przez `supabase-js`, bez własnego poolera
 
-**Wybrano:** serwer rozmawia z bazą przez `@supabase/supabase-js` z kluczem `service_role`.
+**Wybrano:** serwer rozmawia z bazą przez `@supabase/supabase-js` z **nowym kluczem sekretnym**
+(`sb_secret_…`), a nie ze starym `service_role` z działki Legacy.
+
+Oba dają tę samą moc — omijają RLS i wszystkie zabezpieczenia — ale stary `service_role` to JWT
+podpisany sekretem projektu: żeby go zrotować, trzeba zrotować sekret JWT, co unieważnia
+wszystko naraz. Nowe klucze tworzy się i unieważnia pojedynczo, więc wyciek jednego kosztuje
+jedno kliknięcie, a nie awarię.
 
 **Odrzucono:** bezpośrednie połączenie Postgresem (jak `DATABASE_URL` w SplitDecu). Tam było
 konieczne przez SQLAlchemy i wymagało uważnej konfiguracji transaction poolera, `NullPool`
 i `statement_cache_size=0`. Przy trzech tabelach i zapytaniach typu „daj zdjęcia gościa" to
 narzut bez korzyści.
 
-**Konsekwencja:** klucz `service_role` omija RLS i **nigdy nie może trafić do przeglądarki**.
+**Konsekwencja:** klucz sekretny omija RLS i **nigdy nie może trafić do przeglądarki**.
 Żyje wyłącznie w zmiennych środowiskowych funkcji.
 
 ### D9 — Funkcja serwerowa jest jedyną granicą autoryzacji
@@ -185,7 +191,7 @@ z podpisanych linków, które same w sobie są ograniczonymi w czasie przepustka
    siedzi w kodzie **każdej zainstalowanej aplikacji gościa**.
 2. **RLS włączony na wszystkich trzech tabelach, bez żadnych polityk.**
 
-Punkt 2 jest odstępstwem od SplitDeca, który RLS świadomie wyłącza. Kosztuje zero — `service_role`
+Punkt 2 jest odstępstwem od SplitDeca, który RLS świadomie wyłącza. Kosztuje zero — klucz sekretny
 omija oba mechanizmy, więc aplikacja nie zauważa różnicy — a kupuje odporność na jeden konkretny
 scenariusz: gdyby prawa z punktu 1 kiedykolwiek wróciły (zmiana domyślnych ustawień Supabase,
 przywrócenie z kopii, cudze `grant`), RLS bez polityk nadal odmawia wszystkiego. Przy danych
@@ -571,13 +577,13 @@ z tych przypadków nie dotyczy weekendu wesela, ale warto o nich wiedzieć.
 ```bash
 # ---- Frontend (Vite, trafia do przeglądarki) ----
 VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_...
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 # ---- Backend (wyłącznie serwer) ----
 ENV=development
 
 SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=...        # omija RLS, NIGDY nie może trafić do przeglądarki
+SUPABASE_SECRET_KEY=sb_secret_...    # omija RLS, NIGDY nie może trafić do przeglądarki
 SUPABASE_BUCKET=fotobingo
 
 GOOGLE_CLIENT_ID=...
@@ -687,7 +693,7 @@ Lista gości mieszka w lokalnym CSV poza repo i w bazie. Repo jest publiczne i m
 - **Nagłówki bezpieczeństwa** w `vercel.json`, wzorowane na SplitDecu: HSTS, `nosniff`,
   `frame-ancestors 'none'` z `X-Frame-Options: DENY`, polityka referrera i uprawnień.
 - **Bucket jest prywatny.** Zdjęcia wychodzą wyłącznie podpisanymi linkami o krótkiej ważności.
-- **Klucz `service_role` i token Google nigdy nie opuszczają serwera.**
+- **Klucz sekretny Supabase i token Google nigdy nie opuszczają serwera.**
 - **Kody gości trzymane jako SHA-256.** Wyciek bazy nie daje dostępu do niczyjej planszy.
 - **Service worker nigdy nie cache'uje `/api/*`** (`navigateFallbackDenylist: [/^\/api\//]`) —
   odpowiedź z pamięci podręcznej dla wysyłki zdjęcia byłaby katastrofą.

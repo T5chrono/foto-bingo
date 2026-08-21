@@ -1,0 +1,51 @@
+@import "tailwindcss" source(none);
+@import "@fontsource-variable/manrope";
+
+/* Tailwind's sources are declared, not auto-detected — same rule as SplitDec.
+   Auto-detection scans everything not gitignored, which on Vercel has been known
+   to reach into installed packages and mint utilities out of their comments.
+   These lines must sit AFTER both @import rules: @import has to precede every
+   other rule or the parser drops it, and the second one is the font.
+   A new location holding class names has to be added here, or its classes
+   silently never generate. */
+@source "../index.html";
+@source "./";
+
+@theme {
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Wino i krem. Odróżnia się od teal SplitDeca, a na weselnym stole
+     nie wygląda jak aplikacja bankowa. */
+  --color-brand-50: #fff1f2;
+  --color-brand-100: #ffe4e6;
+  --color-brand-200: #fecdd3;
+  --color-brand-400: #fb7185;
+  --color-brand-600: #e11d48;
+  --color-brand-700: #be123c;
+  --color-brand-800: #9f1239;
+  --color-brand-900: #881337;
+
+  --color-cream: #fdf8f6;
+  --color-ink: #1c1417;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    /* Plansza 5x5 na telefonie ma być całą stroną, bez gumowego odbicia
+       przy przewijaniu — w zainstalowanej aplikacji to wygląda jak błąd. */
+    overscroll-behavior-y: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-cream text-ink antialiased;
+  }
+
+  /* Kafelki planszy są przyciskami dotykowymi. Niebieski błysk Androida
+     przy dotknięciu psuje wrażenie natywności. */
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
