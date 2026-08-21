@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.vercel/
+.vercel
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+# Playwright MCP browser artifacts (screenshots, logs, profile with auth session)
+.playwright-mcp/
+
+# Local Claude Code tool config (dev-server launcher for the preview browser)
+.claude/
+
+# Dane osobowe gosci. Repo jest publiczne — lista gosci, wygenerowane kody
+# i winietki nigdy nie moga sie tu znalezc. Zyja lokalnie i w bazie.
+goscie.csv
+guests.csv
+winietki/
+*.pdf
+
+# Launch checklist i zapis bezpieczenstwa — celowo nietrackowane, jak w SplitDecu.
+GO-LIVE.md
+SECURITY.md
