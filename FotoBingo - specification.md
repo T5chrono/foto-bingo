@@ -171,12 +171,25 @@ narzut bez korzyści.
 **Konsekwencja:** klucz `service_role` omija RLS i **nigdy nie może trafić do przeglądarki**.
 Żyje wyłącznie w zmiennych środowiskowych funkcji.
 
-### D9 — RLS wyłączony, funkcja serwerowa jest jedyną granicą
+### D9 — Funkcja serwerowa jest jedyną granicą autoryzacji
 
-Tak samo jak w SplitDecu. Przeglądarka nigdy nie rozmawia z bazą bezpośrednio — wszystko idzie
-przez `/api/*`, gdzie sprawdzany jest kod gościa albo ciasteczko panelu. Jedyny wyjątek to
-pobieranie obrazków z podpisanych linków, które same w sobie są ograniczonymi w czasie
-przepustkami do pojedynczego pliku.
+Przeglądarka nigdy nie rozmawia z bazą bezpośrednio — wszystko idzie przez `/api/*`, gdzie
+sprawdzany jest kod gościa albo ciasteczko panelu. Jedyny wyjątek to pobieranie obrazków
+z podpisanych linków, które same w sobie są ograniczonymi w czasie przepustkami do jednego pliku.
+
+**Data API jest zamknięte dwiema warstwami**, obiema w migracji początkowej:
+
+1. **Odebrane prawa rolom `anon` i `authenticated`**, również domyślne dla przyszłych obiektów.
+   To jest warstwa główna — taka sama jak w SplitDecu. Bez niej Supabase domyślnie pozwala
+   rolom `anon` i `authenticated` czytać i pisać po tabelach w `public`, a klucz publishable
+   siedzi w kodzie **każdej zainstalowanej aplikacji gościa**.
+2. **RLS włączony na wszystkich trzech tabelach, bez żadnych polityk.**
+
+Punkt 2 jest odstępstwem od SplitDeca, który RLS świadomie wyłącza. Kosztuje zero — `service_role`
+omija oba mechanizmy, więc aplikacja nie zauważa różnicy — a kupuje odporność na jeden konkretny
+scenariusz: gdyby prawa z punktu 1 kiedykolwiek wróciły (zmiana domyślnych ustawień Supabase,
+przywrócenie z kopii, cudze `grant`), RLS bez polityk nadal odmawia wszystkiego. Przy danych
+40 gości weselnych druga warstwa za darmo jest warta wzięcia.
 
 ### D10 — Kompresja do budżetu bajtowego, nie do stałej jakości
 
@@ -328,14 +341,24 @@ claims
   id           uuid primary key
   guest_id     uuid not null references guests(id)
   kind         text not null           -- 'row' | 'col' | 'diag' | 'full'
-  index        int                     -- numer wiersza/kolumny/przekątnej; null dla 'full'
+  line_index   int                     -- numer wiersza/kolumny/przekątnej; null dla 'full'
   status       text not null default 'new'       -- 'new' | 'accepted' | 'rejected'
   created_at   timestamptz not null default now()
   resolved_at  timestamptz
 ```
 
-Indeksy: `photos(guest_id, category_id) where is_active`,
-`photos(drive_status) where drive_status <> 'ok'`, `claims(status)`.
+**Indeksy, które są regułami biznesowymi, nie optymalizacją:**
+
+- `unique (guest_id, category_id) where is_active` — jeden aktywny kafelek na gościa i kategorię.
+  Wymuszone w bazie, a nie tylko w kodzie: podwójne kliknięcie na słabym łączu nie może zrobić
+  dwóch aktywnych zdjęć na jednym polu.
+- `unique (guest_id, kind, coalesce(line_index, -1)) where status = 'new'` — jedno otwarte
+  zgłoszenie na linię. Gość klikający „Zgłoś bingo" trzy razy pod rząd nie zasypuje panelu
+  duplikatami w trakcie zabawy.
+
+Zwykłe indeksy: `photos(drive_status) where drive_status <> 'ok'` (kolejka kopiowania) oraz
+`claims(created_at) where status = 'new'`. Oba częściowe, bo docelowo prawie każdy wiersz ma
+status końcowy i nie ma po co go indeksować.
 
 ### Czego celowo nie ma w bazie
 
