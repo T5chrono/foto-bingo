@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "icons": "npm i --no-save sharp && node scripts/generate-icons.mjs",
-    "api": "node --experimental-strip-types scripts/dev-api.mjs"
+    "api": "node --experimental-strip-types scripts/dev-api.mjs",
+    "google-auth": "node scripts/google-auth.mjs",
+    "add-guest": "node --experimental-strip-types scripts/add-guest.mjs"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
