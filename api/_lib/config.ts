@@ -27,6 +27,21 @@ export const config = {
   get isDev() {
     return (process.env.ENV ?? "production") === "development";
   },
+
+  get googleClientId() {
+    return required("GOOGLE_CLIENT_ID");
+  },
+  get googleClientSecret() {
+    return required("GOOGLE_CLIENT_SECRET");
+  },
+  get googleRefreshToken() {
+    return required("GOOGLE_REFRESH_TOKEN");
+  },
+  /** Folder utworzony przez `npm run drive:init` — zakres drive.file nie widzi
+   *  folderow zalozonych recznie w przegladarce. */
+  get driveRootFolderId() {
+    return required("DRIVE_ROOT_FOLDER_ID");
+  },
 } as const;
 
 /**

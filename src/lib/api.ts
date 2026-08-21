@@ -52,6 +52,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     response = await fetch(`${BASE}${path}`, {
       ...init,
       headers: {
+        // Domyslnie JSON, ale init.headers jest PO tym wpisie i moze go
+        // przykryc — kawalki oryginalu leca jako application/octet-stream.
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
         ...(token ? { "X-Guest-Token": token } : {}),
         ...init?.headers,
@@ -70,6 +72,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   return (await response.json()) as T;
 }
+
+export type OriginalStart = {
+  done: boolean;
+  offset?: number;
+  chunkSize: number;
+  name?: string;
+};
 
 export const api = {
   me: () => request<Me>("/me"),
@@ -92,5 +101,30 @@ export const api = {
     request<{ photoId: string; replaced: boolean; alreadyExisted: boolean }>(
       "/photos/finalize",
       { method: "POST", body: JSON.stringify(body) },
+    ),
+
+  originalStart: (body: {
+    photoId: string;
+    size: number;
+    mime: string;
+    filename: string | null;
+  }) =>
+    request<OriginalStart>("/photos/original/start", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** Cialo jest surowe, nie JSON — base64 dokladaloby 33% do kazdego bajtu. */
+  originalChunk: (
+    args: { photoId: string; offset: number; total: number },
+    chunk: ArrayBuffer,
+  ) =>
+    request<{ done: boolean; offset?: number; fileId?: string; name?: string }>(
+      `/photos/original/chunk?photoId=${args.photoId}&offset=${args.offset}&total=${args.total}`,
+      {
+        method: "POST",
+        body: chunk,
+        headers: { "Content-Type": "application/octet-stream" },
+      },
     ),
 };

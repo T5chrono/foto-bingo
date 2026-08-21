@@ -39,6 +39,11 @@ export type Job = {
   /** Podgląd plus miniatura — to trafia do licznika zajętości w panelu. */
   bytes: number;
   originalBytes: number;
+  /** Podglad i miniatura sa juz na serwerze — kafelek jest zapelniony,
+   *  a zadanie zostaje w kolejce wylacznie dla oryginalu. */
+  previewDone: boolean;
+  /** Ile bajtow oryginalu Google juz ma. Przezywa restart telefonu. */
+  originalOffset: number;
   attempts: number;
   lastError: string | null;
   createdAt: number;
@@ -71,7 +76,14 @@ function database(): Promise<IDBPDatabase<Schema>> {
 
 export type NewJob = Omit<
   Job,
-  "state" | "attempts" | "lastError" | "createdAt" | "updatedAt" | "bytes"
+  | "state"
+  | "attempts"
+  | "lastError"
+  | "createdAt"
+  | "updatedAt"
+  | "bytes"
+  | "previewDone"
+  | "originalOffset"
 >;
 
 export async function enqueue(job: NewJob): Promise<Job> {
@@ -79,6 +91,8 @@ export async function enqueue(job: NewJob): Promise<Job> {
   const full: Job = {
     ...job,
     bytes: job.preview.byteLength + job.thumb.byteLength,
+    previewDone: false,
+    originalOffset: 0,
     state: "queued",
     attempts: 0,
     lastError: null,
@@ -103,6 +117,18 @@ export async function pendingJobs(): Promise<Job[]> {
   return jobs
     .filter((j) => j.state !== "done")
     .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/** Zadania czekające na podgląd — mają pierwszeństwo, bo od nich zależy,
+ *  czy kafelek się zapełni i czy zdjęcie policzy się do bingo. */
+export async function previewPending(): Promise<Job[]> {
+  return (await pendingJobs()).filter((j) => !j.previewDone);
+}
+
+/** Zadania czekające już tylko na oryginał — niższy priorytet, mogą iść
+ *  godzinami i nikt na nie nie patrzy. */
+export async function originalPending(): Promise<Job[]> {
+  return (await pendingJobs()).filter((j) => j.previewDone && j.original !== null);
 }
 
 export async function jobFor(categoryId: number): Promise<Job | undefined> {

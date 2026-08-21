@@ -302,8 +302,8 @@ Telefon gościa (PWA)
   │
   ├──► /api/photos/finalize ─── wpis do Postgresa; od tej chwili zdjęcie jest bezpieczne
   │
-  └──► Dysk Google ─── oryginał, w tle, niskim priorytetem
-                        droga zależna od wyniku spike'u S1 (sekcja 13)
+  └──► /api/photos/original/* ─── oryginał kawałkami po 3 MB, w tle
+        └──► Dysk Google ─── sesja resumable; Supabase nigdy nie widzi oryginału
 ```
 
 Panel Pary Młodej czyta z Postgresa i wyświetla obrazki podpisanymi linkami z Supabase.
@@ -469,9 +469,10 @@ Na weselu nic się nie kasuje bezpowrotnie.
    bezpieczne.** Kafelek zmienia się w miniaturę, plansza przelicza bingo.
 7. **Oryginał, w tle.** Osobne zadanie w kolejce, niski priorytet, ustawia `drive_status`.
    Droga zależy od spike'u S1 (sekcja 13).
-8. **Ponowienia.** `POST /api/mirror/drain` przemiela zaległości. Wołany z panelu przyciskiem
-   „Wyślij zaległe na Dysk"; opcjonalnie z `pg_cron` w Supabase co 5 minut. Vercel Hobby daje
-   crona tylko raz na dobę, co jest za rzadko — stąd przycisk jako podstawowa ścieżka.
+8. **Ponowienia.** Należą do kolejki w telefonie, nie do serwera: przy S1-C oryginał leży
+   na telefonie gościa i nikt poza nim nie może go dosłać. Kolejka rusza sama, gdy wraca sieć
+   albo aplikacja wraca na wierzch. Serwer pamięta jedynie, ile bajtów Google już ma, żeby
+   wznowienie nie zaczynało od zera — telefon ubity w środku wysyłki sam tego nie wie.
 
 Zadanie znika z kolejki dopiero po potwierdzeniu z serwera. Zadanie oryginału znika dopiero po
 `drive_status='ok'`.
@@ -487,13 +488,14 @@ Wszystko pod `/api/*`, jedna funkcja, router Hono.
 | `GET /api/me` | gość | Zwraca imię gościa i stan jego planszy |
 | `POST /api/photos/upload-url` | gość | Podpisany link do bucketa dla jednej kategorii |
 | `POST /api/photos/finalize` | gość | Zapisuje zdjęcie w bazie, uruchamia kopiowanie na Dysk |
-| `POST /api/photos/original-url` | gość | Adres docelowy dla oryginału (zależny od S1) |
+| `POST /api/photos/original/start` | gość | Otwiera sesję resumable w Google |
+| `POST /api/photos/original/chunk` | gość | Przekazuje jeden kawałek (≤3 MB) do Google |
 | `POST /api/claims` | gość | Zgłoszenie bingo |
 | `POST /api/panel/login` | Para Młoda | PIN → podpisane ciasteczko httpOnly, ważne 30 dni |
 | `GET /api/panel/claims` | Para Młoda | Lista zgłoszeń ze statusami |
 | `POST /api/panel/claims/:id` | Para Młoda | Uznanie albo odrzucenie zgłoszenia |
 | `GET /api/panel/photos` | Para Młoda | Zdjęcia pogrupowane po kategoriach albo po gościach |
-| `POST /api/mirror/drain` | Para Młoda | Ponawia kopiowanie zaległych oryginałów |
+| `GET /api/panel/pending` | Para Młoda | Którzy goście mają oryginały w drodze |
 | `POST /api/panel/guests` | Para Młoda | Dodaje gościa i zwraca nowy kod (awaryjne winietki) |
 
 **Uwierzytelnienie gościa:** nagłówek `X-Guest-Token` z kodem z QR. Serwer porównuje SHA-256.
@@ -537,35 +539,72 @@ mówi wprost „instaluj ze swojego osobistego linku", a dodatkowo serwujemy man
 - **Tryb rzutnika**: pełny ekran, strzałki i spacja, Wake Lock (ekran nie gaśnie), duży podpis
   z kategorią i imieniem gościa.
 - Widok wszystkich zdjęć pogrupowany po kategoriach — czego Dysk z natury nie potrafi.
-- Licznik miejsca `zajęte / 1000 MB` i przycisk „Wyślij zaległe na Dysk".
+- Licznik miejsca `zajęte / 1000 MB`.
+- Lista gości z oryginałami w drodze. **Serwer nie może ich dosłać sam** — przy S1-C
+  oryginał leży na telefonie gościa, więc ponawianie należy do jego kolejki. Panel służy
+  do tego, żeby wiedzieć, kogo poprośić o otwarcie aplikacji.
 - Dodanie gościa i wygenerowanie kodu, gdy ktoś zgubi winietkę.
 
 ---
 
-## 13. Otwarta kwestia: droga oryginału na Dysk
+## 13. Droga oryginału na Dysk — rozstrzygnięte (spike S1)
 
-**Spike S1 — do rozstrzygnięcia przed Etapem 3.**
+Oryginał (~4 MB, czasem 10 MB) jest za duży, żeby przejść przez funkcję Vercela jednym
+żądaniem — limit ciała to 4,5 MB. Rozważane były trzy drogi; wybrana jest trzecia.
 
-Oryginał (~4 MB, czasem 10 MB) jest za duży, żeby przejść przez funkcję Vercela (limit 4,5 MB
-na ciało żądania). Zostają dwie drogi:
+### S1-A — z telefonu prosto do Google. **Odrzucone: działa za dobrze.**
 
-**S1-A — z telefonu prosto do Google.** Serwer prosi Google o *resumable session URI* dla jednego
-pliku, telefon wysyła bajty pod ten adres. Token Pary Młodej nigdy nie trafia do przeglądarki;
-adres jest ważny tydzień i dotyczy jednego pliku. Zero tranzytu, zero zużycia limitów Supabase.
+Mechanizm istnieje: serwer prosi Google o *resumable session URI*, telefon wysyła bajty pod ten
+adres bez żadnego tokena. Sprawdzone na żywym API, sierpień 2026:
 
-**Czego nie wiadomo:** dokumentacja Google dla Dysku wymienia przy wysyłce fragmentów tylko
-nagłówki `Content-Length` i `Content-Range`, bez autoryzacji — ale nigdzie tego nie potwierdza
-wprost. Dla Cloud Storage jest napisane jasno, że taki adres działa jak przepustka; dla Dysku nie.
-Otwarte jest też pytanie o nagłówki CORS przy żądaniu z naszej domeny.
+| Krok | Wynik |
+|---|---|
+| Utworzenie sesji resumable | HTTP 200, adres otrzymany |
+| Preflight CORS z `localhost:5173` | HTTP 200, `allow-origin` i `allow-methods: PUT` |
+| `PUT` bez nagłówka `Authorization` | HTTP 200, **plik utworzony** |
+| Nagłówek `allow-origin` w odpowiedzi na `PUT` | **BRAK** |
 
-**S1-B — przez Supabase, gdyby A nie zadziałało.** Oryginał ląduje w bucketcie, serwer pobiera go
-i przekłada na Dysk, po czym **usuwa z bucketa**. Działa na pewno, ale kosztuje: ~4,8 GB pobrania
-z Supabase przy darmowym limicie 5 GB miesięcznie. Mieści się, ale bez zapasu — a zapas jest
-w tym projekcie wymaganiem. Gdyby S1-B było jedyną opcją, rozważamy Supabase Pro na jeden miesiąc
-($25) albo rozłożenie kopiowania na kilka dni po weselu.
+I to ostatnie przesądza. Preflight przechodzi, więc przeglądarka wysyła żądanie, ale odpowiedź
+nie ma `Access-Control-Allow-Origin`, więc Chrome ją blokuje. Test w prawdziwej przeglądarce:
 
-**Sposób rozstrzygnięcia:** pół godziny, jeden plik, jeden telefon, konsola przeglądarki.
-Wynik zapisujemy tutaj i w `CLAUDE.md`.
+```
+TypeError: Failed to fetch
+Access to fetch ... blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+**A plik na Dysku mimo to powstał, w pełnym rozmiarze.** To najgorszy możliwy układ: wysyłka się
+udaje, a klient widzi błąd. Kolejka ponawiałaby zadanie, które już przeszło, gość widziałby
+„nie wyszło" przy zdjęciu leżącym na Dysku, a w folderze rosłyby duplikaty. Cicha awaria,
+której nie da się odróżnić od prawdziwej — gorsza niż brak działania.
+
+Obejście przez `mode: "no-cors"` też odpada: ten tryb nie dopuszcza metody `PUT`.
+
+### S1-B — przez Supabase. **Odrzucone: nie mieści się w limitach.**
+
+Oryginał ląduje w bucketcie, serwer pobiera go i przekłada na Dysk, po czym kasuje z bucketa.
+Działałoby na pewno, ale pobranie 1200 oryginałów to **~4,8 GB z 5 GB darmowego limitu
+transferu wychodzącego** — do tego dochodzi serwowanie podglądów na plansze i rzutnik.
+Razem powyżej limitu, a zapas jest w tym projekcie wymaganiem, nie życzeniem.
+
+### S1-C — kawałkami przez naszą funkcję. **Wybrane.**
+
+Telefon tnie oryginał na kawałki po 3 MB i wysyła je do naszej funkcji, a ta przekazuje je
+do sesji resumable w Google. Supabase nigdy nie widzi oryginału.
+
+| | Zużycie | Limit |
+|---|---|---|
+| Supabase — miejsce | ~456 MB (bez zmian) | 1 GB |
+| Supabase — transfer | podglądy i rzutnik, ~1–2 GB | 5 GB |
+| Vercel — transfer | ~9,6 GB (w górę i do Google) | 100 GB |
+
+Kawałek 3 MB mieści się pod limitem 4,5 MB z zapasem na narzuty, a Google wymaga, by kawałki
+poza ostatnim były wielokrotnością 256 KB — 3 MB to równe 12 × 256 KB.
+
+**Zysk, którego S1-A nie miało:** każdy bajt przechodzi przez nasz serwer, więc
+**wiemy na pewno, kiedy zapis się udał**. Odpowiedź Google trafia do nas, a nie w próżnię
+za ścianą CORS. Przy kolejce, która nie ma prawa zgubić zdjęcia, to jest ważniejsze
+od zaoszczędzonego tranzytu.
 
 ---
 
@@ -742,8 +781,9 @@ z trzema tabelami, plansza w `src/lib/board.ts`, CI.
 do budżetu (`src/lib/image.ts`), kolejka IndexedDB (`src/lib/queue.ts`), podpisane linki,
 `finalize`. **Na tym etapie zdjęcia lądują tylko w Supabase** — całość jest już grywalna.
 
-**Etap 3 — Dysk Google.** Spike S1 (sekcja 13), potem `api/_lib/drive.ts`: odświeżanie tokena,
-folder gościa, wysyłka, `appProperties`. Kolejka oryginałów w tle. Endpoint `drain`.
+**Etap 3 — Dysk Google.** `api/_lib/drive.ts`: odświeżanie tokena, folder gościa, sesja
+resumable, `appProperties`. Przekazywanie kawałków według S1-C (sekcja 13). Kolejka oryginałów
+w tle, z wznawianiem po restarcie telefonu.
 
 **Etap 4 — bingo i panel.** Wykrywanie linii (5 wierszy + 5 kolumn + 2 przekątne + pełna karta),
 zgłoszenia, panel na PIN, widok linii, tryb rzutnika z Wake Lockiem, widok po kategoriach,
@@ -765,8 +805,11 @@ runbook weekendowy, próba generalna.
   instaluj z linku osobistego `/g/…`.
 - **Dysk.** Po pierwszej wysyłce sprawdź, że powstał `FotoBingo/Imię Nazwisko/` i nazwa
   pliku zgadza się ze wzorem z sekcji 9.
-- **Odporność na awarię Google.** Podmień `GOOGLE_REFRESH_TOKEN` na śmieciowy → wysyłka podglądu
-  musi się udać, a wiersz dostać `drive_status='pending'`. Przywróć token → „Wyślij zaległe" domyka.
+- **Odporność na awarię Google.** Podmień `GOOGLE_REFRESH_TOKEN` na śmieciowy → **wysyłka
+  podglądu musi się udać**, kafelek zapełnić, a wiersz zostać z `drive_status='pending'`.
+  Przywróć token i otwórz aplikację gościa → oryginał dochodzi sam.
+- **Wznowienie w połowie oryginału.** Zabij kartę w trakcie wysyłki 10-megabajtowego pliku,
+  otwórz ponownie → wysyłka wznawia się od ostatniego przyjętego kawałka, nie od zera.
 - **Budżet miejsca.** Wgraj 1200 sztucznych wierszy → licznik w panelu musi pokazać wartość
   zgodną z sekcją 5, a panel i tryb rzutnika pozostać płynne (miniatury, nie podglądy).
 - **Próba generalna.** Pięć osób, po trzy zdjęcia, na telefonach, w trybie Slow 3G.
@@ -779,7 +822,6 @@ runbook weekendowy, próba generalna.
       i realny zapis pliku testowego do folderu głównego.
 - [ ] OAuth consent screen w statusie **„In production"**, nie „Testing".
 - [ ] Refresh token wygenerowany, wgrany na Vercela, testowa wysyłka przechodzi.
-- [ ] Spike S1 rozstrzygnięty, wynik zapisany w `CLAUDE.md`.
 - [ ] Domena ustalona i podpięta. **Winietki drukujemy dopiero po tym** — zmiana adresu
       po druku unieważnia wszystkie kody.
 - [ ] Winietki z QR wydrukowane: **40 imiennych plus 8 zapasowych bez imienia**.

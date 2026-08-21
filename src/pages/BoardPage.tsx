@@ -20,7 +20,11 @@ export default function BoardPage() {
     () =>
       autoDrain((p) => {
         void refreshJobs();
-        if (p.state === "done") void client.invalidateQueries({ queryKey: ["me"] });
+        // Plansza odswieza sie po podgladzie — oryginal niczego na niej
+        // nie zmienia, wiec nie ma po co pytac serwera drugi raz.
+        if (p.phase === "preview" && p.state === "done") {
+          void client.invalidateQueries({ queryKey: ["me"] });
+        }
       }),
     [client, refreshJobs],
   );

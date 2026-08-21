@@ -104,3 +104,37 @@ describe("kolejka wysyłkowa", () => {
     await expect(queue.patch("nieistnieje", { state: "done" })).resolves.toBeUndefined();
   });
 });
+
+describe("priorytety kolejki", () => {
+  beforeEach(async () => {
+    for (const j of await queue.allJobs()) await queue.remove(j.photoId);
+  });
+
+  // Sedno podzialu: podglad decyduje, czy kafelek sie zapelni i czy zdjecie
+  // policzy sie do bingo. Oryginal to archiwum i moze czekac godzinami.
+  it("nowe zadanie czeka najpierw na podglad, nie na oryginal", async () => {
+    await queue.enqueue(job("a", 3));
+    expect((await queue.previewPending()).map((j) => j.photoId)).toEqual(["a"]);
+    expect(await queue.originalPending()).toEqual([]);
+  });
+
+  it("po wyslaniu podgladu zadanie przechodzi do kolejki oryginalow", async () => {
+    await queue.enqueue(job("a", 3));
+    await queue.patch("a", { previewDone: true });
+    expect(await queue.previewPending()).toEqual([]);
+    expect((await queue.originalPending()).map((j) => j.photoId)).toEqual(["a"]);
+  });
+
+  it("nie czeka na oryginal, ktorego nie ma", async () => {
+    await queue.enqueue({ ...job("a", 3), original: null });
+    await queue.patch("a", { previewDone: true });
+    expect(await queue.originalPending()).toEqual([]);
+  });
+
+  it("zapamietuje postep oryginalu miedzy uruchomieniami", async () => {
+    await queue.enqueue(job("a", 3));
+    await queue.patch("a", { previewDone: true, originalOffset: 3 * 1024 * 1024 });
+    const [stored] = await queue.originalPending();
+    expect(stored?.originalOffset).toBe(3 * 1024 * 1024);
+  });
+});

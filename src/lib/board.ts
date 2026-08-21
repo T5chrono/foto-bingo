@@ -1,4 +1,6 @@
-import { slugify } from "./slug";
+// Jawne rozszerzenie, bo ten plik importuje rowniez api/ — Node przy
+// --experimental-strip-types nie robi rozszerzania sciezek w stylu bundlera.
+import { slugify } from "./slug.ts";
 
 /**
  * 25 kategorii planszy. Świadomie NIE jest to tabela w bazie (sekcja 8

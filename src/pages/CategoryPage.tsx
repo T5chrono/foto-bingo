@@ -8,7 +8,14 @@ import { prepare } from "../lib/image";
 import * as queue from "../lib/queue";
 import { drain } from "../lib/uploader";
 
-type Phase = "idle" | "przetwarzanie" | "w kolejce" | "wysyłanie" | "zapisane" | "błąd";
+type Phase =
+  | "idle"
+  | "przetwarzanie"
+  | "w kolejce"
+  | "wysyłanie"
+  | "zapisane"
+  | "oryginał w drodze"
+  | "błąd";
 
 export default function CategoryPage() {
   const { id } = useParams();
@@ -21,6 +28,7 @@ export default function CategoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [sizeInfo, setSizeInfo] = useState<string | null>(null);
+  const [originalRatio, setOriginalRatio] = useState(0);
 
   useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
 
@@ -77,8 +85,18 @@ export default function CategoryPage() {
       setPhase("w kolejce");
 
       await drain((p) => {
-        if (p.state === "uploading") setPhase("wysyłanie");
-        if (p.state === "done") setPhase("zapisane");
+        if (p.phase === "preview") {
+          if (p.state === "uploading") setPhase("wysyłanie");
+          // Podglad doszedl — kafelek jest zapelniony i zdjecie liczy sie do
+          // bingo. Oryginal idzie dalej w tle i nikt na niego nie czeka.
+          if (p.state === "done") setPhase("zapisane");
+        } else if (p.state === "uploading") {
+          setPhase("oryginał w drodze");
+          setOriginalRatio(p.ratio ?? 0);
+        } else if (p.state === "done") {
+          setPhase("zapisane");
+          setOriginalRatio(1);
+        }
         if (p.state === "failed") {
           setPhase("błąd");
           setError(p.error ?? "Nie udało się wysłać");
@@ -141,7 +159,12 @@ export default function CategoryPage() {
         {preview ? "Zmień zdjęcie" : "Wybierz zdjęcie"}
       </button>
 
-      <StatusLine phase={phase} error={error} sizeInfo={sizeInfo} />
+      <StatusLine
+        phase={phase}
+        error={error}
+        sizeInfo={sizeInfo}
+        originalRatio={originalRatio}
+      />
 
       <p className="mt-auto text-center text-xs text-ink/40">
         Zdjęcie możesz wysłać bez zasięgu — poczeka w telefonie i doleci samo.
@@ -154,10 +177,12 @@ function StatusLine({
   phase,
   error,
   sizeInfo,
+  originalRatio,
 }: {
   phase: Phase;
   error: string | null;
   sizeInfo: string | null;
+  originalRatio: number;
 }) {
   if (phase === "idle") return null;
 
@@ -175,6 +200,14 @@ function StatusLine({
       </p>
       {error && <p className="mt-1 text-xs">{error}</p>}
       {sizeInfo && !error && <p className="mt-1 text-xs opacity-60">{sizeInfo}</p>}
+      {phase === "oryginał w drodze" && (
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-brand-100">
+          <div
+            className="h-full bg-brand-600 transition-[width]"
+            style={{ width: `${Math.round(originalRatio * 100)}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }
