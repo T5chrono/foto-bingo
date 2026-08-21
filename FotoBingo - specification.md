@@ -599,6 +599,7 @@ foto-bingo/
 │       ├── claims.ts
 │       └── *.test.ts                 # testy backendu obok kodu
 ├── docs/
+│   ├── supabase-setup.md             # zakładanie projektu, bucket, klucze, pułapki
 │   ├── google-setup.md               # rozwinięcie sekcji 14, ze zrzutami
 │   └── runbook-weekend.md            # co robić, gdy w sobotę coś nie działa
 ├── public/
@@ -730,6 +731,10 @@ runbook weekendowy, próba generalna.
 - [ ] Hasło do Wi-Fi ośrodka na winietce albo na instrukcji.
 - [ ] PIN do panelu zna ktoś jeszcze poza Panem Młodym — w sobotę będzie zajęty.
 - [ ] Licznik miejsca w panelu sprawdzony i pokazujący sensowną wartość.
+- [ ] **W czwartek przed weselem: wejdź do aplikacji i sprawdź, że odpowiada.** Projekt Supabase
+      na darmowym planie **pauzuje się po 7 dniach bez ruchu**, a wybudzenie jest ręczne i trwa
+      kilka minut. Uspiona baza w piątek rano to jedyna awaria w tym projekcie, której nikt
+      nie zauważy, dopóki pierwszy gość nie spróbuje wysłać zdjęcia.
 
 ---
 
