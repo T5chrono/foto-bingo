@@ -41,6 +41,16 @@ const state = randomBytes(16).toString("base64url");
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`);
+
+  // Krotki adres startowy. Pelny adres do Google ma kilkaset znakow i pare
+  // ampersandow — a te potrafia zginac przy kopiowaniu z terminala albo przy
+  // przekazywaniu przez powloke. Tutaj uzytkownik otwiera http://localhost:8765/start
+  // i przekierowanie robi serwer, ktory adres zna w calosci.
+  if (url.pathname === "/start") {
+    res.writeHead(302, { Location: authUrl() });
+    return void res.end();
+  }
+
   if (url.pathname !== "/") return void res.writeHead(404).end();
 
   const finish = (msg) => {
@@ -105,7 +115,13 @@ const PORT = 8765;
 
 server.on("error", (e) => {
   if (e.code === "EADDRINUSE") {
-    fail(`Port ${PORT} jest zajety. Zamknij to, co go trzyma, i sprobuj ponownie.`);
+    // Nieudane uruchomienie zostawia ten serwer w tle, wiec kolejna proba
+    // pada wlasnie tutaj. Warto od razu powiedziec, jak to zamknac.
+    fail(
+      `Port ${PORT} jest zajety — najpewniej przez poprzednie uruchomienie tego\n` +
+        `  skryptu, ktore zostalo w tle. Zamknij je i sprobuj ponownie:\n\n` +
+        `    npm run google-auth:reset\n`,
+    );
   } else fail(String(e));
 });
 
@@ -114,9 +130,23 @@ server.listen(PORT, "127.0.0.1", () => {
   port = PORT;
   const redirectUri = `http://localhost:${port}`;
 
+  console.log(`
+  Otwieram przegladarke. Zaloguj sie kontem, na ktorego Dysku maja
+  ladowac zdjecia z wesela, i zezwol na dostep.
+
+  Gdyby okno sie nie otworzylo, wklej w przegladarke ten adres:
+
+      http://localhost:${port}/start
+
+  (adres przekierowania dla klienta OAuth: ${redirectUri})
+`);
+  openBrowser(`http://localhost:${port}/start`);
+});
+
+function authUrl() {
   const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   auth.searchParams.set("client_id", CLIENT_ID);
-  auth.searchParams.set("redirect_uri", redirectUri);
+  auth.searchParams.set("redirect_uri", `http://localhost:${port}`);
   auth.searchParams.set("response_type", "code");
   auth.searchParams.set("scope", SCOPE);
   // Bez tych dwoch Google nie wyda refresh tokena przy powtornym logowaniu.
@@ -125,17 +155,8 @@ server.listen(PORT, "127.0.0.1", () => {
   auth.searchParams.set("state", state);
   auth.searchParams.set("code_challenge", challenge);
   auth.searchParams.set("code_challenge_method", "S256");
-
-  console.log(`
-  Otwieram przegladarke. Zaloguj sie kontem, na ktorego Dysku maja
-  ladowac zdjecia z wesela, i zezwol na dostep.
-
-  Gdyby okno sie nie otworzylo, wklej ten adres recznie:
-
-  ${auth}
-`);
-  openBrowser(auth.toString());
-});
+  return auth.toString();
+}
 
 async function exchange(code) {
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -181,8 +202,12 @@ function saveToEnv(refreshToken) {
 }
 
 function openBrowser(url) {
+  // NIE przez `cmd /c start`: cmd.exe traktuje & jako separator polecen, wiec
+  // ucina adres na pierwszym parametrze zapytania. Objawia sie to bledem
+  // "Required parameter is missing: response_type" — Google dostaje sam
+  // client_id. rundll32 nie przechodzi przez zadna powloke.
   const cmd =
-    process.platform === "win32" ? ["cmd", ["/c", "start", "", url]]
+    process.platform === "win32" ? ["rundll32", ["url.dll,FileProtocolHandler", url]]
     : process.platform === "darwin" ? ["open", [url]]
     : ["xdg-open", [url]];
   try {
