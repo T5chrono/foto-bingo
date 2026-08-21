@@ -812,6 +812,16 @@ runbook weekendowy, próba generalna.
   otwórz ponownie → wysyłka wznawia się od ostatniego przyjętego kawałka, nie od zera.
 - **Budżet miejsca.** Wgraj 1200 sztucznych wierszy → licznik w panelu musi pokazać wartość
   zgodną z sekcją 5, a panel i tryb rzutnika pozostać płynne (miniatury, nie podglądy).
+- **Zgłoszenie bingo.** Zapełnij linię, zgłoś, uznaj w panelu → gość widzi „Uznane ✓",
+  a przycisk znika. Osobno: zgłoszenie niepełnej linii musi dać 409 — **serwer sprawdza linię
+  sam**, bo plansza w telefonie bywa nieodświeżona.
+- **Tryb rzutnika — wymaga fizycznego ekranu.** Pełny ekran i Wake Lock działają tylko
+  z prawdziwym gestem użytkownika i widoczną kartą, więc żadne środowisko testowe tego nie
+  potwierdzi. Sprawdź na tym telefonie i tym rzutniku, które pojadą na wesele: czy obraz
+  wchodzi na pełny ekran, czy strzałki przewijają i **czy ekran nie gaśnie po minucie**.
+- **PIN do panelu.** Dziesięć nietrafień pod rząd → panel odmawia na godzinę (429).
+  Sprawdź też, że po zamknięciu i ponownym otwarciu przeglądarki panel nadal pamięta
+  zalogowanie — ciasteczko żyje 30 dni.
 - **Próba generalna.** Pięć osób, po trzy zdjęcia, na telefonach, w trybie Slow 3G.
 
 ---
@@ -828,6 +838,10 @@ runbook weekendowy, próba generalna.
 - [ ] Instrukcja na stołach: „Zeskanuj → Dodaj do ekranu początkowego → graj".
 - [ ] Hasło do Wi-Fi ośrodka na winietce albo na instrukcji.
 - [ ] PIN do panelu zna ktoś jeszcze poza Panem Młodym — w sobotę będzie zajęty.
+- [ ] **Tryb rzutnika sprawdzony na docelowym sprzęcie** — telefon podpięty do rzutnika,
+      pełny ekran, ekran nie gaśnie po minucie.
+- [ ] Panel zalogowany na telefonie, który będzie pod ręką — ciasteczko żyje 30 dni,
+      więc warto to zrobić przed weselem, a nie przy rzutniku.
 - [ ] Licznik miejsca w panelu sprawdzony i pokazujący sensowną wartość.
 - [ ] **W czwartek przed weselem: wejdź do aplikacji i sprawdź, że odpowiada.** Projekt Supabase
       na darmowym planie **pauzuje się po 7 dniach bez ruchu**, a wybudzenie jest ręczne i trwa

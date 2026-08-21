@@ -19,6 +19,14 @@ import {
 } from "./_lib/drive.ts";
 import { categoryById } from "../src/lib/board.ts";
 import { driveFileName } from "../src/lib/slug.ts";
+import {
+  createClaim,
+  guestClaims,
+  lineCategories,
+  resolveClaim,
+  type ClaimKind,
+} from "./_lib/claims.ts";
+import { clearCookie, login, verifyCookie } from "./_lib/panel.ts";
 
 type Vars = { guest: Guest };
 
@@ -261,6 +269,232 @@ app.post("/photos/original/chunk", requireGuest, async (c) => {
   return c.json({ done: true, fileId: result.fileId, name: result.fileName });
 });
 
+/** Wszystkie trasy panelu wymagaja podpisanego ciasteczka. */
+const requirePanel = createMiddleware(async (c, next) => {
+  if (!verifyCookie(c.req.header("cookie"))) {
+    return c.json({ error: "Panel zamkniety" }, 401);
+  }
+  await next();
+});
+
+const KINDS: ClaimKind[] = ["row", "col", "diag", "full"];
+
+// ------------------------------------------------------------------- gosc
+
+app.post("/claims", requireGuest, async (c) => {
+  const guest = c.get("guest");
+  const body = await c.req.json().catch(() => null);
+
+  const kind = String(body?.kind ?? "") as ClaimKind;
+  if (!KINDS.includes(kind)) return c.json({ error: "Nieznany rodzaj bingo" }, 400);
+
+  let lineIndex: number | null = null;
+  if (kind !== "full") {
+    const n = Number(body?.lineIndex);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      return c.json({ error: "Zly numer linii" }, 400);
+    }
+    lineIndex = n;
+  }
+
+  const result = await createClaim(guest, kind, lineIndex);
+  if (!result.ok) {
+    // Plansza w telefonie moze byc nieodswiezona — to nie jest oszustwo,
+    // tylko rozjazd, wiec komunikat ma o tym mowic wprost.
+    return c.json(
+      { error: "Ta linia nie jest jeszcze kompletna. Odswiez plansze i sprobuj ponownie." },
+      409,
+    );
+  }
+  return c.json(result);
+});
+
+app.get("/claims", requireGuest, async (c) => c.json(await guestClaims(c.get("guest").id)));
+
+// ------------------------------------------------------------------ panel
+
+app.post("/panel/login", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await login(String(body?.pin ?? ""));
+
+  if (!result.ok) {
+    if (result.reason === "zablokowane") {
+      return c.json(
+        { error: `Za duzo prob. Panel otworzy sie za ${result.retryAfterMinutes} minut.` },
+        429,
+      );
+    }
+    return c.json({ error: "Zly PIN" }, 401);
+  }
+
+  c.header("Set-Cookie", result.cookie);
+  return c.json({ ok: true });
+});
+
+app.post("/panel/logout", (c) => {
+  c.header("Set-Cookie", clearCookie());
+  return c.json({ ok: true });
+});
+
+app.get("/panel/session", (c) => c.json({ ok: verifyCookie(c.req.header("cookie")) }));
+
+/** Zgloszenia bingo, najnowsze na gorze. */
+app.get("/panel/claims", requirePanel, async (c) => {
+  const { data, error } = await db()
+    .from("claims")
+    .select("id, kind, line_index, status, created_at, guests(name)")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+
+  return c.json(
+    (data ?? []).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      lineIndex: row.line_index,
+      status: row.status,
+      createdAt: row.created_at,
+      guestName: guestName(row.guests),
+    })),
+  );
+});
+
+/**
+ * Piec zdjec zgloszonej linii, w kolejnosci pol na planszy.
+ *
+ * Puste pola tez wracaja, z null zamiast adresu — jesli zgloszenie jest
+ * niekompletne, Para Mloda ma to zobaczyc, a nie dostac krotsza liste
+ * i zgadywac, ktorego pola brakuje.
+ */
+app.get("/panel/claims/:id", requirePanel, async (c) => {
+  const { data: claim, error } = await db()
+    .from("claims")
+    .select("id, kind, line_index, status, created_at, guest_id, guests(name)")
+    .eq("id", c.req.param("id"))
+    .maybeSingle();
+  if (error) throw error;
+  if (!claim) return c.json({ error: "Nie ma takiego zgloszenia" }, 404);
+
+  const ids = lineCategories(claim.kind as ClaimKind, claim.line_index as number | null);
+  const { data: photos } = await db()
+    .from("photos")
+    .select("category_id, preview_path, drive_status")
+    .eq("guest_id", claim.guest_id as string)
+    .eq("is_active", true)
+    .in("category_id", ids);
+
+  const byCategory = new Map((photos ?? []).map((p) => [p.category_id as number, p]));
+
+  const tiles = await Promise.all(
+    ids.map(async (id) => {
+      const photo = byCategory.get(id);
+      const category = categoryById(id);
+      return {
+        categoryId: id,
+        label: category?.label ?? "?",
+        position: category ? `R${category.row}K${category.col}` : "",
+        driveStatus: photo?.drive_status ?? null,
+        url: photo ? await createDownloadUrl(photo.preview_path as string, 3600) : null,
+      };
+    }),
+  );
+
+  return c.json({
+    id: claim.id,
+    kind: claim.kind,
+    lineIndex: claim.line_index,
+    status: claim.status,
+    createdAt: claim.created_at,
+    guestName: guestName(claim.guests),
+    tiles,
+  });
+});
+
+app.post("/panel/claims/:id", requirePanel, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const status = String(body?.status ?? "");
+  if (status !== "accepted" && status !== "rejected") {
+    return c.json({ error: "Status musi byc accepted albo rejected" }, 400);
+  }
+  const changed = await resolveClaim(c.req.param("id"), status);
+  return c.json({ ok: changed });
+});
+
+/** Wszystkie zdjecia jednej kategorii — czego Dysk z natury nie potrafi,
+ *  bo plik ma tam dokladnie jednego rodzica. */
+app.get("/panel/category/:id", requirePanel, async (c) => {
+  const categoryId = Number(c.req.param("id"));
+  if (!Number.isInteger(categoryId) || categoryId < 1 || categoryId > 25) {
+    return c.json({ error: "Zla kategoria" }, 400);
+  }
+
+  const { data, error } = await db()
+    .from("photos")
+    .select("id, preview_path, created_at, drive_status, guests(name)")
+    .eq("category_id", categoryId)
+    .eq("is_active", true)
+    .order("created_at");
+  if (error) throw error;
+
+  const photos = await Promise.all(
+    (data ?? []).map(async (row) => ({
+      photoId: row.id,
+      guestName: guestName(row.guests),
+      driveStatus: row.drive_status,
+      url: await createDownloadUrl(row.preview_path as string, 3600),
+    })),
+  );
+
+  const category = categoryById(categoryId);
+  return c.json({
+    categoryId,
+    label: category?.label ?? "?",
+    position: category ? `R${category.row}K${category.col}` : "",
+    photos,
+  });
+});
+
+/**
+ * Stan zbiorki: zajete miejsce i oryginaly w drodze.
+ *
+ * Oryginalow serwer nie moze doslac sam — przy S1-C leza na telefonach gosci.
+ * Ta lista sluzy do tego, zeby wiedziec, kogo poprosic o otwarcie aplikacji.
+ */
+app.get("/panel/stats", requirePanel, async (c) => {
+  const used = await usedBytes().catch(() => 0);
+
+  const { data } = await db()
+    .from("photos")
+    .select("guests(name)")
+    .eq("is_active", true)
+    .neq("drive_status", "ok");
+
+  const pending = new Map<string, number>();
+  for (const row of data ?? []) {
+    const name = guestName(row.guests);
+    pending.set(name, (pending.get(name) ?? 0) + 1);
+  }
+
+  const { count: photoCount } = await db()
+    .from("photos")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true);
+
+  const { count: guestCount } = await db()
+    .from("guests")
+    .select("id", { count: "exact", head: true });
+
+  return c.json({
+    usedBytes: used,
+    limitBytes: 1000 * 1024 * 1024,
+    photos: photoCount ?? 0,
+    guests: guestCount ?? 0,
+    pendingOriginals: [...pending.entries()]
+      .map(([guestName, count]) => ({ guestName, count }))
+      .sort((a, b) => b.count - a.count),
+  });
+});
+
 app.onError((err, c) => {
   const status = (err as { status?: number }).status;
   if (status === 403) return c.json({ error: err.message }, 403);
@@ -281,6 +515,19 @@ async function currentBudget() {
 
 function isUuid(v: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+/**
+ * Nazwa goscia z zagniezdzonej relacji.
+ *
+ * supabase-js typuje `guests(name)` jako tablice, bo nie zna kardynalnosci
+ * bez wygenerowanych typow — w runtime dla relacji do-jednego przychodzi
+ * obiekt. Helper obsluguje oba ksztalty; rzutowanie na jeden z nich byloby
+ * klamstwem, ktore wyszloby dopiero na produkcji.
+ */
+function guestName(value: unknown): string {
+  const one = Array.isArray(value) ? value[0] : value;
+  return (one as { name?: string } | null | undefined)?.name ?? "?";
 }
 
 async function ownPhoto(photoId: string, guestId: string) {

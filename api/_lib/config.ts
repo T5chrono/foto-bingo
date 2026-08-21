@@ -42,6 +42,13 @@ export const config = {
   get driveRootFolderId() {
     return required("DRIVE_ROOT_FOLDER_ID");
   },
+
+  get panelPin() {
+    return required("PANEL_PIN");
+  },
+  get sessionSecret() {
+    return required("SESSION_SECRET");
+  },
 } as const;
 
 /**

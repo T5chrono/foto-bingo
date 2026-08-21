@@ -9,6 +9,12 @@ import { GuestTokenProvider, useGuestToken } from "./hooks/useGuestToken";
 
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 
+// Panel jest osobna galezia aplikacji: gosc nigdy go nie otworzy, wiec nie ma
+// powodu, zeby jego kod jechal w paczce, ktora 40 osob pobiera przy ognisku.
+const PanelPage = lazy(() => import("./pages/PanelPage"));
+const ClaimPage = lazy(() => import("./pages/ClaimPage"));
+const PanelCategoryPage = lazy(() => import("./pages/PanelCategoryPage"));
+
 const client = new QueryClient({
   defaultOptions: {
     queries: { refetchOnWindowFocus: true, staleTime: 30_000 },
@@ -23,6 +29,12 @@ function Screens() {
       <Routes>
         {/* /g/:token działa zawsze — to jedyna droga zdobycia tożsamości. */}
         <Route path="/g/:token" element={<JoinPage />} />
+
+        {/* Panel ma wlasne uwierzytelnienie (PIN) i nie zalezy od kodu goscia,
+            wiec lezy poza gałęzią token/brak-tokenu. */}
+        <Route path="/panel" element={<PanelPage />} />
+        <Route path="/panel/zgloszenie/:id" element={<ClaimPage />} />
+        <Route path="/panel/kategoria/:id" element={<PanelCategoryPage />} />
         {token ? (
           <>
             <Route path="/" element={<BoardPage />} />

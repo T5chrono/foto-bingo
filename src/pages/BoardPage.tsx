@@ -2,10 +2,11 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { BingoBanner } from "../components/BingoBanner";
 import { BoardGrid } from "../components/BoardGrid";
 import { useBoard } from "../hooks/useBoard";
 import { SIZE } from "../lib/board";
-import { completedLines, countFilled, isFullCard, lineLabel } from "../lib/bingo";
+import { completedLines, countFilled } from "../lib/bingo";
 import { autoDrain } from "../lib/uploader";
 
 export default function BoardPage() {
@@ -56,13 +57,7 @@ export default function BoardPage() {
 
       <BoardGrid tiles={tiles} onPick={(cat) => navigate(`/kategoria/${cat.id}`)} />
 
-      {lines.length > 0 && (
-        <p className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800" role="status">
-          {isFullCard(filled)
-            ? "Pełna karta! Wszystkie 25 pól."
-            : `Bingo: ${lines.map(lineLabel).join(", ")}`}
-        </p>
-      )}
+      <BingoBanner filled={filled} lines={lines} />
     </main>
   );
 }

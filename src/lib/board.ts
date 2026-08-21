@@ -1,5 +1,3 @@
-// Jawne rozszerzenie, bo ten plik importuje rowniez api/ — Node przy
-// --experimental-strip-types nie robi rozszerzania sciezek w stylu bundlera.
 import { slugify } from "./slug.ts";
 
 /**

@@ -1,4 +1,4 @@
-import { SIZE } from "./board";
+import { SIZE } from "./board.ts";
 
 /**
  * Wykrywanie linii na planszy 5×5.

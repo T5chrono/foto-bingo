@@ -1,5 +1,5 @@
-import { readToken } from "./guest";
-import type { Budget } from "./image";
+import { readToken } from "./guest.ts";
+import type { Budget } from "./image.ts";
 
 const BASE = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -80,6 +80,52 @@ export type OriginalStart = {
   name?: string;
 };
 
+export type ClaimKind = "row" | "col" | "diag" | "full";
+export type ClaimStatus = "new" | "accepted" | "rejected";
+
+export type GuestClaim = {
+  id: string;
+  kind: ClaimKind;
+  line_index: number | null;
+  status: ClaimStatus;
+  created_at: string;
+};
+
+export type PanelClaim = {
+  id: string;
+  kind: ClaimKind;
+  lineIndex: number | null;
+  status: ClaimStatus;
+  createdAt: string;
+  guestName: string;
+};
+
+export type ClaimTile = {
+  categoryId: number;
+  label: string;
+  position: string;
+  driveStatus: "pending" | "ok" | "failed" | null;
+  /** null = gosc nie ma zdjecia na tym polu; panel ma to pokazac wprost. */
+  url: string | null;
+};
+
+export type ClaimDetail = PanelClaim & { tiles: ClaimTile[] };
+
+export type CategoryView = {
+  categoryId: number;
+  label: string;
+  position: string;
+  photos: { photoId: string; guestName: string; driveStatus: string; url: string }[];
+};
+
+export type PanelStats = {
+  usedBytes: number;
+  limitBytes: number;
+  photos: number;
+  guests: number;
+  pendingOriginals: { guestName: string; count: number }[];
+};
+
 export const api = {
   me: () => request<Me>("/me"),
 
@@ -127,4 +173,36 @@ export const api = {
         headers: { "Content-Type": "application/octet-stream" },
       },
     ),
+
+  // ------------------------------------------------------------- bingo
+  claim: (body: { kind: ClaimKind; lineIndex: number | null }) =>
+    request<{ ok: boolean; claimId: string; alreadyOpen: boolean }>("/claims", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  myClaims: () => request<GuestClaim[]>("/claims"),
+
+  // ------------------------------------------------------------- panel
+  panelLogin: (pin: string) =>
+    request<{ ok: true }>("/panel/login", { method: "POST", body: JSON.stringify({ pin }) }),
+
+  panelLogout: () => request<{ ok: true }>("/panel/logout", { method: "POST" }),
+
+  panelSession: () => request<{ ok: boolean }>("/panel/session"),
+
+  panelClaims: () => request<PanelClaim[]>("/panel/claims"),
+
+  panelClaim: (id: string) => request<ClaimDetail>(`/panel/claims/${id}`),
+
+  panelResolve: (id: string, status: "accepted" | "rejected") =>
+    request<{ ok: boolean }>(`/panel/claims/${id}`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    }),
+
+  panelCategory: (categoryId: number) =>
+    request<CategoryView>(`/panel/category/${categoryId}`),
+
+  panelStats: () => request<PanelStats>("/panel/stats"),
 };
