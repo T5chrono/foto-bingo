@@ -24,6 +24,13 @@ Dysk trzyma archiwum. Jeśli Google chwilowo nie odpowiada, zdjęcie i tak jest 
 wszystkie decyzje architektoniczne wraz z odrzuconymi alternatywami i powodami, model danych,
 budżety miejsca, konfiguracja Google, etapy realizacji i checklista przedweselna.
 
+**[docs/dziennik-projektu.md](docs/dziennik-projektu.md)** — czego się nauczyliśmy po drodze:
+pułapki opisane objawem, decyzje które odwróciliśmy i powody, oraz lista rzeczy, których
+nie da się sprawdzić inaczej niż na prawdziwym telefonie. **Zacznij tutaj, gdy coś nie działa.**
+
+Pozostałe: [konfiguracja Google](docs/google-setup.md) · [Supabase](docs/supabase-setup.md) ·
+[wdrożenie](docs/vercel-deploy.md) · [runbook weselny](docs/runbook-weekend.md)
+
 ## Stack
 
 Vite · React 19 · TypeScript · Tailwind 4 · vite-plugin-pwa · Vercel Functions (Hono) ·

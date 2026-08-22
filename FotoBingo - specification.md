@@ -703,6 +703,7 @@ foto-bingo/
 │       ├── claims.ts
 │       └── *.test.ts                 # testy backendu obok kodu
 ├── docs/
+│   ├── dziennik-projektu.md          # czego się nauczyliśmy — pułapki wg objawów
 │   ├── vercel-deploy.md              # trzy pułapki wdrożenia, zmienne, regiony
 │   ├── supabase-setup.md             # zakładanie projektu, bucket, klucze, pułapki
 │   ├── google-setup.md               # rozwinięcie sekcji 14, ze zrzutami
