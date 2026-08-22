@@ -1,5 +1,15 @@
 @import "tailwindcss" source(none);
-@import "@fontsource-variable/manrope";
+
+/* Dwie czcionki, dwie role. Lora (szeryfowa) niesie caly tekst — to ona daje
+   aplikacji ten sam ton co papierowe zaproszenie. Yellowtail jest wylacznie
+   pisanym logotypem "Foto Bingo" i tytulami ekranow, dokladnie tak, jak na
+   karcie z Canvy: reszta strony jest szeryfowa, pisanka wchodzi raz.
+
+   Importujemy `wght.css`, nie `index.css`: kursywy nigdzie nie uzywamy,
+   a kazdy zbedny @font-face to plik, ktory service worker chce zapamietac.
+   Manrope wylecial — jedna rodzina mniej do pobrania w gorach. */
+@import "@fontsource-variable/lora/wght.css";
+@import "@fontsource/yellowtail/400.css";
 
 /* Tailwind's sources are declared, not auto-detected — same rule as SplitDec.
    Auto-detection scans everything not gitignored, which on Vercel has been known
@@ -12,21 +22,50 @@
 @source "./";
 
 @theme {
-  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora Variable", ui-serif, Georgia, serif;
+  --font-script: "Yellowtail", "Lora Variable", cursive;
 
-  /* Wino i krem. Odróżnia się od teal SplitDeca, a na weselnym stole
-     nie wygląda jak aplikacja bankowa. */
-  --color-brand-50: #fff1f2;
-  --color-brand-100: #ffe4e6;
-  --color-brand-200: #fecdd3;
-  --color-brand-400: #fb7185;
-  --color-brand-600: #e11d48;
-  --color-brand-700: #be123c;
-  --color-brand-800: #9f1239;
-  --color-brand-900: #881337;
+  /* Paleta jest zdjeta z projektu weselnego w Canvie, nie dobrana na oko.
+     Wartosci 300-500 i 800 to doslownie te same liczby, ktorymi narysowana
+     jest papierowa karta Foto Bingo: ramka kafelka, obwodka kolka do
+     zaznaczania i kolor podpisow. Reszta skali jest dociagnieta wokol nich.
 
-  --color-cream: #fdf8f6;
-  --color-ink: #1c1417;
+     Nazwy zostaja `brand-*`. Zmiana wartosci przemalowuje cala aplikacje bez
+     dotykania ani jednej klasy w komponentach — a marka to marka, niezaleznie
+     od tego, czy akurat jest winem, czy szalwia. */
+  --color-brand-50: #f7f9f1;
+  --color-brand-100: #ecefe0;
+  --color-brand-200: #dfe4cd;
+  --color-brand-300: #c8d0b3; /* Canva: delikatna zielen tla */
+  --color-brand-400: #b7c29c; /* Canva: ramka kafelka planszy */
+  --color-brand-500: #9aa97b; /* Canva: obwodka kolka do zaznaczania */
+  --color-brand-600: #7f8f5e;
+  --color-brand-700: #66744a; /* przyciski — 5.05:1 z bialym tekstem */
+  --color-brand-800: #525938; /* Canva: kolor wszystkich podpisow */
+  --color-brand-900: #3e4429;
+
+  /* Ostrzezenia i bledy nosza kolor makow z bukietu, a nie fabryczny bursztyn
+     Tailwinda. Zolto-pomaranczowy alarm na kremowym papierze wyglada jak
+     komunikat z bankowosci — terakota siedzi w tej samej rodzinie co kwiaty
+     i nadal krzyczy wystarczajaco glosno. */
+  --color-clay-50: #fbf1ec;
+  --color-clay-200: #eccfc2;
+  --color-clay-300: #ddb3a2;
+  --color-clay-400: #cf9280;
+  --color-clay-500: #c5675a;
+  --color-clay-700: #9d4a3f;
+  --color-clay-900: #6e3128;
+
+  /* Kwiaty z laki na dole ekranu. Nie sa uzywane jako klasy Tailwinda —
+     siedza tu, zeby paleta calej aplikacji byla w jednym pliku. */
+  --color-poppy: #c5675a;
+  --color-rose: #d69797;
+  --color-honey: #e4bd5b;
+  --color-corn: #71859c;
+
+  --color-cream: #f6f3e9; /* papier zaproszenia — tlo strony */
+  --color-paper: #fdfcf7; /* Canva: wypelnienie kafelka — karty i pola */
+  --color-ink: #3b3b3b; /* Canva: kolor tytulu */
 }
 
 @layer base {
@@ -39,7 +78,7 @@
   }
 
   body {
-    @apply bg-cream text-ink antialiased;
+    @apply bg-cream font-serif text-ink antialiased;
   }
 
   /* Kafelki planszy są przyciskami dotykowymi. Niebieski błysk Androida
@@ -48,4 +87,14 @@
   a {
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+@utility font-script {
+  font-family: var(--font-script);
+  /* Yellowtail ma dlugie wyrzutnie i wysokie majuskuly. Ciasniejsza interlinia
+     i odrobina swiatla miedzy literami odtwarzaja proporcje z Canvy
+     (letterSpacing 0.103 przy 48 pt). */
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
 }
