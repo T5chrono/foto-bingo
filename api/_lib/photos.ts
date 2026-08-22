@@ -1,5 +1,5 @@
-import { db, type Photo } from "./db";
-import { removeObjects } from "./storage";
+import { db, type Photo } from "./db.js";
+import { removeObjects } from "./storage.js";
 
 export type TileState = {
   categoryId: number;

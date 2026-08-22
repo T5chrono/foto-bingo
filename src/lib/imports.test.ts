@@ -1,24 +1,29 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * Względne importy w `src/lib` **nie mogą** mieć rozszerzenia `.ts`.
+ * Względne importy w `src/lib` muszą kończyć się na `.js` — mimo że na dysku
+ * leżą pliki `.ts`. To jest konwencja ESM w TypeScripcie: specyfikator opisuje
+ * plik **po** kompilacji.
  *
- * Reguła jest odwrotna do tej, którą ten plik pilnował wcześniej — i to jest
- * ważniejsza połowa jego historii.
+ * Ta reguła zmieniała się dwa razy i obie zmiany kosztowały wdrożenie, więc
+ * warto zapisać, skąd się wzięła.
  *
- * Katalog jest współdzielony: `api/` importuje stąd `board`, `slug` i `bingo`,
- * żeby serwer i front liczyły nazwy plików oraz linie bingo tym samym kodem.
- * Natywny stripper Node'a (`--experimental-strip-types`) wymagał jawnego `.ts`,
- * więc dodaliśmy je wszędzie. **Vercel transpiluje `api/index.ts` do `.js`,
- * ale zostawia specyfikatory importów bez zmian** — więc funkcja na produkcji
- * szukała `api/_lib/auth.ts`, którego po transpilacji nie ma, i wywalała się
- * z `ERR_MODULE_NOT_FOUND` na każdym żądaniu.
+ * Najpierw importy nie miały rozszerzeń. Natywny stripper Node'a
+ * (`--experimental-strip-types`) nie robi rozszerzania ścieżek w stylu
+ * bundlera, więc dev-serwer nie wstawał — dodaliśmy `.ts`.
  *
- * Build i testy przechodziły. Zobaczyliśmy to dopiero na wdrożonej funkcji.
+ * Potem okazało się, że **Vercel transpiluje `api/index.ts` do `.js`, ale
+ * zostawia specyfikatory bez zmian**: funkcja na produkcji szukała
+ * `api/_lib/auth.ts`, którego już nie ma. Zdjęliśmy `.ts` i przestawiliśmy
+ * dev-serwer na `tsx`.
  *
- * Dev-serwer używa teraz `tsx`, który rozwiązuje ścieżki po bundlerowemu, więc
- * wymóg zniknął po tej stronie, w której był wygodą — a został po tej, w której
- * jest warunkiem działania.
+ * Wtedy Vercel odmówił kompilacji: jego type-check dla `api/` działa
+ * z `moduleResolution: node16`, które wymaga jawnych rozszerzeń — i to `.js`,
+ * nie `.ts`. Stąd stan obecny, jedyny, który zadowala wszystkich naraz:
+ * Vercel, `tsc`, Vite, vitest i `tsx`.
+ *
+ * Za każdym razem build i testy przechodziły. Oba błędy pokazały się dopiero
+ * na wdrożonej funkcji — stąd ten test.
  */
 const sources = import.meta.glob("./*.ts", {
   query: "?raw",
@@ -33,11 +38,11 @@ describe("importy w src/lib", () => {
     expect(files.length).toBeGreaterThan(3);
   });
 
-  it.each(files.map(([path]) => path))("%s importuje bez rozszerzenia", (path) => {
+  it.each(files.map(([path]) => path))("%s importuje z rozszerzeniem .js", (path) => {
     const source = sources[path] ?? "";
     const statyczne = [...source.matchAll(/from\s+"(\.[^"]*)"/g)].map((m) => m[1]!);
     const dynamiczne = [...source.matchAll(/import\(\s*"(\.[^"]*)"\s*\)/g)].map((m) => m[1]!);
 
-    expect([...statyczne, ...dynamiczne].filter((spec) => spec.endsWith(".ts"))).toEqual([]);
+    expect([...statyczne, ...dynamiczne].filter((spec) => !spec.endsWith(".js"))).toEqual([]);
   });
 });

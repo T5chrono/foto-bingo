@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fitWithin } from "./image";
+import { fitWithin } from "./image.js";
 
 describe("skalowanie do dłuższego boku", () => {
   it("nie powiększa zdjęcia mniejszego niż budżet", () => {

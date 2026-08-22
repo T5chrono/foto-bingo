@@ -3,11 +3,11 @@ import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
 import { handle } from "hono/vercel";
 
-import { guestByToken } from "./_lib/auth";
-import { BUDGET, config } from "./_lib/config";
-import { db, type Guest } from "./_lib/db";
-import { boardState, finalizePhoto } from "./_lib/photos";
-import { createDownloadUrl, createUploadUrl, storagePath, usedBytes } from "./_lib/storage";
+import { guestByToken } from "./_lib/auth.js";
+import { BUDGET, config } from "./_lib/config.js";
+import { db, type Guest } from "./_lib/db.js";
+import { boardState, finalizePhoto } from "./_lib/photos.js";
+import { createDownloadUrl, createUploadUrl, storagePath, usedBytes } from "./_lib/storage.js";
 import {
   CHUNK_SIZE,
   ensureGuestFolder,
@@ -16,17 +16,17 @@ import {
   sessionOffset,
   startResumable,
   extensionFor,
-} from "./_lib/drive";
-import { categoryById } from "../src/lib/board";
-import { driveFileName } from "../src/lib/slug";
+} from "./_lib/drive.js";
+import { categoryById } from "../src/lib/board.js";
+import { driveFileName } from "../src/lib/slug.js";
 import {
   createClaim,
   guestClaims,
   lineCategories,
   resolveClaim,
   type ClaimKind,
-} from "./_lib/claims";
-import { clearCookie, login, verifyCookie } from "./_lib/panel";
+} from "./_lib/claims.js";
+import { clearCookie, login, verifyCookie } from "./_lib/panel.js";
 
 type Vars = { guest: Guest };
 

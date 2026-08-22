@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { driveFileName, slugify } from "./slug";
+import { driveFileName, slugify } from "./slug.js";
 
 describe("slugify", () => {
   it("usuwa wszystkie polskie diakrytyki", () => {

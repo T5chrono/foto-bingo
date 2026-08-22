@@ -6,7 +6,7 @@ import {
   highlightedIds,
   isFullCard,
   lineLabel,
-} from "./bingo";
+} from "./bingo.js";
 
 const ids = (...n: number[]) => new Set(n);
 const all = new Set(Array.from({ length: 25 }, (_, i) => i + 1));

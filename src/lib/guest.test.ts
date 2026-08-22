@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalize, tokenFromLocation } from "./guest";
+import { normalize, tokenFromLocation } from "./guest.js";
 
 describe("kod gościa z adresu", () => {
   it("czyta kod ze ścieżki /g/", () => {

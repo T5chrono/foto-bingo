@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
-import * as queue from "./queue";
+import * as queue from "./queue.js";
 
 const bytes = (n: number) => new Uint8Array(n).fill(7).buffer;
 

@@ -1,5 +1,5 @@
-import { config } from "./config";
-import { db, type Guest } from "./db";
+import { config } from "./config.js";
+import { db, type Guest } from "./db.js";
 
 /**
  * Klient Google Drive.

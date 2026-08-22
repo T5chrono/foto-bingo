@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { db, type Guest } from "./db";
+import { db, type Guest } from "./db.js";
 
 /**
  * Tożsamość gościa to kod z QR — bez konta, bez hasła, bez logowania (D6).

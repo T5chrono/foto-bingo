@@ -1,5 +1,5 @@
-import { LINES, isFullCard } from "../../src/lib/bingo";
-import { db, type Guest } from "./db";
+import { LINES, isFullCard } from "../../src/lib/bingo.js";
+import { db, type Guest } from "./db.js";
 
 /**
  * Zgłoszenia bingo.

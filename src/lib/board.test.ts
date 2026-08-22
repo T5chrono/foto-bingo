@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOARD, SIZE, categoryById } from "./board";
+import { BOARD, SIZE, categoryById } from "./board.js";
 
 describe("plansza", () => {
   it("ma 25 kategorii ponumerowanych 1..25 wierszami", () => {

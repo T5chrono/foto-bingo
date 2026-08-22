@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GOSCIE, ZDJECIA, count, pluralForm } from "./plural";
+import { GOSCIE, ZDJECIA, count, pluralForm } from "./plural.js";
 
 describe("polskie liczebniki", () => {
   it("rozpoznaje formę pojedynczą", () => {
