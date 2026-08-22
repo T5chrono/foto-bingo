@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
-import { handle } from "hono/vercel";
 
 import { guestByToken } from "./_lib/auth.js";
 import { BUDGET, config } from "./_lib/config.js";
@@ -568,4 +567,18 @@ function toIntOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? Math.round(n) : null;
 }
 
-export default handle(app);
+/**
+ * Eksportujemy handler w stylu Web `fetch`, a NIE `export default`.
+ *
+ * `hono/vercel` oddaje funkcje `(Request) => Response`, ale runtime Node na
+ * Vercelu traktuje domyslny eksport jako `(req, res) => void` i IGNORUJE
+ * zwrocona wartosc. Odpowiedz nigdy nie trafiala do `res`, wiec kazde zadanie
+ * wisialo do limitu 30 sekund i konczylo sie 504 — nawet `/api/health`,
+ * ktore tylko zwraca `{ ok: true }`.
+ *
+ * Nazwany eksport `fetch` jest tym, czego runtime oczekuje dla handlera
+ * webowego. Przypisanie przez alias, zeby nie przeslonic globalnego `fetch`
+ * w tym module.
+ */
+const handler = app.fetch;
+export { handler as fetch };
