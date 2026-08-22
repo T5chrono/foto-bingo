@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { PRIVACY } from "../lib/legal.ts";
-import * as queue from "../lib/queue.ts";
-import { ORYGINALY, ZDJECIA, count } from "../lib/plural.ts";
-import { setWifiOnly, wifiOnly } from "../lib/uploader.ts";
+import { PRIVACY } from "../lib/legal";
+import * as queue from "../lib/queue";
+import { ORYGINALY, ZDJECIA, count } from "../lib/plural";
+import { setWifiOnly, wifiOnly } from "../lib/uploader";
 
 export default function SettingsPage() {
   const navigate = useNavigate();

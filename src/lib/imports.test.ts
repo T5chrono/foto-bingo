@@ -1,19 +1,24 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * Wszystkie względne importy w `src/lib` muszą mieć jawne `.ts`.
+ * Względne importy w `src/lib` **nie mogą** mieć rozszerzenia `.ts`.
  *
- * Ten katalog jest współdzielony: `api/` importuje stąd `board.ts`, `slug.ts`
- * i `bingo.ts`, żeby serwer i front liczyły nazwy plików oraz linie bingo tym
- * samym kodem. Vite rozwiązuje ścieżki bez rozszerzenia, ale Node przy
- * `--experimental-strip-types` już nie — i wtedy serwer deweloperski nie
- * wstaje wcale, z błędem wskazującym plik, którego nikt nie ruszał.
+ * Reguła jest odwrotna do tej, którą ten plik pilnował wcześniej — i to jest
+ * ważniejsza połowa jego historii.
  *
- * Ten sam błąd wyłożył start API trzy razy z rzędu, za każdym razem po dodaniu
- * jednego importu. Test kosztuje mniej niż czwarta diagnoza.
+ * Katalog jest współdzielony: `api/` importuje stąd `board`, `slug` i `bingo`,
+ * żeby serwer i front liczyły nazwy plików oraz linie bingo tym samym kodem.
+ * Natywny stripper Node'a (`--experimental-strip-types`) wymagał jawnego `.ts`,
+ * więc dodaliśmy je wszędzie. **Vercel transpiluje `api/index.ts` do `.js`,
+ * ale zostawia specyfikatory importów bez zmian** — więc funkcja na produkcji
+ * szukała `api/_lib/auth.ts`, którego po transpilacji nie ma, i wywalała się
+ * z `ERR_MODULE_NOT_FOUND` na każdym żądaniu.
  *
- * Czytamy pliki przez `import.meta.glob`, a nie przez `node:fs`, bo ten test
- * mieszka w projekcie frontowym — sięgnięcie po API Node'a wywala `tsc`.
+ * Build i testy przechodziły. Zobaczyliśmy to dopiero na wdrożonej funkcji.
+ *
+ * Dev-serwer używa teraz `tsx`, który rozwiązuje ścieżki po bundlerowemu, więc
+ * wymóg zniknął po tej stronie, w której był wygodą — a został po tej, w której
+ * jest warunkiem działania.
  */
 const sources = import.meta.glob("./*.ts", {
   query: "?raw",
@@ -28,11 +33,11 @@ describe("importy w src/lib", () => {
     expect(files.length).toBeGreaterThan(3);
   });
 
-  it.each(files.map(([path]) => path))("%s importuje z jawnym rozszerzeniem", (path) => {
+  it.each(files.map(([path]) => path))("%s importuje bez rozszerzenia", (path) => {
     const source = sources[path] ?? "";
     const statyczne = [...source.matchAll(/from\s+"(\.[^"]*)"/g)].map((m) => m[1]!);
     const dynamiczne = [...source.matchAll(/import\(\s*"(\.[^"]*)"\s*\)/g)].map((m) => m[1]!);
 
-    expect([...statyczne, ...dynamiczne].filter((spec) => !spec.endsWith(".ts"))).toEqual([]);
+    expect([...statyczne, ...dynamiczne].filter((spec) => spec.endsWith(".ts"))).toEqual([]);
   });
 });

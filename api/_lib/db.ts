@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { config } from "./config.ts";
+import { config } from "./config";
 
 /**
  * Klient Supabase z kluczem sekretnym — omija RLS i odebrane prawa ról

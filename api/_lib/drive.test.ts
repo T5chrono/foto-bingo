@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CHUNK_SIZE, extensionFor, putChunk, sessionOffset } from "./drive.ts";
+import { CHUNK_SIZE, extensionFor, putChunk, sessionOffset } from "./drive";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => {

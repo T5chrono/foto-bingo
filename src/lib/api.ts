@@ -1,5 +1,5 @@
-import { readToken } from "./guest.ts";
-import type { Budget } from "./image.ts";
+import { readToken } from "./guest";
+import type { Budget } from "./image";
 
 const BASE = import.meta.env.VITE_API_URL ?? "/api";
 

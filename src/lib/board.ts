@@ -1,4 +1,4 @@
-import { slugify } from "./slug.ts";
+import { slugify } from "./slug";
 
 /**
  * 25 kategorii planszy. Świadomie NIE jest to tabela w bazie (sekcja 8

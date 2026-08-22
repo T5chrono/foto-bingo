@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LEGAL_UPDATED, PRIVACY } from "../lib/legal.ts";
+import { LEGAL_UPDATED, PRIVACY } from "../lib/legal";
 
 const KEY = "fotobingo.privacyAccepted";
 

@@ -1,5 +1,5 @@
-import { config } from "./config.ts";
-import { db } from "./db.ts";
+import { config } from "./config";
+import { db } from "./db";
 
 /**
  * Bucket jest prywatny. Wszystko, co z niego wychodzi i do niego wchodzi,

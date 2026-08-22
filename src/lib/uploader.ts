@@ -1,5 +1,5 @@
-import { ApiError, api } from "./api.ts";
-import * as queue from "./queue.ts";
+import { ApiError, api } from "./api";
+import * as queue from "./queue";
 
 /**
  * Opróżnianie kolejki, w dwóch priorytetach.
@@ -164,7 +164,7 @@ async function putSigned(
   // pierwszym wysyłaniu, a nie przy wejściu na planszę. Gość skanujący QR
   // przy oświetleniu ogniska ma zobaczyć kafelki od razu; ten kawałek dojedzie,
   // zanim wybierze pierwsze zdjęcie z galerii.
-  const { supabase } = await import("./supabase.ts");
+  const { supabase } = await import("./supabase");
   const { error } = await supabase.storage
     .from(bucket)
     .uploadToSignedUrl(target.path, target.token, blob, { upsert: true });

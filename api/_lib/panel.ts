@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { config } from "./config.ts";
-import { db } from "./db.ts";
-import { safeEqual } from "./auth.ts";
+import { config } from "./config";
+import { db } from "./db";
+import { safeEqual } from "./auth";
 
 /**
  * Wejście do panelu Pary Młodej: PIN w zamian za podpisane ciasteczko.

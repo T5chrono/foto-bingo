@@ -24,3 +24,6 @@ winietki/
 # Launch checklist i zapis bezpieczenstwa — celowo nietrackowane, jak w SplitDecu.
 GO-LIVE.md
 SECURITY.md
+
+.vercel
+.env*
