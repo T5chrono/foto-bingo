@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import BoardPage from "./pages/BoardPage";
 import JoinPage from "./pages/JoinPage";
 import NoTokenPage from "./pages/NoTokenPage";
+import { PrivacyGate } from "./components/PrivacyGate";
 import { GuestTokenProvider, useGuestToken } from "./hooks/useGuestToken";
 
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
@@ -14,6 +15,7 @@ const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 const PanelPage = lazy(() => import("./pages/PanelPage"));
 const ClaimPage = lazy(() => import("./pages/ClaimPage"));
 const PanelCategoryPage = lazy(() => import("./pages/PanelCategoryPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 const client = new QueryClient({
   defaultOptions: {
@@ -37,8 +39,18 @@ function Screens() {
         <Route path="/panel/kategoria/:id" element={<PanelCategoryPage />} />
         {token ? (
           <>
-            <Route path="/" element={<BoardPage />} />
+            {/* Ekran o zdjeciach pokazuje sie raz, przed plansza — ale dopiero
+                po zdobyciu tozsamosci, zeby nie stal na drodze skanowaniu QR. */}
+            <Route
+              path="/"
+              element={
+                <PrivacyGate>
+                  <BoardPage />
+                </PrivacyGate>
+              }
+            />
             <Route path="/kategoria/:id" element={<CategoryPage />} />
+            <Route path="/ustawienia" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : (

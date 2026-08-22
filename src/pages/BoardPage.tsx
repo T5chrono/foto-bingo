@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { BingoBanner } from "../components/BingoBanner";
+import { InstallBanner } from "../components/InstallBanner";
 import { BoardGrid } from "../components/BoardGrid";
 import { useBoard } from "../hooks/useBoard";
 import { SIZE } from "../lib/board";
@@ -44,9 +45,18 @@ export default function BoardPage() {
             <p className="truncate text-sm text-ink/50">{me.data.guest.name}</p>
           )}
         </div>
-        <p className="shrink-0 text-sm text-ink/60" aria-live="polite">
-          {countFilled(filled)} / {SIZE * SIZE}
-        </p>
+        <span className="flex shrink-0 items-center gap-3">
+          <p className="text-sm text-ink/60" aria-live="polite">
+            {countFilled(filled)} / {SIZE * SIZE}
+          </p>
+          <Link
+            to="/ustawienia"
+            aria-label="Ustawienia"
+            className="text-lg leading-none text-ink/30"
+          >
+            &#9881;
+          </Link>
+        </span>
       </header>
 
       {me.isError && (
@@ -58,6 +68,8 @@ export default function BoardPage() {
       <BoardGrid tiles={tiles} onPick={(cat) => navigate(`/kategoria/${cat.id}`)} />
 
       <BingoBanner filled={filled} lines={lines} />
+
+      <InstallBanner />
     </main>
   );
 }

@@ -519,18 +519,31 @@ w zepsutym telefonie, nie przed złośliwym gościem.
 | `/kategoria/:id` | Pełna nazwa, przycisk wyboru zdjęcia, podgląd, status wysyłki, podmiana |
 | `/ustawienia` | Przełącznik „oryginały tylko przez Wi-Fi", stan kolejki, informacja RODO |
 
+Ekran o zdjęciach (`PrivacyGate`) pokazuje się **raz, przed planszą**, ale dopiero po zdobyciu
+tożsamości — żeby nie stał na drodze skanowaniu QR. Zapamiętywana jest **data wersji tekstu**,
+a nie samo „zaakceptowano": gdyby zmieniło się to, gdzie zdjęcia lądują albo kto je widzi, gość
+musi zobaczyć nową treść, a nie zostać z decyzją podjętą wobec innego tekstu.
+
 Status wysyłki pokazywany wprost: **w kolejce → wysyłanie → zapisane ✓**, a dla oryginału osobno
 **oryginał w drodze → oryginał na Dysku ✓**.
 
-**Instalacja.** Android przez `beforeinstallprompt` i własny baner. iOS nie wspiera promptu —
-dostaje osobną instrukcję „Udostępnij → Dodaj do ekranu początkowego". Przy 40 gościach iPhone'ów
-będzie sporo, więc ta ścieżka jest równorzędna, nie awaryjna.
+**Instalacja — Android jest ścieżką główną, iOS dodatkiem.** Decyzja Pary Młodej: goście
+w większości mają Androida, więc tam wszystko ma działać samo, a iOS ma po prostu nie przeszkadzać.
 
-**Pułapka iOS, którą trzeba obsłużyć:** zainstalowana aplikacja dostaje na iOS własny magazyn
-danych, osobny od Safari — gość, który „dołączył" w przeglądarce, po instalacji zobaczyłby pustą
-aplikację. Rozwiązanie dwutorowe: iOS bierze adres startowy z bieżącej strony, więc instrukcja
-mówi wprost „instaluj ze swojego osobistego linku", a dodatkowo serwujemy manifest per gość
-(`/api/manifest?g=…`) z `start_url` zawierającym kod.
+Na Androidzie przechwytujemy `beforeinstallprompt` i pokazujemy własny przycisk, zamiast czekać,
+aż Chrome sam coś zaproponuje — bo zaproponuje najczęściej wtedy, gdy gość jest w środku
+wybierania zdjęcia.
+
+iOS dostaje **jedno zdanie instrukcji** („Udostępnij → Dodaj do ekranu początkowego") i nic
+więcej: żadnych obrazków, żadnego kreatora. Aplikacja działa w Safari tak samo dobrze —
+instalacja daje tam wyłącznie ikonę i pełny ekran.
+
+**Pułapka iOS, świadomie nieobsłużona kodem:** zainstalowana aplikacja dostaje tam własny
+magazyn danych, osobny od Safari, więc gość, który „dołączył" w przeglądarce, po instalacji
+zobaczyłby pustą aplikację. Rozważaliśmy dynamiczny manifest per gość — przy iOS jako dodatku
+to za dużo maszynerii na zbyt mały problem. Zamiast tego iOS bierze adres startowy z bieżącej
+strony, więc **instrukcja mówi wprost: instaluj ze swojego osobistego linku**. Gdyby mimo to
+tożsamość przepadła, ekran „Zeskanuj kod QR" tłumaczy, co zrobić.
 
 ### Panel Pary Młodej — `/panel`
 
@@ -702,7 +715,10 @@ foto-bingo/
 ├── scripts/
 │   ├── generate-icons.mjs            # jak w SplitDecu
 │   ├── google-auth.mjs               # jednorazowe zdobycie refresh tokena
-│   └── generate-guests.mjs           # CSV → baza + PDF z winietkami QR
+│   ├── drive-check.mjs               # token, konto, wolne miejsce, realny zapis
+│   ├── add-guest.mjs                 # jeden gość awaryjnie, w trakcie wesela
+│   ├── generate-guests.mjs           # CSV → baza + winietki QR do druku
+│   └── dev-api.mjs                   # lokalny serwer funkcji API
 ├── src/
 │   ├── components/
 │   ├── hooks/
@@ -801,8 +817,10 @@ runbook weekendowy, próba generalna.
   tego nie odtworzy. Osobno: zdjęcie nocne, ziarniste, żeby zweryfikować pętlę budżetu.
 - **Offline.** DevTools → Network: Offline → wyślij 3 zdjęcia → zamknij kartę → włącz sieć →
   otwórz ponownie → wszystkie trzy muszą dojść. Powtórz na **zainstalowanej** aplikacji.
-- **Instalacja.** Fizyczny Android (Chrome) i fizyczny iPhone (Safari → Udostępnij). Na iOS
-  instaluj z linku osobistego `/g/…`.
+- **Instalacja — najpierw Android.** Fizyczny telefon z Androidem, Chrome, prawdziwy skan QR:
+  baner „Zainstaluj" musi się pojawić, a po instalacji aplikacja startować bez paska adresu
+  i **pamiętać, kim jest gość**. To jest ścieżka, którą przejdzie większość osób.
+  iPhone (Safari → Udostępnij) sprawdź jako drugi, **instalując z linku osobistego** `/g/…`.
 - **Dysk.** Po pierwszej wysyłce sprawdź, że powstał `FotoBingo/Imię Nazwisko/` i nazwa
   pliku zgadza się ze wzorem z sekcji 9.
 - **Odporność na awarię Google.** Podmień `GOOGLE_REFRESH_TOKEN` na śmieciowy → **wysyłka
@@ -834,7 +852,13 @@ runbook weekendowy, próba generalna.
 - [ ] Refresh token wygenerowany, wgrany na Vercela, testowa wysyłka przechodzi.
 - [ ] Domena ustalona i podpięta. **Winietki drukujemy dopiero po tym** — zmiana adresu
       po druku unieważnia wszystkie kody.
+- [ ] `PUBLIC_BASE_URL` w `.env` ustawione na docelową domenę — **przed** generowaniem
+      winietek. Kody prowadzą pod ten adres; zmiana po druku unieważnia wszystkie naraz.
+- [ ] `npm run guests -- goscie.csv --zapas 8` uruchomione, a `winietki/winietki.html`
+      przejrzany w przeglądarce przed drukiem.
 - [ ] Winietki z QR wydrukowane: **40 imiennych plus 8 zapasowych bez imienia**.
+- [ ] Karty zapasowe i wydruk `docs/runbook-weekend.md` w jednej kopercie, u osoby
+      z PIN-em do panelu.
 - [ ] Instrukcja na stołach: „Zeskanuj → Dodaj do ekranu początkowego → graj".
 - [ ] Hasło do Wi-Fi ośrodka na winietce albo na instrukcji.
 - [ ] PIN do panelu zna ktoś jeszcze poza Panem Młodym — w sobotę będzie zajęty.
