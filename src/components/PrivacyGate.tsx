@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { LEGAL_UPDATED, PRIVACY } from "../lib/legal";
+import { Meadow } from "./wedding/Meadow";
+import { ScreenTitle } from "./wedding/Wordmark";
 
 const KEY = "fotobingo.privacyAccepted";
 
@@ -25,15 +27,15 @@ export function PrivacyGate({ children }: { children: React.ReactNode }) {
 
   return (
     <main className="mx-auto flex min-h-full max-w-md flex-col justify-center gap-5 px-6 py-10">
-      <h1 className="text-2xl font-semibold text-brand-800">{PRIVACY.title}</h1>
+      <ScreenTitle>{PRIVACY.title}</ScreenTitle>
 
-      <div className="flex flex-col gap-3 text-ink/75">
+      <div className="flex flex-col gap-3 text-brand-800/80">
         {PRIVACY.paragraphs.map((p) => (
           <p key={p.slice(0, 24)}>{p}</p>
         ))}
       </div>
 
-      <p className="text-sm text-ink/50">{PRIVACY.removal}</p>
+      <p className="text-sm text-brand-800/60">{PRIVACY.removal}</p>
 
       <button
         type="button"
@@ -49,6 +51,8 @@ export function PrivacyGate({ children }: { children: React.ReactNode }) {
       >
         {PRIVACY.accept}
       </button>
+
+      <Meadow className="-mx-6 -mb-10 mt-2" />
     </main>
   );
 }

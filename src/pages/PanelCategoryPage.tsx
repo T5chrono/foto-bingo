@@ -18,9 +18,9 @@ export default function PanelCategoryPage() {
     enabled: Boolean(id),
   });
 
-  if (view.isLoading) return <p className="p-8 text-center text-ink/50">Chwileczkę…</p>;
+  if (view.isLoading) return <p className="p-8 text-center text-brand-800/60">Chwileczkę…</p>;
   if (view.isError || !view.data) {
-    return <p className="p-8 text-center text-ink/60">Nie ma takiej kategorii.</p>;
+    return <p className="p-8 text-center text-brand-800/70">Nie ma takiej kategorii.</p>;
   }
 
   const { label, position, photos } = view.data;
@@ -32,9 +32,9 @@ export default function PanelCategoryPage() {
       </Link>
 
       <header>
-        <p className="text-xs font-medium text-ink/40">{position}</p>
+        <p className="text-xs font-medium text-brand-800/55">{position}</p>
         <h1 className="text-2xl leading-tight font-semibold text-brand-800">{label}</h1>
-        <p className="text-sm text-ink/50">
+        <p className="text-sm text-brand-800/60">
           {photos.length === 0
             ? "Jeszcze nikt nie wysłał zdjęcia w tej kategorii."
             : count(photos.length, ZDJECIA)}
@@ -43,17 +43,17 @@ export default function PanelCategoryPage() {
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {photos.map((p) => (
-          <figure key={p.photoId} className="overflow-hidden rounded-xl bg-white">
+          <figure key={p.photoId} className="overflow-hidden rounded-lg border border-brand-200 bg-paper">
             <img
               src={p.url}
               alt={`${label} — ${p.guestName}`}
               loading="lazy"
               className="aspect-square w-full object-cover"
             />
-            <figcaption className="flex items-center justify-between px-2 py-1.5 text-[0.65rem] text-ink/60">
+            <figcaption className="flex items-center justify-between px-2 py-1.5 text-[0.65rem] text-brand-800/70">
               <span className="truncate">{p.guestName}</span>
               {p.driveStatus !== "ok" && (
-                <span className="shrink-0 text-amber-700" title="Oryginał jeszcze nie doszedł">
+                <span className="shrink-0 text-clay-700" title="Oryginał jeszcze nie doszedł">
                   ○
                 </span>
               )}
