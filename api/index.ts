@@ -6,7 +6,13 @@ import { guestByToken } from "./_lib/auth.js";
 import { BUDGET, config } from "./_lib/config.js";
 import { db, type Guest } from "./_lib/db.js";
 import { boardState, finalizePhoto } from "./_lib/photos.js";
-import { createDownloadUrl, createUploadUrl, storagePath, usedBytes } from "./_lib/storage.js";
+import {
+  createDownloadUrls,
+  createUploadUrl,
+  signedUrl,
+  storagePath,
+  usedBytes,
+} from "./_lib/storage.js";
 import {
   CHUNK_SIZE,
   ensureGuestFolder,
@@ -59,23 +65,24 @@ app.get("/health", (c) => c.json({ ok: true }));
  * Linki lecą razem z planszą, a nie osobnym żądaniem: przy 25 kafelkach
  * osobne zapytanie na każdy oznaczałoby 25 round-tripów przez górski maszt,
  * żeby narysować jeden ekran.
+ *
+ * Po stronie serwera obowiązuje ta sama zasada i z tego samego powodu:
+ * wszystkie podpisy powstają **jednym** wywołaniem, a nie w pętli po
+ * kafelkach. Szczegóły przy `createDownloadUrls`.
  */
 app.get("/me", requireGuest, async (c) => {
   const guest = c.get("guest");
   const tiles = await boardState(guest.id);
-
-  const withUrls = await Promise.all(
-    tiles.map(async (tile) => ({
-      categoryId: tile.categoryId,
-      photoId: tile.photoId,
-      driveStatus: tile.driveStatus,
-      thumbUrl: await createDownloadUrl(tile.thumbPath, 3600),
-    })),
-  );
+  const urls = await createDownloadUrls(tiles.map((tile) => tile.thumbPath));
 
   return c.json({
     guest: { name: guest.name, slug: guest.slug },
-    tiles: withUrls,
+    tiles: tiles.map((tile) => ({
+      categoryId: tile.categoryId,
+      photoId: tile.photoId,
+      driveStatus: tile.driveStatus,
+      thumbUrl: signedUrl(urls, tile.thumbPath),
+    })),
     budget: await currentBudget(),
   });
 });
@@ -384,19 +391,23 @@ app.get("/panel/claims/:id", requirePanel, async (c) => {
 
   const byCategory = new Map((photos ?? []).map((p) => [p.category_id as number, p]));
 
-  const tiles = await Promise.all(
-    ids.map(async (id) => {
-      const photo = byCategory.get(id);
-      const category = categoryById(id);
-      return {
-        categoryId: id,
-        label: category?.label ?? "?",
-        position: category ? `R${category.row}K${category.col}` : "",
-        driveStatus: photo?.drive_status ?? null,
-        url: photo ? await createDownloadUrl(photo.preview_path as string, 3600) : null,
-      };
-    }),
+  const urls = await createDownloadUrls(
+    ids
+      .map((id) => byCategory.get(id)?.preview_path as string | undefined)
+      .filter((path): path is string => Boolean(path)),
   );
+
+  const tiles = ids.map((id) => {
+    const photo = byCategory.get(id);
+    const category = categoryById(id);
+    return {
+      categoryId: id,
+      label: category?.label ?? "?",
+      position: category ? `R${category.row}K${category.col}` : "",
+      driveStatus: photo?.drive_status ?? null,
+      url: photo ? signedUrl(urls, photo.preview_path as string) : null,
+    };
+  });
 
   return c.json({
     id: claim.id,
@@ -435,14 +446,15 @@ app.get("/panel/category/:id", requirePanel, async (c) => {
     .order("created_at");
   if (error) throw error;
 
-  const photos = await Promise.all(
-    (data ?? []).map(async (row) => ({
-      photoId: row.id,
-      guestName: guestName(row.guests),
-      driveStatus: row.drive_status,
-      url: await createDownloadUrl(row.preview_path as string, 3600),
-    })),
-  );
+  const rows = data ?? [];
+  const urls = await createDownloadUrls(rows.map((row) => row.preview_path as string));
+
+  const photos = rows.map((row) => ({
+    photoId: row.id,
+    guestName: guestName(row.guests),
+    driveStatus: row.drive_status,
+    url: signedUrl(urls, row.preview_path as string),
+  }));
 
   const category = categoryById(categoryId);
   return c.json({

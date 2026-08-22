@@ -18,6 +18,20 @@ import * as queue from "./queue.js";
 
 export type Phase = "preview" | "original";
 
+/**
+ * Ile razy z rzędu wolno wysyłce oryginału nie ruszyć się do przodu.
+ *
+ * Przy odpowiedzi 308 bez nagłówka `range` serwer zwraca przesunięcie 0 —
+ * to jest wartość, nie `null`, więc `??` niżej jej nie przykryje i pętla
+ * wraca na początek pliku. Sam w sobie jest to zachowanie poprawne (Google
+ * mówi „nie mam jeszcze nic"), ale gdyby powtarzało się w kółko, telefon
+ * wysyłałby ten sam kawałek po 3 MB bez końca, a każde takie podejście to
+ * jeszcze trzy zapytania do bazy. Po kilku próbach oddajemy zadanie do
+ * kolejki i wracamy przy następnym powrocie sieci, zamiast kręcić się
+ * w miejscu przez cały wieczór.
+ */
+const MAX_STALLED_CHUNKS = 3;
+
 export type Progress = {
   photoId: string;
   phase: Phase;
@@ -107,14 +121,24 @@ async function sendOriginal(job: queue.Job, onProgress?: (p: Progress) => void):
     // zostać ubity w środku wysyłki i nie wie, ile bajtów naprawdę doszło.
     let offset = start.offset ?? 0;
     const chunkSize = start.chunkSize;
+    let stalled = 0;
 
     while (offset < total) {
       const chunk = job.original.slice(offset, Math.min(offset + chunkSize, total));
       const res = await api.originalChunk({ photoId: job.photoId, offset, total }, chunk);
 
       if (res.done) break;
-      offset = res.offset ?? offset + chunk.byteLength;
+      const next = res.offset ?? offset + chunk.byteLength;
 
+      if (next <= offset) {
+        if (++stalled >= MAX_STALLED_CHUNKS) {
+          throw new Error("Wysyłka oryginału nie posuwa się do przodu — spróbujemy później");
+        }
+      } else {
+        stalled = 0;
+      }
+
+      offset = next;
       await queue.patch(job.photoId, { originalOffset: offset, state: "queued" });
       onProgress?.({
         photoId: job.photoId,
@@ -167,7 +191,15 @@ async function putSigned(
   const { supabase } = await import("./supabase.js");
   const { error } = await supabase.storage
     .from(bucket)
-    .uploadToSignedUrl(target.path, target.token, blob, { upsert: true });
+    .uploadToSignedUrl(target.path, target.token, blob, {
+      upsert: true,
+      // Ścieżka niesie photoId, więc pod jednym adresem zawsze leżą te same
+      // bajty — plik jest niezmienny i przeglądarka może go trzymać na dysku.
+      // Domyślna godzina kazałaby telefonom dopytywać o te same miniatury
+      // przez cały wieczór, a to jest dokładnie ten transfer, którego
+      // sześciogodzinne podpisy w `api/_lib/storage.ts` mają oszczędzić.
+      cacheControl: "86400",
+    });
   // Powtórka z kolejki trafia w tę samą ścieżkę, więc "już istnieje" nie jest
   // błędem, tylko dowodem, że poprzednie podejście doszło dalej, niż sądziliśmy.
   if (error && !/already exists/i.test(error.message)) throw error;
