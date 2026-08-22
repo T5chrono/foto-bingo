@@ -689,11 +689,8 @@ zastanawiać, czy patrzysz na właściwą rzecz.
 ```
 foto-bingo/
 ├── .github/
-│   ├── dependabot.yml
 │   └── workflows/
-│       ├── ci.yml                    # vitest + build, na push do master/develop i na PR
-│       ├── claude.yml                # @claude w komentarzach
-│       └── claude-code-review.yml    # automatyczny przegląd każdego PR-a
+│       └── ci.yml                    # vitest + build, na push do master/develop i na PR
 ├── api/
 │   ├── index.ts                      # jedna funkcja Vercela, router Hono
 │   └── _lib/                         # podkreślnik: Vercel nie robi z nich osobnych funkcji
@@ -761,7 +758,12 @@ foto-bingo/
   uruchamiać się w testach.
 
 **Przepływ pracy:** praca na `develop`, nigdy bezpośrednio na `master`. Push → PR do `master` →
-automatyczny przegląd → merge na zielonym CI → Vercel wdraża `master` na produkcję.
+merge na zielonym CI → Vercel wdraża `master` na produkcję.
+
+SplitDec ma dodatkowo automatyczny przegląd PR-ów przez Claude (`claude.yml`,
+`claude-code-review.yml`). Tutaj go **nie ma**: wymaga sekretu `ANTHROPIC_API_KEY`
+w ustawieniach repozytorium, a bez niego każdy PR miałby czerwony check bez powodu.
+Do dorobienia, jeśli projekt przeżyje wesele.
 Po merge'u synchronizacja: `git checkout develop && git merge master && git push`.
 
 **Czego repozytorium nie zawiera:** listy gości, kodów z QR, żadnych zdjęć, żadnych sekretów.
