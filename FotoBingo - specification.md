@@ -250,6 +250,31 @@ Przy miniaturze zdjęcia, które i tak należy do tego gościa, to świadomy kur
 Pliki wgrywamy z `cacheControl: 86400`, bo ścieżka niesie `photoId` i pod jednym adresem
 zawsze leżą te same bajty.
 
+### D13 — Wizualia są zdjęte z projektu weselnego, a ozdobniki rysowane od zera
+
+**Wybrano:** paleta i typografia **odczytane** z projektu w Canvie (tego samego, z którego
+powstały zaproszenia i papierowa karta Foto Bingo), a wszystkie ozdobniki — łąka polnych
+kwiatów, akwarelowa dolina, gałązka — narysowane jako własne SVG.
+
+**Odrzucono:** wyeksportowanie kwiatów i gór z Canvy jako plików PNG i wgranie ich do
+aplikacji. Szybsze i wierniejsze co do piksela.
+
+**Dlaczego:** dwa powody, jeden prawny i jeden praktyczny. Licencja Canvy pozwala użyć grafiki
+stockowej **w projekcie**, ale nie wyjąć jej z niego i rozprowadzać jako samodzielny element —
+a właśnie tym byłby plik w `public/`. Praktycznie: własne SVG waży tyle, co kawałek tekstu,
+skaluje się do każdej szerokości ekranu bez drugiego kompletu plików i bierze kolory z palety,
+więc zmiana tokenu przemalowuje też ozdobniki.
+
+Wartości nie są dobrane na oko. Ramka kafelka `#b7c29c`, obwódka kółka do zaznaczania
+`#9aa97b`, kolor podpisów `#525938` i wypełnienie pola `#fdfcf7` to te same liczby, którymi
+narysowana jest papierowa karta.
+
+**Konsekwencja — i jest to koszt w tej samej walucie co D12.** Dwie rodziny pisma zamiast
+jednej to cztery pliki w precache'u service workera zamiast dwóch: ~87 KB zamiast ~40 KB na
+pierwsze wejście. Manrope wyleciał, więc netto jest to jedna rodzina więcej, nie dwie,
+a pozostałe podzbiory Lory (cyrylica, matematyka, symbole, wietnamski) są wycięte z precache'a
+przez `globIgnores` — telefon w górach ich nie pobiera. Szczegóły: [docs/wizualia.md](docs/wizualia.md).
+
 ---
 
 ## 4. Gdzie mieszkają dane
@@ -559,6 +584,12 @@ Ekran o zdjęciach (`PrivacyGate`) pokazuje się **raz, przed planszą**, ale do
 tożsamości — żeby nie stał na drodze skanowaniu QR. Zapamiętywana jest **data wersji tekstu**,
 a nie samo „zaakceptowano": gdyby zmieniło się to, gdzie zdjęcia lądują albo kto je widzi, gość
 musi zobaczyć nową treść, a nie zostać z decyzją podjętą wobec innego tekstu.
+
+**Wygląd planszy jest cytatem z papierowej karty** (D13): kremowy kafelek, cienka szałwiowa
+ramka, wyśrodkowany podpis i **kółko do zaznaczenia** pod nim, które zamalowuje się samo, gdy
+zdjęcie dojdzie. Kod pozycji (`R3K2`) z kafelków **zniknął** — papierowa karta go nie ma, a 25
+kodów na 25 polach hałasowało tam, gdzie liczy się podpis. Kod został w `aria-label`, na ekranie
+kategorii, w panelu i w nazwie pliku na Dysku, czyli wszędzie, gdzie do czegoś służy.
 
 Status wysyłki pokazywany wprost: **w kolejce → wysyłanie → zapisane ✓**, a dla oryginału osobno
 **oryginał w drodze → oryginał na Dysku ✓**.

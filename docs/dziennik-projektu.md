@@ -19,6 +19,7 @@ dziwny komunikat, dopiero potem szukasz przyczyny.
 - [Supabase](#supabase)
 - [Obciążenie i równoczesny ruch](#obciążenie-i-równoczesny-ruch)
 - [Przeglądarka i front](#przeglądarka-i-front)
+- [Wizualia](#wizualia)
 - [Vercel](#vercel)
 - [Środowisko lokalne (Windows)](#środowisko-lokalne-windows)
 - [Decyzje, które odwróciliśmy](#decyzje-które-odwróciliśmy)
@@ -40,8 +41,8 @@ Pięć etapów, każdy zamknięty własnym commitem na `master`.
 
 Stan końcowy: **90 testów**, produkcja na https://foto-bingo.vercel.app.
 
-Osobne dokumenty: [konfiguracja Google](google-setup.md), [Supabase](supabase-setup.md),
-[wdrożenie](vercel-deploy.md), [runbook weselny](runbook-weekend.md).
+Osobne dokumenty: [wizualia](wizualia.md), [konfiguracja Google](google-setup.md),
+[Supabase](supabase-setup.md), [wdrożenie](vercel-deploy.md), [runbook weselny](runbook-weekend.md).
 
 ---
 
@@ -298,16 +299,68 @@ Kolejka trzyma `ArrayBuffer` plus typ MIME; Blob powstaje z powrotem tuż przed 
 Polskie liczebniki mają **trzy** formy, nie dwie. `src/lib/plural.ts`, z wyjątkiem
 na 12–14, który łapie też 112 i 213.
 
-### Manrope ciągnął pięć zestawów znaków
+### Czcionka ciągnie podzbiory, o których nikt nie prosił
 
 Przeglądarka pobiera tylko potrzebne (`unicode-range`), ale **precache service workera
-bierze wszystko jak leci** — 32 KB cyrylicy, greki i wietnamskiego przy pierwszym
-wejściu. Wykluczone w `workbox.globIgnores`.
+bierze wszystko jak leci** — czyli cyrylicę, grekę i wietnamski przy pierwszym wejściu,
+przy weselu w górach. Wykluczone w `workbox.globIgnores`.
+
+Pułapka jest w tym, że lista wykluczeń **nazywa pliki po imieniu**. Napisana była dla
+Manrope'a; przy zmianie wizualiów Manrope wyleciał, a wzorce zostałyby martwe i po cichu
+przepuściłyby cztery nowe podzbiory Lory. Zmiana rodziny pisma to zawsze także zmiana
+w `globIgnores` — sprawdzaj po buildzie, co naprawdę wylądowało w `dist/sw.js`, a nie
+co miało wylądować.
 
 ### Vercel ma limit 4,5 MB na ciało funkcji
 
 Dlatego kompresja dzieje się w telefonie, a oryginał idzie kawałkami po 3 MB
 (12 × 256 KB — Google wymaga wielokrotności 256 KB dla wszystkich kawałków poza ostatnim).
+
+---
+
+## Wizualia
+
+Pełny opis palety, typografii i ozdobników: [wizualia.md](wizualia.md). Tutaj to, na czym
+się nadzialiśmy po drodze.
+
+### Kolory czyta się z projektu, a nie dobiera na oko
+
+Projekt weselny w Canvie da się otworzyć narzędziem i **odczytać jego strukturę**, a nie
+tylko obejrzeć podgląd. Wyszło z tego, że ramka kafelka na papierowej karcie to `#b7c29c`,
+obwódka kółka `#9aa97b`, a wszystkie podpisy `#525938`. Dobieranie tych wartości z oka
+na podstawie miniatury dałoby paletę „w tej okolicy", a nie tę samą — i to widać, gdy
+telefon leży obok wydrukowanej karty.
+
+Przy okazji: nazwy tokenów zostały `brand-*` mimo zmiany z wina na zieleń. Dzięki temu
+przemalowanie całej aplikacji nie dotknęło **ani jednej klasy** w komponentach.
+
+### Build przeszedł, a fontów w `dist` nie było
+
+Weryfikację „czystego" `develop` robiłem w osobnym worktree na dysku C, podpinając
+`node_modules` z dysku D junctionem — żeby nie czekać na drugą instalację. Build
+zakończył się sukcesem, testy przeszły, wszystko wyglądało dobrze.
+
+Fontów nie było. Vite nie skopiował ich do `dist/assets`, tylko wstawił do CSS ścieżki
+w rodzaju `url(../../../../../../../../../../../../D:/Programowanie/FotoBingo/node_modules/...)`.
+Bez błędu, bez ostrzeżenia. Wyszło dopiero przy porównaniu liczby wpisów w precache'u:
+**23 zamiast 27**.
+
+**Morał:** `node_modules` podpięte przez junction na inny dysk to nie to samo co
+`node_modules`. Jeśli weryfikujesz build w osobnym worktree, zrób w nim prawdziwe
+`npm ci` — a wynik sprawdzaj po liczbie plików w `dist`, nie po tym, że polecenie
+wyszło z zerem.
+
+### Akwarelową dolinę trzeba było narysować trzy razy
+
+Pierwsze dwa podejścia rysowały wzgórza jako pełne wypełnienia schodzące do dolnej
+krawędzi, a rzekę jako kształt między nimi. Za każdym razem rzeka czytała się jak
+szczelina w zieleni, bo zbiegała się do punktu na horyzoncie i była tam węższa niż
+kreska. Kolejne poprawki geometrii niczego nie ratowały.
+
+Zadziałało dopiero odwrócenie problemu: rzeka **rozpuszcza się** w horyzoncie —
+jej gradient zaczyna się od przezroczystości — więc nie trzeba jej niczym zasłaniać
+ani do niczego dopasowywać krawędzi wzgórz. Cztery niezależne plany, każdy ciemniejszy
+i mniej rozmyty, i jeden kształt na wierzchu.
 
 ---
 
@@ -422,6 +475,8 @@ od decyzji.
 | Importy bez rozszerzeń → `.ts` | → `.js` | Trzy różne narzędzia, trzy różne wymagania |
 | 48 gości | 40 gości + 8 kodów zapasowych | Doprecyzowanie od Pary Młodej |
 | Podpis osobno na każdy kafelek | jeden podpis na cały ekran | 25 żądań na odświeżenie i cache przeglądarki bezużyteczny |
+| Wino i krem | akwarelowa zieleń z Canvy | Aplikacja leżała obok zaproszenia i jako jedyna była różowa |
+| Kod pozycji na każdym kafelku | tylko w `aria-label` i poza planszą | 25 kodów na 25 polach hałasowało tam, gdzie liczy się podpis |
 
 ---
 
@@ -440,6 +495,9 @@ w checkliście przedweselnej w specyfikacji.
 - **Nowa ścieżka podpisów na prawdziwym Storage.** Hurtowe `createSignedUrls` i cache
   adresów mają testy jednostkowe na atrapie, ale przez prawdziwy bucket jeszcze nie
   przeszły — do sprawdzenia przy pierwszym wejściu na planszę z danymi.
+- **Wizualia na fizycznym telefonie.** Pisanka w rozmiarze logotypu i podpisy kafelków
+  po 9 px oglądaliśmy wyłącznie w przeglądarce na biurku. Sprawdź czytelność podpisów
+  w słońcu i to, czy łąka na dole nie wchodzi pod pasek gestów.
 - **Zachowanie przy naprawdę słabym zasięgu.** Symulacja w DevTools to nie to samo,
   co jeden maszt i czterdzieści telefonów.
 

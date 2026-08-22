@@ -8,6 +8,9 @@ następna zmiana nie musiała zgadywać.
 12 stron: zaproszenia, winietka i karta Foto Bingo). Kolory i proporcje poniżej
 są z niego **odczytane**, a nie dobrane na oko.
 
+Decyzja i odrzucone alternatywy: **D13** w [specyfikacji](../FotoBingo%20-%20specification.md).
+Czego się przy tym nadzialiśmy: [dziennik projektu](dziennik-projektu.md#wizualia).
+
 ## Paleta
 
 Cała paleta mieszka w `@theme` w [src/index.css](../src/index.css). Nazwy
@@ -41,6 +44,16 @@ Dwie rodziny, dwie role — tak samo jak na karcie:
 Manrope wyleciał: jedna rodzina mniej do pobrania przy weselu w górach.
 W precache service workera lądują cztery pliki (~87 KB) — reszta podzbiorów
 Lory jest wycięta w `globIgnores` w [vite.config.ts](../vite.config.ts).
+
+**To jest wydatek w tej samej walucie, co decyzja D12 o podpisach do plików**:
+netto jedna rodzina pisma więcej to ~47 KB na pierwsze wejście, jednorazowo
+i z cache'u. D12 oszczędza wielokrotność tej liczby na samych miniaturach
+pobieranych w kółko przez cały wieczór. Warto trzymać oba rachunki obok siebie,
+gdyby kiedyś doszła trzecia rodzina.
+
+Lista wykluczeń w `globIgnores` **nazywa pliki po imieniu**, więc zmiana rodziny
+pisma jest zawsze także zmianą tam. Po buildzie sprawdź, co naprawdę wylądowało
+w `dist/sw.js`.
 
 ## Ozdobniki
 
