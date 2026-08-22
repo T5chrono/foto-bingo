@@ -1,0 +1,56 @@
+{
+  "name": "foto-bingo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "npm i --no-save sharp && node scripts/generate-icons.mjs",
+    "api": "node --experimental-strip-types scripts/dev-api.mjs",
+    "google-auth": "node scripts/google-auth.mjs",
+    "add-guest": "node --experimental-strip-types scripts/add-guest.mjs",
+    "google-auth:reset": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Output \"port 8765 zwolniony\"\"",
+    "drive:check": "node scripts/drive-check.mjs",
+    "drive:init": "node scripts/drive-check.mjs --init",
+    "guests": "node --experimental-strip-types scripts/generate-guests.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@supabase/supabase-js": "^2.112.3",
+    "@tanstack/react-query": "^5.101.4",
+    "hono": "^4.10.6",
+    "idb": "^8.0.3",
+    "lucide-react": "^0.522.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.6.0"
+  },
+  "devDependencies": {
+    "@hono/node-server": "^2.1.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.4",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vercel/node": "^5.4.4",
+    "@vitejs/plugin-react": "^4.5.0",
+    "dotenv": "^17.4.2",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^30.0.1",
+    "qrcode": "^1.5.4",
+    "tailwindcss": "^4.1.10",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^4.1.10"
+  }
+}

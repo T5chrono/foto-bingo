@@ -32,14 +32,21 @@ Aplikacja sama pilnuje, co jest zebrane, i sama wykrywa bingo.
 
 | Wielkość | Wartość |
 |---|---|
-| Goście | 48 |
+| Goście | 40 |
+| Kodów QR — goście plus zapas | **48** |
 | Kategorii na planszy | 25 |
+| Plansz maksymalnie | 48 |
 | Zdjęć maksymalnie | **1200** |
 | Okres zbierania | ~72 godziny |
 | Szczyt ruchu | ceremonia i pierwszy taniec — kilkanaście wysyłek naraz |
 
-Realnie planszy nie zapełni każdy, więc 1200 to sufit, nie prognoza. Wszystkie liczby poniżej
-liczone są jednak od sufitu — zapas ma być zapasem, nie nadzieją.
+Gości jest 40, ale kodów drukujemy 48. Osiem zapasowych pokrywa zgubione winietki, nieplanowane
+osoby towarzyszące i dzieci, które zechcą grać na własnej planszy — czyli wszystko, czego nie da
+się przewidzieć w piątek. Zapasowy kod nie zajmuje miejsca, dopóki ktoś go nie użyje.
+
+**Wszystkie budżety poniżej liczone są od sufitu 48 plansz**, a nie od 40 realnych gości — i to
+przy założeniu, że każdy zapełni wszystkie 25 pól. Realnie będzie znacznie mniej. Zapas ma być
+zapasem, nie nadzieją.
 
 ---
 
@@ -53,7 +60,7 @@ a nie inaczej. Kolejność chronologiczna.
 **Wybrano:** instalowalna strona (Progressive Web App) hostowana na Vercelu.
 
 **Odrzucono:** aplikacja z Google Play. Wymaga konta developerskiego, przeglądu, publikacji,
-a goście musieliby jej szukać w sklepie. Dla 48 osób i jednego weekendu to absurdalny narzut.
+a goście musieliby jej szukać w sklepie. Dla 40 osób i jednego weekendu to absurdalny narzut.
 
 **Dlaczego to działa:** gość skanuje QR, otwiera stronę, dodaje ją do ekranu głównego dwoma
 dotknięciami. Dostaje ikonę, pełny ekran bez paska adresu i działanie offline. Aktualizacja
@@ -81,7 +88,7 @@ Aplikacja widzi wyłącznie pliki, które sama utworzyła — nie ma dostępu do
 **Wybrano:** jeden refresh token konta Pary Młodej, przechowywany w zmiennej środowiskowej
 na Vercelu. Serwer wysyła pliki w imieniu wszystkich gości.
 
-**Odrzucono:** logowanie gości do Google. 48 osób przechodzących przez ekran zgody Google,
+**Odrzucono:** logowanie gości do Google. 40 osób przechodzących przez ekran zgody Google,
 część bez konta pod ręką, część na iOS gdzie flow bywa kapryśny — plus pliki lądowałyby
 na ich Dyskach, a nie na naszym.
 
@@ -121,7 +128,7 @@ bezpieczne w Supabase. Kopiowanie ponawiamy choćby następnego dnia i nikt tego
 darmowego Supabase, albo za mała jako archiwum.
 
 **Odrzucono:** proszenie gości o oryginały po weselu. To była realna alternatywa (oryginały i tak
-zostają w telefonach), ale Para Młoda nie chce po weselu ścigać 48 osób. Decyzja świadoma,
+zostają w telefonach), ale Para Młoda nie chce po weselu ścigać 40 osób. Decyzja świadoma,
 podjęta ze znajomością kosztu: ~110 MB transferu na gościa i ~5 GB na Dysku.
 
 **Gwarancja bezpieczeństwa:** jeśli oryginał nigdy nie dojdzie, **nic nie jest stracone**.
@@ -154,22 +161,41 @@ Zostaje jako awaryjna ścieżka w panelu, obsługiwana ręcznie przez Parę Mło
 
 ### D8 — Dostęp do bazy przez `supabase-js`, bez własnego poolera
 
-**Wybrano:** serwer rozmawia z bazą przez `@supabase/supabase-js` z kluczem `service_role`.
+**Wybrano:** serwer rozmawia z bazą przez `@supabase/supabase-js` z **nowym kluczem sekretnym**
+(`sb_secret_…`), a nie ze starym `service_role` z działki Legacy.
+
+Oba dają tę samą moc — omijają RLS i wszystkie zabezpieczenia — ale stary `service_role` to JWT
+podpisany sekretem projektu: żeby go zrotować, trzeba zrotować sekret JWT, co unieważnia
+wszystko naraz. Nowe klucze tworzy się i unieważnia pojedynczo, więc wyciek jednego kosztuje
+jedno kliknięcie, a nie awarię.
 
 **Odrzucono:** bezpośrednie połączenie Postgresem (jak `DATABASE_URL` w SplitDecu). Tam było
 konieczne przez SQLAlchemy i wymagało uważnej konfiguracji transaction poolera, `NullPool`
 i `statement_cache_size=0`. Przy trzech tabelach i zapytaniach typu „daj zdjęcia gościa" to
 narzut bez korzyści.
 
-**Konsekwencja:** klucz `service_role` omija RLS i **nigdy nie może trafić do przeglądarki**.
+**Konsekwencja:** klucz sekretny omija RLS i **nigdy nie może trafić do przeglądarki**.
 Żyje wyłącznie w zmiennych środowiskowych funkcji.
 
-### D9 — RLS wyłączony, funkcja serwerowa jest jedyną granicą
+### D9 — Funkcja serwerowa jest jedyną granicą autoryzacji
 
-Tak samo jak w SplitDecu. Przeglądarka nigdy nie rozmawia z bazą bezpośrednio — wszystko idzie
-przez `/api/*`, gdzie sprawdzany jest kod gościa albo ciasteczko panelu. Jedyny wyjątek to
-pobieranie obrazków z podpisanych linków, które same w sobie są ograniczonymi w czasie
-przepustkami do pojedynczego pliku.
+Przeglądarka nigdy nie rozmawia z bazą bezpośrednio — wszystko idzie przez `/api/*`, gdzie
+sprawdzany jest kod gościa albo ciasteczko panelu. Jedyny wyjątek to pobieranie obrazków
+z podpisanych linków, które same w sobie są ograniczonymi w czasie przepustkami do jednego pliku.
+
+**Data API jest zamknięte dwiema warstwami**, obiema w migracji początkowej:
+
+1. **Odebrane prawa rolom `anon` i `authenticated`**, również domyślne dla przyszłych obiektów.
+   To jest warstwa główna — taka sama jak w SplitDecu. Bez niej Supabase domyślnie pozwala
+   rolom `anon` i `authenticated` czytać i pisać po tabelach w `public`, a klucz publishable
+   siedzi w kodzie **każdej zainstalowanej aplikacji gościa**.
+2. **RLS włączony na wszystkich trzech tabelach, bez żadnych polityk.**
+
+Punkt 2 jest odstępstwem od SplitDeca, który RLS świadomie wyłącza. Kosztuje zero — klucz sekretny
+omija oba mechanizmy, więc aplikacja nie zauważa różnicy — a kupuje odporność na jeden konkretny
+scenariusz: gdyby prawa z punktu 1 kiedykolwiek wróciły (zmiana domyślnych ustawień Supabase,
+przywrócenie z kopii, cudze `grant`), RLS bez polityk nadal odmawia wszystkiego. Przy danych
+40 gości weselnych druga warstwa za darmo jest warta wzięcia.
 
 ### D10 — Kompresja do budżetu bajtowego, nie do stałej jakości
 
@@ -179,6 +205,22 @@ przepustkami do pojedynczego pliku.
 się fatalnie — przy stałej jakości potrafią wyjść trzy razy większe niż zdjęcie w dzień.
 A wesele to głównie zdjęcia nocne. Przy stałej jakości budżet miejsca z sekcji 5 byłby
 prognozą; przy budżecie bajtowym jest gwarancją.
+
+### D11 — Kolejka trzyma surowe bajty, nie obiekty Blob
+
+**Wybrano:** zdjęcia czekają w IndexedDB jako `ArrayBuffer` plus zapamiętany typ MIME.
+Blob powstaje z powrotem dopiero tuż przed wysłaniem.
+
+**Odrzucono:** trzymanie `Blob` wprost, co jest wersją krótszą i bardziej oczywistą.
+
+**Dlaczego:** iOS Safari ma udokumentowaną historię gubienia zawartości blobów po zamknięciu
+strony. To jest dokładnie ten scenariusz, na którym stoi cała obietnica „zdjęcie dojdzie samo":
+gość wybiera zdjęcie na spacerze bez zasięgu, zamyka aplikację, wraca do budynku następnego
+dnia. Surowe bajty nie mają tej klasy problemów. Efekt uboczny: kolejka da się przetestować,
+bo `Blob` nie przechodzi przez `structuredClone` w środowisku testowym.
+
+**Konsekwencja:** oryginał zapisujemy do kolejki od razu przy wyborze zdjęcia, a nie dopiero
+na Etapie 3 — galeria telefonu może go do tego czasu przemielić, a drugi raz gość go nie wybierze.
 
 ---
 
@@ -234,9 +276,10 @@ Full HD (1920×1080). Większy plik nic by tam nie zmienił, a archiwum i tak tr
 1200 oryginałów × ~4 MB ≈ **4,8 GB**. Zakres zależy od telefonów: iPhone w HEIC daje ~2,5 MB,
 Android w trybie 50 MP potrafi dać 10 MB. Realistyczny przedział: **3–10 GB**.
 
-**Google One 100 GB (8,99 zł/mies.) jest wymagany**, nie opcjonalny. Darmowe 15 GB jest dzielone
-z Gmailem i Zdjęciami — wchodzenie w ten limit z kilkoma gigabajtami zdjęć weselnych to proszenie
-się o `storageQuotaExceeded` w sobotę wieczorem. Za dziewięć złotych problem znika całkowicie.
+**Miejsce jest niepotrzebnym zmartwieniem: konto ma plan 5 TB, z czego ~5005 GB wolnego**
+(sprawdzone `npm run drive:check`, sierpień 2026). Wcześniejsza wersja tej specyfikacji
+wymagała wykupienia Google One 100 GB — to założenie było błędne i zostało wycofane.
+`drive:check` sam ostrzega, gdyby wolnego miejsca spadło poniżej potrzebnych ~4,8 GB.
 
 ### Transfer po stronie gościa
 
@@ -259,8 +302,8 @@ Telefon gościa (PWA)
   │
   ├──► /api/photos/finalize ─── wpis do Postgresa; od tej chwili zdjęcie jest bezpieczne
   │
-  └──► Dysk Google ─── oryginał, w tle, niskim priorytetem
-                        droga zależna od wyniku spike'u S1 (sekcja 13)
+  └──► /api/photos/original/* ─── oryginał kawałkami po 3 MB, w tle
+        └──► Dysk Google ─── sesja resumable; Supabase nigdy nie widzi oryginału
 ```
 
 Panel Pary Młodej czyta z Postgresa i wyświetla obrazki podpisanymi linkami z Supabase.
@@ -321,14 +364,24 @@ claims
   id           uuid primary key
   guest_id     uuid not null references guests(id)
   kind         text not null           -- 'row' | 'col' | 'diag' | 'full'
-  index        int                     -- numer wiersza/kolumny/przekątnej; null dla 'full'
+  line_index   int                     -- numer wiersza/kolumny/przekątnej; null dla 'full'
   status       text not null default 'new'       -- 'new' | 'accepted' | 'rejected'
   created_at   timestamptz not null default now()
   resolved_at  timestamptz
 ```
 
-Indeksy: `photos(guest_id, category_id) where is_active`,
-`photos(drive_status) where drive_status <> 'ok'`, `claims(status)`.
+**Indeksy, które są regułami biznesowymi, nie optymalizacją:**
+
+- `unique (guest_id, category_id) where is_active` — jeden aktywny kafelek na gościa i kategorię.
+  Wymuszone w bazie, a nie tylko w kodzie: podwójne kliknięcie na słabym łączu nie może zrobić
+  dwóch aktywnych zdjęć na jednym polu.
+- `unique (guest_id, kind, coalesce(line_index, -1)) where status = 'new'` — jedno otwarte
+  zgłoszenie na linię. Gość klikający „Zgłoś bingo" trzy razy pod rząd nie zasypuje panelu
+  duplikatami w trakcie zabawy.
+
+Zwykłe indeksy: `photos(drive_status) where drive_status <> 'ok'` (kolejka kopiowania) oraz
+`claims(created_at) where status = 'new'`. Oba częściowe, bo docelowo prawie każdy wiersz ma
+status końcowy i nie ma po co go indeksować.
 
 ### Czego celowo nie ma w bazie
 
@@ -352,8 +405,15 @@ Numeracja `R{wiersz}K{kolumna}`, kolumny zgodnie z oryginalną listą Pary Młod
 
 ## 9. Nazwy plików i struktura Dysku
 
+**Folder główny musi utworzyć aplikacja, nie człowiek.** Zakres `drive.file` daje dostęp
+wyłącznie do plików, które aplikacja sama utworzyła — folder założony kliknięciem w Dysku jest
+dla niej **niewidoczny**, mimo że należy do tego samego konta. Próba zapisu kończy się wtedy
+404, co wygląda na problem z uprawnieniami, a jest zwykłą konsekwencją minimalnego zakresu.
+Załatwia to `npm run drive:init`. Ta sama zasada jest też gwarancją prywatności: aplikacja
+nie widzi reszty Dysku Pary Młodej.
+
 ```
-FotoBingo 2026/                          ← folder root, tworzony przez aplikację
+FotoBingo/                               ← folder root, tworzony przez aplikację
 ├── Anna Kowalska/
 │   ├── R1K1_selfie-z-para-mloda__anna-kowalska__20260815-193045.jpg
 │   ├── R1K3_ognisko-z-iskrami__anna-kowalska__20260815-201233.heic
@@ -409,9 +469,10 @@ Na weselu nic się nie kasuje bezpowrotnie.
    bezpieczne.** Kafelek zmienia się w miniaturę, plansza przelicza bingo.
 7. **Oryginał, w tle.** Osobne zadanie w kolejce, niski priorytet, ustawia `drive_status`.
    Droga zależy od spike'u S1 (sekcja 13).
-8. **Ponowienia.** `POST /api/mirror/drain` przemiela zaległości. Wołany z panelu przyciskiem
-   „Wyślij zaległe na Dysk"; opcjonalnie z `pg_cron` w Supabase co 5 minut. Vercel Hobby daje
-   crona tylko raz na dobę, co jest za rzadko — stąd przycisk jako podstawowa ścieżka.
+8. **Ponowienia.** Należą do kolejki w telefonie, nie do serwera: przy S1-C oryginał leży
+   na telefonie gościa i nikt poza nim nie może go dosłać. Kolejka rusza sama, gdy wraca sieć
+   albo aplikacja wraca na wierzch. Serwer pamięta jedynie, ile bajtów Google już ma, żeby
+   wznowienie nie zaczynało od zera — telefon ubity w środku wysyłki sam tego nie wie.
 
 Zadanie znika z kolejki dopiero po potwierdzeniu z serwera. Zadanie oryginału znika dopiero po
 `drive_status='ok'`.
@@ -427,13 +488,14 @@ Wszystko pod `/api/*`, jedna funkcja, router Hono.
 | `GET /api/me` | gość | Zwraca imię gościa i stan jego planszy |
 | `POST /api/photos/upload-url` | gość | Podpisany link do bucketa dla jednej kategorii |
 | `POST /api/photos/finalize` | gość | Zapisuje zdjęcie w bazie, uruchamia kopiowanie na Dysk |
-| `POST /api/photos/original-url` | gość | Adres docelowy dla oryginału (zależny od S1) |
+| `POST /api/photos/original/start` | gość | Otwiera sesję resumable w Google |
+| `POST /api/photos/original/chunk` | gość | Przekazuje jeden kawałek (≤3 MB) do Google |
 | `POST /api/claims` | gość | Zgłoszenie bingo |
 | `POST /api/panel/login` | Para Młoda | PIN → podpisane ciasteczko httpOnly, ważne 30 dni |
 | `GET /api/panel/claims` | Para Młoda | Lista zgłoszeń ze statusami |
 | `POST /api/panel/claims/:id` | Para Młoda | Uznanie albo odrzucenie zgłoszenia |
 | `GET /api/panel/photos` | Para Młoda | Zdjęcia pogrupowane po kategoriach albo po gościach |
-| `POST /api/mirror/drain` | Para Młoda | Ponawia kopiowanie zaległych oryginałów |
+| `GET /api/panel/pending` | Para Młoda | Którzy goście mają oryginały w drodze |
 | `POST /api/panel/guests` | Para Młoda | Dodaje gościa i zwraca nowy kod (awaryjne winietki) |
 
 **Uwierzytelnienie gościa:** nagłówek `X-Guest-Token` z kodem z QR. Serwer porównuje SHA-256.
@@ -441,7 +503,7 @@ Wszystko pod `/api/*`, jedna funkcja, router Hono.
 liczone w bazie; po 10 nietrafieniach panel blokuje się na godzinę.
 
 **Limity zdroworozsądkowe:** maksymalnie 3 zdjęcia na kafelek (podmiany) i 120 wysyłek na gościa.
-Przy 48 gościach nie ma zagrożenia nadużyciem — te limity chronią przed zapętloną kolejką
+Przy 40 gościach nie ma zagrożenia nadużyciem — te limity chronią przed zapętloną kolejką
 w zepsutym telefonie, nie przed złośliwym gościem.
 
 ---
@@ -457,18 +519,31 @@ w zepsutym telefonie, nie przed złośliwym gościem.
 | `/kategoria/:id` | Pełna nazwa, przycisk wyboru zdjęcia, podgląd, status wysyłki, podmiana |
 | `/ustawienia` | Przełącznik „oryginały tylko przez Wi-Fi", stan kolejki, informacja RODO |
 
+Ekran o zdjęciach (`PrivacyGate`) pokazuje się **raz, przed planszą**, ale dopiero po zdobyciu
+tożsamości — żeby nie stał na drodze skanowaniu QR. Zapamiętywana jest **data wersji tekstu**,
+a nie samo „zaakceptowano": gdyby zmieniło się to, gdzie zdjęcia lądują albo kto je widzi, gość
+musi zobaczyć nową treść, a nie zostać z decyzją podjętą wobec innego tekstu.
+
 Status wysyłki pokazywany wprost: **w kolejce → wysyłanie → zapisane ✓**, a dla oryginału osobno
 **oryginał w drodze → oryginał na Dysku ✓**.
 
-**Instalacja.** Android przez `beforeinstallprompt` i własny baner. iOS nie wspiera promptu —
-dostaje osobną instrukcję „Udostępnij → Dodaj do ekranu początkowego". Przy 48 gościach iPhone'ów
-będzie sporo, więc ta ścieżka jest równorzędna, nie awaryjna.
+**Instalacja — Android jest ścieżką główną, iOS dodatkiem.** Decyzja Pary Młodej: goście
+w większości mają Androida, więc tam wszystko ma działać samo, a iOS ma po prostu nie przeszkadzać.
 
-**Pułapka iOS, którą trzeba obsłużyć:** zainstalowana aplikacja dostaje na iOS własny magazyn
-danych, osobny od Safari — gość, który „dołączył" w przeglądarce, po instalacji zobaczyłby pustą
-aplikację. Rozwiązanie dwutorowe: iOS bierze adres startowy z bieżącej strony, więc instrukcja
-mówi wprost „instaluj ze swojego osobistego linku", a dodatkowo serwujemy manifest per gość
-(`/api/manifest?g=…`) z `start_url` zawierającym kod.
+Na Androidzie przechwytujemy `beforeinstallprompt` i pokazujemy własny przycisk, zamiast czekać,
+aż Chrome sam coś zaproponuje — bo zaproponuje najczęściej wtedy, gdy gość jest w środku
+wybierania zdjęcia.
+
+iOS dostaje **jedno zdanie instrukcji** („Udostępnij → Dodaj do ekranu początkowego") i nic
+więcej: żadnych obrazków, żadnego kreatora. Aplikacja działa w Safari tak samo dobrze —
+instalacja daje tam wyłącznie ikonę i pełny ekran.
+
+**Pułapka iOS, świadomie nieobsłużona kodem:** zainstalowana aplikacja dostaje tam własny
+magazyn danych, osobny od Safari, więc gość, który „dołączył" w przeglądarce, po instalacji
+zobaczyłby pustą aplikację. Rozważaliśmy dynamiczny manifest per gość — przy iOS jako dodatku
+to za dużo maszynerii na zbyt mały problem. Zamiast tego iOS bierze adres startowy z bieżącej
+strony, więc **instrukcja mówi wprost: instaluj ze swojego osobistego linku**. Gdyby mimo to
+tożsamość przepadła, ekran „Zeskanuj kod QR" tłumaczy, co zrobić.
 
 ### Panel Pary Młodej — `/panel`
 
@@ -477,35 +552,72 @@ mówi wprost „instaluj ze swojego osobistego linku", a dodatkowo serwujemy man
 - **Tryb rzutnika**: pełny ekran, strzałki i spacja, Wake Lock (ekran nie gaśnie), duży podpis
   z kategorią i imieniem gościa.
 - Widok wszystkich zdjęć pogrupowany po kategoriach — czego Dysk z natury nie potrafi.
-- Licznik miejsca `zajęte / 1000 MB` i przycisk „Wyślij zaległe na Dysk".
+- Licznik miejsca `zajęte / 1000 MB`.
+- Lista gości z oryginałami w drodze. **Serwer nie może ich dosłać sam** — przy S1-C
+  oryginał leży na telefonie gościa, więc ponawianie należy do jego kolejki. Panel służy
+  do tego, żeby wiedzieć, kogo poprośić o otwarcie aplikacji.
 - Dodanie gościa i wygenerowanie kodu, gdy ktoś zgubi winietkę.
 
 ---
 
-## 13. Otwarta kwestia: droga oryginału na Dysk
+## 13. Droga oryginału na Dysk — rozstrzygnięte (spike S1)
 
-**Spike S1 — do rozstrzygnięcia przed Etapem 3.**
+Oryginał (~4 MB, czasem 10 MB) jest za duży, żeby przejść przez funkcję Vercela jednym
+żądaniem — limit ciała to 4,5 MB. Rozważane były trzy drogi; wybrana jest trzecia.
 
-Oryginał (~4 MB, czasem 10 MB) jest za duży, żeby przejść przez funkcję Vercela (limit 4,5 MB
-na ciało żądania). Zostają dwie drogi:
+### S1-A — z telefonu prosto do Google. **Odrzucone: działa za dobrze.**
 
-**S1-A — z telefonu prosto do Google.** Serwer prosi Google o *resumable session URI* dla jednego
-pliku, telefon wysyła bajty pod ten adres. Token Pary Młodej nigdy nie trafia do przeglądarki;
-adres jest ważny tydzień i dotyczy jednego pliku. Zero tranzytu, zero zużycia limitów Supabase.
+Mechanizm istnieje: serwer prosi Google o *resumable session URI*, telefon wysyła bajty pod ten
+adres bez żadnego tokena. Sprawdzone na żywym API, sierpień 2026:
 
-**Czego nie wiadomo:** dokumentacja Google dla Dysku wymienia przy wysyłce fragmentów tylko
-nagłówki `Content-Length` i `Content-Range`, bez autoryzacji — ale nigdzie tego nie potwierdza
-wprost. Dla Cloud Storage jest napisane jasno, że taki adres działa jak przepustka; dla Dysku nie.
-Otwarte jest też pytanie o nagłówki CORS przy żądaniu z naszej domeny.
+| Krok | Wynik |
+|---|---|
+| Utworzenie sesji resumable | HTTP 200, adres otrzymany |
+| Preflight CORS z `localhost:5173` | HTTP 200, `allow-origin` i `allow-methods: PUT` |
+| `PUT` bez nagłówka `Authorization` | HTTP 200, **plik utworzony** |
+| Nagłówek `allow-origin` w odpowiedzi na `PUT` | **BRAK** |
 
-**S1-B — przez Supabase, gdyby A nie zadziałało.** Oryginał ląduje w bucketcie, serwer pobiera go
-i przekłada na Dysk, po czym **usuwa z bucketa**. Działa na pewno, ale kosztuje: ~4,8 GB pobrania
-z Supabase przy darmowym limicie 5 GB miesięcznie. Mieści się, ale bez zapasu — a zapas jest
-w tym projekcie wymaganiem. Gdyby S1-B było jedyną opcją, rozważamy Supabase Pro na jeden miesiąc
-($25) albo rozłożenie kopiowania na kilka dni po weselu.
+I to ostatnie przesądza. Preflight przechodzi, więc przeglądarka wysyła żądanie, ale odpowiedź
+nie ma `Access-Control-Allow-Origin`, więc Chrome ją blokuje. Test w prawdziwej przeglądarce:
 
-**Sposób rozstrzygnięcia:** pół godziny, jeden plik, jeden telefon, konsola przeglądarki.
-Wynik zapisujemy tutaj i w `CLAUDE.md`.
+```
+TypeError: Failed to fetch
+Access to fetch ... blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+**A plik na Dysku mimo to powstał, w pełnym rozmiarze.** To najgorszy możliwy układ: wysyłka się
+udaje, a klient widzi błąd. Kolejka ponawiałaby zadanie, które już przeszło, gość widziałby
+„nie wyszło" przy zdjęciu leżącym na Dysku, a w folderze rosłyby duplikaty. Cicha awaria,
+której nie da się odróżnić od prawdziwej — gorsza niż brak działania.
+
+Obejście przez `mode: "no-cors"` też odpada: ten tryb nie dopuszcza metody `PUT`.
+
+### S1-B — przez Supabase. **Odrzucone: nie mieści się w limitach.**
+
+Oryginał ląduje w bucketcie, serwer pobiera go i przekłada na Dysk, po czym kasuje z bucketa.
+Działałoby na pewno, ale pobranie 1200 oryginałów to **~4,8 GB z 5 GB darmowego limitu
+transferu wychodzącego** — do tego dochodzi serwowanie podglądów na plansze i rzutnik.
+Razem powyżej limitu, a zapas jest w tym projekcie wymaganiem, nie życzeniem.
+
+### S1-C — kawałkami przez naszą funkcję. **Wybrane.**
+
+Telefon tnie oryginał na kawałki po 3 MB i wysyła je do naszej funkcji, a ta przekazuje je
+do sesji resumable w Google. Supabase nigdy nie widzi oryginału.
+
+| | Zużycie | Limit |
+|---|---|---|
+| Supabase — miejsce | ~456 MB (bez zmian) | 1 GB |
+| Supabase — transfer | podglądy i rzutnik, ~1–2 GB | 5 GB |
+| Vercel — transfer | ~9,6 GB (w górę i do Google) | 100 GB |
+
+Kawałek 3 MB mieści się pod limitem 4,5 MB z zapasem na narzuty, a Google wymaga, by kawałki
+poza ostatnim były wielokrotnością 256 KB — 3 MB to równe 12 × 256 KB.
+
+**Zysk, którego S1-A nie miało:** każdy bajt przechodzi przez nasz serwer, więc
+**wiemy na pewno, kiedy zapis się udał**. Odpowiedź Google trafia do nas, a nie w próżnię
+za ścianą CORS. Przy kolejce, która nie ma prawa zgubić zdjęcia, to jest ważniejsze
+od zaoszczędzonego tranzytu.
 
 ---
 
@@ -525,14 +637,16 @@ Najbardziej podatny na błąd fragment całego projektu. Kolejność ma znaczeni
    aplikacji, co dla jednego konta (Waszego) jest bez znaczenia.
 5. Utwórz OAuth client typu **Desktop app**. Uruchom raz `node scripts/google-auth.mjs`, przejdź
    flow z `access_type=offline` i `prompt=consent`, zapisz `refresh_token`.
-6. Utwórz na Dysku folder `FotoBingo 2026`, skopiuj jego identyfikator z adresu URL.
-7. Wgraj zmienne na Vercela (sekcja 15).
+6. `npm run drive:init` — **folder główny tworzy aplikacja**, nie Ty kliknięciem w Dysku
+   (patrz sekcja 9). Identyfikator zapisuje się sam.
+7. `npm run drive:check` — potwierdzenie, że zapis naprawdę działa.
+8. Wgraj zmienne na Vercela (sekcja 15).
 
 **Kiedy refresh token mimo produkcji przestaje działać:** gdy cofniesz dostęp w ustawieniach
 konta Google, gdy zmienisz hasło do konta, albo gdy nie użyjesz go przez 6 miesięcy. Żaden
 z tych przypadków nie dotyczy weekendu wesela, ale warto o nich wiedzieć.
 
-**Wykup Google One 100 GB** przed weselem (sekcja 5).
+Miejsce na Dysku: patrz sekcja 5 — konto ma plan 5 TB, więc nie ma tu nic do zrobienia.
 
 ---
 
@@ -541,19 +655,19 @@ z tych przypadków nie dotyczy weekendu wesela, ale warto o nich wiedzieć.
 ```bash
 # ---- Frontend (Vite, trafia do przeglądarki) ----
 VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_...
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 # ---- Backend (wyłącznie serwer) ----
 ENV=development
 
 SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=...        # omija RLS, NIGDY nie może trafić do przeglądarki
+SUPABASE_SECRET_KEY=sb_secret_...    # omija RLS, NIGDY nie może trafić do przeglądarki
 SUPABASE_BUCKET=fotobingo
 
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REFRESH_TOKEN=...             # z scripts/google-auth.mjs, jednorazowo
-DRIVE_ROOT_FOLDER_ID=...             # identyfikator folderu "FotoBingo 2026"
+DRIVE_ROOT_FOLDER_ID=...             # identyfikator folderu "FotoBingo"
 
 PANEL_PIN=...                        # 6 cyfr, do panelu Pary Młodej
 SESSION_SECRET=...                   # losowy, do podpisywania ciasteczka panelu
@@ -566,16 +680,17 @@ który jest w `.gitignore`. Repozytorium zawiera tylko `.env.example` z wartośc
 
 ## 16. Repozytorium
 
-Publiczne repo na GitHubie, struktura odwzorowana ze SplitDeca.
+**https://github.com/T5chrono/foto-bingo** — publiczne, struktura odwzorowana ze SplitDeca.
+
+Projekt nazywa się `foto-bingo` w trzech miejscach naraz: repozytorium na GitHubie, projekt
+na Vercelu i projekt w Supabase. Jedna nazwa wszędzie — żaden z tych paneli nie każe się
+zastanawiać, czy patrzysz na właściwą rzecz.
 
 ```
-FotoBingo/
+foto-bingo/
 ├── .github/
-│   ├── dependabot.yml
 │   └── workflows/
-│       ├── ci.yml                    # vitest + build, na push do master/develop i na PR
-│       ├── claude.yml                # @claude w komentarzach
-│       └── claude-code-review.yml    # automatyczny przegląd każdego PR-a
+│       └── ci.yml                    # vitest + build, na push do master/develop i na PR
 ├── api/
 │   ├── index.ts                      # jedna funkcja Vercela, router Hono
 │   └── _lib/                         # podkreślnik: Vercel nie robi z nich osobnych funkcji
@@ -588,6 +703,7 @@ FotoBingo/
 │       ├── claims.ts
 │       └── *.test.ts                 # testy backendu obok kodu
 ├── docs/
+│   ├── supabase-setup.md             # zakładanie projektu, bucket, klucze, pułapki
 │   ├── google-setup.md               # rozwinięcie sekcji 14, ze zrzutami
 │   └── runbook-weekend.md            # co robić, gdy w sobotę coś nie działa
 ├── public/
@@ -596,7 +712,10 @@ FotoBingo/
 ├── scripts/
 │   ├── generate-icons.mjs            # jak w SplitDecu
 │   ├── google-auth.mjs               # jednorazowe zdobycie refresh tokena
-│   └── generate-guests.mjs           # CSV → baza + PDF z winietkami QR
+│   ├── drive-check.mjs               # token, konto, wolne miejsce, realny zapis
+│   ├── add-guest.mjs                 # jeden gość awaryjnie, w trakcie wesela
+│   ├── generate-guests.mjs           # CSV → baza + winietki QR do druku
+│   └── dev-api.mjs                   # lokalny serwer funkcji API
 ├── src/
 │   ├── components/
 │   ├── hooks/
@@ -639,7 +758,12 @@ FotoBingo/
   uruchamiać się w testach.
 
 **Przepływ pracy:** praca na `develop`, nigdy bezpośrednio na `master`. Push → PR do `master` →
-automatyczny przegląd → merge na zielonym CI → Vercel wdraża `master` na produkcję.
+merge na zielonym CI → Vercel wdraża `master` na produkcję.
+
+SplitDec ma dodatkowo automatyczny przegląd PR-ów przez Claude (`claude.yml`,
+`claude-code-review.yml`). Tutaj go **nie ma**: wymaga sekretu `ANTHROPIC_API_KEY`
+w ustawieniach repozytorium, a bez niego każdy PR miałby czerwony check bez powodu.
+Do dorobienia, jeśli projekt przeżyje wesele.
 Po merge'u synchronizacja: `git checkout develop && git merge master && git push`.
 
 **Czego repozytorium nie zawiera:** listy gości, kodów z QR, żadnych zdjęć, żadnych sekretów.
@@ -652,7 +776,7 @@ Lista gości mieszka w lokalnym CSV poza repo i w bazie. Repo jest publiczne i m
 - **Nagłówki bezpieczeństwa** w `vercel.json`, wzorowane na SplitDecu: HSTS, `nosniff`,
   `frame-ancestors 'none'` z `X-Frame-Options: DENY`, polityka referrera i uprawnień.
 - **Bucket jest prywatny.** Zdjęcia wychodzą wyłącznie podpisanymi linkami o krótkiej ważności.
-- **Klucz `service_role` i token Google nigdy nie opuszczają serwera.**
+- **Klucz sekretny Supabase i token Google nigdy nie opuszczają serwera.**
 - **Kody gości trzymane jako SHA-256.** Wyciek bazy nie daje dostępu do niczyjej planszy.
 - **Service worker nigdy nie cache'uje `/api/*`** (`navigateFallbackDenylist: [/^\/api\//]`) —
   odpowiedź z pamięci podręcznej dla wysyłki zdjęcia byłaby katastrofą.
@@ -675,8 +799,9 @@ z trzema tabelami, plansza w `src/lib/board.ts`, CI.
 do budżetu (`src/lib/image.ts`), kolejka IndexedDB (`src/lib/queue.ts`), podpisane linki,
 `finalize`. **Na tym etapie zdjęcia lądują tylko w Supabase** — całość jest już grywalna.
 
-**Etap 3 — Dysk Google.** Spike S1 (sekcja 13), potem `api/_lib/drive.ts`: odświeżanie tokena,
-folder gościa, wysyłka, `appProperties`. Kolejka oryginałów w tle. Endpoint `drain`.
+**Etap 3 — Dysk Google.** `api/_lib/drive.ts`: odświeżanie tokena, folder gościa, sesja
+resumable, `appProperties`. Przekazywanie kawałków według S1-C (sekcja 13). Kolejka oryginałów
+w tle, z wznawianiem po restarcie telefonu.
 
 **Etap 4 — bingo i panel.** Wykrywanie linii (5 wierszy + 5 kolumn + 2 przekątne + pełna karta),
 zgłoszenia, panel na PIN, widok linii, tryb rzutnika z Wake Lockiem, widok po kategoriach,
@@ -694,31 +819,60 @@ runbook weekendowy, próba generalna.
   tego nie odtworzy. Osobno: zdjęcie nocne, ziarniste, żeby zweryfikować pętlę budżetu.
 - **Offline.** DevTools → Network: Offline → wyślij 3 zdjęcia → zamknij kartę → włącz sieć →
   otwórz ponownie → wszystkie trzy muszą dojść. Powtórz na **zainstalowanej** aplikacji.
-- **Instalacja.** Fizyczny Android (Chrome) i fizyczny iPhone (Safari → Udostępnij). Na iOS
-  instaluj z linku osobistego `/g/…`.
-- **Dysk.** Po pierwszej wysyłce sprawdź, że powstał `FotoBingo 2026/Imię Nazwisko/` i nazwa
+- **Instalacja — najpierw Android.** Fizyczny telefon z Androidem, Chrome, prawdziwy skan QR:
+  baner „Zainstaluj" musi się pojawić, a po instalacji aplikacja startować bez paska adresu
+  i **pamiętać, kim jest gość**. To jest ścieżka, którą przejdzie większość osób.
+  iPhone (Safari → Udostępnij) sprawdź jako drugi, **instalując z linku osobistego** `/g/…`.
+- **Dysk.** Po pierwszej wysyłce sprawdź, że powstał `FotoBingo/Imię Nazwisko/` i nazwa
   pliku zgadza się ze wzorem z sekcji 9.
-- **Odporność na awarię Google.** Podmień `GOOGLE_REFRESH_TOKEN` na śmieciowy → wysyłka podglądu
-  musi się udać, a wiersz dostać `drive_status='pending'`. Przywróć token → „Wyślij zaległe" domyka.
+- **Odporność na awarię Google.** Podmień `GOOGLE_REFRESH_TOKEN` na śmieciowy → **wysyłka
+  podglądu musi się udać**, kafelek zapełnić, a wiersz zostać z `drive_status='pending'`.
+  Przywróć token i otwórz aplikację gościa → oryginał dochodzi sam.
+- **Wznowienie w połowie oryginału.** Zabij kartę w trakcie wysyłki 10-megabajtowego pliku,
+  otwórz ponownie → wysyłka wznawia się od ostatniego przyjętego kawałka, nie od zera.
 - **Budżet miejsca.** Wgraj 1200 sztucznych wierszy → licznik w panelu musi pokazać wartość
   zgodną z sekcją 5, a panel i tryb rzutnika pozostać płynne (miniatury, nie podglądy).
+- **Zgłoszenie bingo.** Zapełnij linię, zgłoś, uznaj w panelu → gość widzi „Uznane ✓",
+  a przycisk znika. Osobno: zgłoszenie niepełnej linii musi dać 409 — **serwer sprawdza linię
+  sam**, bo plansza w telefonie bywa nieodświeżona.
+- **Tryb rzutnika — wymaga fizycznego ekranu.** Pełny ekran i Wake Lock działają tylko
+  z prawdziwym gestem użytkownika i widoczną kartą, więc żadne środowisko testowe tego nie
+  potwierdzi. Sprawdź na tym telefonie i tym rzutniku, które pojadą na wesele: czy obraz
+  wchodzi na pełny ekran, czy strzałki przewijają i **czy ekran nie gaśnie po minucie**.
+- **PIN do panelu.** Dziesięć nietrafień pod rząd → panel odmawia na godzinę (429).
+  Sprawdź też, że po zamknięciu i ponownym otwarciu przeglądarki panel nadal pamięta
+  zalogowanie — ciasteczko żyje 30 dni.
 - **Próba generalna.** Pięć osób, po trzy zdjęcia, na telefonach, w trybie Slow 3G.
 
 ---
 
 ## 20. Checklista przedweselna
 
-- [ ] **Google One 100 GB wykupione.**
+- [ ] **`npm run drive:check` przechodzi** — token, konto, wolne miejsce
+      i realny zapis pliku testowego do folderu głównego.
 - [ ] OAuth consent screen w statusie **„In production"**, nie „Testing".
 - [ ] Refresh token wygenerowany, wgrany na Vercela, testowa wysyłka przechodzi.
-- [ ] Spike S1 rozstrzygnięty, wynik zapisany w `CLAUDE.md`.
 - [ ] Domena ustalona i podpięta. **Winietki drukujemy dopiero po tym** — zmiana adresu
       po druku unieważnia wszystkie kody.
-- [ ] Winietki z QR wydrukowane, 48 sztuk plus kilka zapasowych.
+- [ ] `PUBLIC_BASE_URL` w `.env` ustawione na docelową domenę — **przed** generowaniem
+      winietek. Kody prowadzą pod ten adres; zmiana po druku unieważnia wszystkie naraz.
+- [ ] `npm run guests -- goscie.csv --zapas 8` uruchomione, a `winietki/winietki.html`
+      przejrzany w przeglądarce przed drukiem.
+- [ ] Winietki z QR wydrukowane: **40 imiennych plus 8 zapasowych bez imienia**.
+- [ ] Karty zapasowe i wydruk `docs/runbook-weekend.md` w jednej kopercie, u osoby
+      z PIN-em do panelu.
 - [ ] Instrukcja na stołach: „Zeskanuj → Dodaj do ekranu początkowego → graj".
 - [ ] Hasło do Wi-Fi ośrodka na winietce albo na instrukcji.
 - [ ] PIN do panelu zna ktoś jeszcze poza Panem Młodym — w sobotę będzie zajęty.
+- [ ] **Tryb rzutnika sprawdzony na docelowym sprzęcie** — telefon podpięty do rzutnika,
+      pełny ekran, ekran nie gaśnie po minucie.
+- [ ] Panel zalogowany na telefonie, który będzie pod ręką — ciasteczko żyje 30 dni,
+      więc warto to zrobić przed weselem, a nie przy rzutniku.
 - [ ] Licznik miejsca w panelu sprawdzony i pokazujący sensowną wartość.
+- [ ] **W czwartek przed weselem: wejdź do aplikacji i sprawdź, że odpowiada.** Projekt Supabase
+      na darmowym planie **pauzuje się po 7 dniach bez ruchu**, a wybudzenie jest ręczne i trwa
+      kilka minut. Uspiona baza w piątek rano to jedyna awaria w tym projekcie, której nikt
+      nie zauważy, dopóki pierwszy gość nie spróbuje wysłać zdjęcia.
 
 ---
 
