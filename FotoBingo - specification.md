@@ -222,6 +222,34 @@ bo `Blob` nie przechodzi przez `structuredClone` w środowisku testowym.
 **Konsekwencja:** oryginał zapisujemy do kolejki od razu przy wyborze zdjęcia, a nie dopiero
 na Etapie 3 — galeria telefonu może go do tego czasu przemielić, a drugi raz gość go nie wybierze.
 
+### D12 — Podpisy do plików powstają hurtem i mają być stabilne
+
+**Wybrano:** wszystkie podpisane adresy dla jednego ekranu powstają **jednym** wywołaniem
+`createSignedUrls`, z ważnością sześciu godzin, a raz wydany adres jest przez tę instancję
+funkcji powtarzany zamiast podpisywany od nowa (`api/_lib/storage.ts`).
+
+**Odrzucono:** podpis na każdy plik osobno, w pętli po kafelkach — wersja, od której projekt
+zaczął i która jest bez zarzutu przy jednym gościu.
+
+**Dlaczego:** dwa niezależne powody, oba widoczne dopiero przy tłumie.
+
+Po pierwsze **rozmnożenie żądań**. Plansza z 25 kafelkami to było 25 równoległych żądań
+do Storage na jedno odświeżenie, otwieranych z wnętrza funkcji, która ma 30 sekund do limitu.
+Kilkunastu gości naraz — czyli szczyt ruchu z sekcji 2 — daje kilkaset otwartych połączeń
+i realne ryzyko 504. To jedyne miejsce w projekcie, w którym liczba gości mnoży się przez
+liczbę kafelków.
+
+Po drugie **transfer**. Podpisany adres niesie token ze znacznikiem czasu, więc ponowne
+podpisanie tego samego pliku daje **inny adres**, a inny adres to dla przeglądarki inny
+zasób. Przy godzinnej ważności i planszy odświeżanej po każdym powrocie do aplikacji gość
+pobierał te same 25 miniatur kilkadziesiąt razy w ciągu wieczoru — ze swojego pakietu
+danych i z darmowego transferu Supabase, dzielonego przez całą organizację.
+
+**Konsekwencja:** przepustka do pojedynczego pliku żyje sześć godzin zamiast godziny.
+Przy miniaturze zdjęcia, które i tak należy do tego gościa, to świadomy kurs wymiany.
+Pliki wgrywamy z `cacheControl: 86400`, bo ścieżka niesie `photoId` i pod jednym adresem
+zawsze leżą te same bajty.
+
 ---
 
 ## 4. Gdzie mieszkają dane
@@ -502,9 +530,17 @@ Wszystko pod `/api/*`, jedna funkcja, router Hono.
 **Uwierzytelnienie panelu:** ciasteczko httpOnly, podpisane `SESSION_SECRET`. Nieudane próby PIN
 liczone w bazie; po 10 nietrafieniach panel blokuje się na godzinę.
 
-**Limity zdroworozsądkowe:** maksymalnie 3 zdjęcia na kafelek (podmiany) i 120 wysyłek na gościa.
-Przy 40 gościach nie ma zagrożenia nadużyciem — te limity chronią przed zapętloną kolejką
-w zepsutym telefonie, nie przed złośliwym gościem.
+**Limity zdroworozsądkowe — zaplanowane, jeszcze nie w kodzie.** Maksymalnie 3 zdjęcia
+na kafelek (podmiany) i 120 wysyłek na gościa. Przy 40 gościach nie ma zagrożenia
+nadużyciem — te limity chronią przed zapętloną kolejką w zepsutym telefonie, nie przed
+złośliwym gościem.
+
+**Dziś nic ich nie egzekwuje.** Jedyny hamulec w API to licznik nieudanych PIN-ów do
+panelu (`api/_lib/panel.ts`). Zapętlonej kolejce zdążył już zapobiec licznik po stronie
+telefonu (`MAX_STALLED_CHUNKS` w `src/lib/uploader.ts`), czyli dokładnie ten przypadek,
+dla którego limity wymyślono. Gdyby dopisywać je po stronie serwera, muszą liczyć
+**w bazie**, a nie w pamięci procesu — funkcja Vercela to kilka instancji budzących się
+na zimno, więc licznik w pamięci nie chroni przed niczym.
 
 ---
 
