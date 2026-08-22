@@ -91,13 +91,13 @@ export function InstallBanner() {
 
 function Frame({ children, onHide }: { children: React.ReactNode; onHide: () => void }) {
   return (
-    <section className="relative rounded-2xl border border-brand-200 bg-white px-4 py-3">
+    <section className="relative rounded-2xl border border-brand-200 bg-paper px-4 py-3">
       {children}
       <button
         type="button"
         onClick={onHide}
         aria-label="Ukryj podpowiedź o instalacji"
-        className="absolute top-2 right-3 text-lg leading-none text-ink/30"
+        className="absolute top-2 right-3 text-lg leading-none text-brand-800/50"
       >
         ×
       </button>

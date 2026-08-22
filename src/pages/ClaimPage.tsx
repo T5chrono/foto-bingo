@@ -21,9 +21,9 @@ export default function ClaimPage() {
     onSuccess: () => void client.invalidateQueries({ queryKey: ["panel"] }),
   });
 
-  if (claim.isLoading) return <p className="p-8 text-center text-ink/50">Chwileczkę…</p>;
+  if (claim.isLoading) return <p className="p-8 text-center text-brand-800/60">Chwileczkę…</p>;
   if (claim.isError || !claim.data) {
-    return <p className="p-8 text-center text-ink/60">Nie ma takiego zgłoszenia.</p>;
+    return <p className="p-8 text-center text-brand-800/70">Nie ma takiego zgłoszenia.</p>;
   }
 
   const data = claim.data;
@@ -42,30 +42,30 @@ export default function ClaimPage() {
 
       <header>
         <h1 className="text-2xl font-semibold text-brand-800">{data.guestName}</h1>
-        <p className="text-ink/60">{describe(data)}</p>
+        <p className="text-brand-800/70">{describe(data)}</p>
       </header>
 
       {missing > 0 && (
         // Zgloszenie moglo powstac na nieodswiezonej planszy albo zdjecie
         // zostalo w miedzyczasie podmienione. Para Mloda ma zobaczyc dziure,
         // a nie krotsza liste i zgadywac, ktorego pola brakuje.
-        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-xl bg-clay-50 px-4 py-3 text-sm text-clay-900">
           Brakuje {missing} z {data.tiles.length} zdjęć tej linii.
         </p>
       )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {data.tiles.map((tile) => (
-          <figure key={tile.categoryId} className="overflow-hidden rounded-xl bg-white">
+          <figure key={tile.categoryId} className="overflow-hidden rounded-lg border border-brand-200 bg-paper">
             {tile.url ? (
               <img src={tile.url} alt={tile.label} className="aspect-square w-full object-cover" />
             ) : (
-              <div className="flex aspect-square w-full items-center justify-center bg-amber-50 text-xs text-amber-900">
+              <div className="flex aspect-square w-full items-center justify-center bg-clay-50 text-xs text-clay-900">
                 brak zdjęcia
               </div>
             )}
-            <figcaption className="px-2 py-1.5 text-[0.65rem] leading-tight text-ink/60">
-              <span className="text-ink/35">{tile.position}</span> {tile.label}
+            <figcaption className="px-2 py-1.5 text-[0.65rem] leading-tight text-brand-800/70">
+              <span className="text-brand-800/50">{tile.position}</span> {tile.label}
             </figcaption>
           </figure>
         ))}
@@ -92,13 +92,13 @@ export default function ClaimPage() {
           <button
             onClick={() => resolve.mutate("rejected")}
             disabled={resolve.isPending}
-            className="flex-1 rounded-2xl border border-amber-400 bg-amber-50 px-4 py-4 font-medium text-amber-900 disabled:opacity-50"
+            className="flex-1 rounded-2xl border border-clay-400 bg-clay-50 px-4 py-4 font-medium text-clay-900 disabled:opacity-50"
           >
             Odrzuć
           </button>
         </div>
       ) : (
-        <p className="text-center text-sm text-ink/50">
+        <p className="text-center text-sm text-brand-800/60">
           {data.status === "accepted" ? "Uznane ✓" : "Odrzucone"}
         </p>
       )}

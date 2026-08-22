@@ -222,6 +222,59 @@ bo `Blob` nie przechodzi przez `structuredClone` w środowisku testowym.
 **Konsekwencja:** oryginał zapisujemy do kolejki od razu przy wyborze zdjęcia, a nie dopiero
 na Etapie 3 — galeria telefonu może go do tego czasu przemielić, a drugi raz gość go nie wybierze.
 
+### D12 — Podpisy do plików powstają hurtem i mają być stabilne
+
+**Wybrano:** wszystkie podpisane adresy dla jednego ekranu powstają **jednym** wywołaniem
+`createSignedUrls`, z ważnością sześciu godzin, a raz wydany adres jest przez tę instancję
+funkcji powtarzany zamiast podpisywany od nowa (`api/_lib/storage.ts`).
+
+**Odrzucono:** podpis na każdy plik osobno, w pętli po kafelkach — wersja, od której projekt
+zaczął i która jest bez zarzutu przy jednym gościu.
+
+**Dlaczego:** dwa niezależne powody, oba widoczne dopiero przy tłumie.
+
+Po pierwsze **rozmnożenie żądań**. Plansza z 25 kafelkami to było 25 równoległych żądań
+do Storage na jedno odświeżenie, otwieranych z wnętrza funkcji, która ma 30 sekund do limitu.
+Kilkunastu gości naraz — czyli szczyt ruchu z sekcji 2 — daje kilkaset otwartych połączeń
+i realne ryzyko 504. To jedyne miejsce w projekcie, w którym liczba gości mnoży się przez
+liczbę kafelków.
+
+Po drugie **transfer**. Podpisany adres niesie token ze znacznikiem czasu, więc ponowne
+podpisanie tego samego pliku daje **inny adres**, a inny adres to dla przeglądarki inny
+zasób. Przy godzinnej ważności i planszy odświeżanej po każdym powrocie do aplikacji gość
+pobierał te same 25 miniatur kilkadziesiąt razy w ciągu wieczoru — ze swojego pakietu
+danych i z darmowego transferu Supabase, dzielonego przez całą organizację.
+
+**Konsekwencja:** przepustka do pojedynczego pliku żyje sześć godzin zamiast godziny.
+Przy miniaturze zdjęcia, które i tak należy do tego gościa, to świadomy kurs wymiany.
+Pliki wgrywamy z `cacheControl: 86400`, bo ścieżka niesie `photoId` i pod jednym adresem
+zawsze leżą te same bajty.
+
+### D13 — Wizualia są zdjęte z projektu weselnego, a ozdobniki rysowane od zera
+
+**Wybrano:** paleta i typografia **odczytane** z projektu w Canvie (tego samego, z którego
+powstały zaproszenia i papierowa karta Foto Bingo), a wszystkie ozdobniki — łąka polnych
+kwiatów, akwarelowa dolina, gałązka — narysowane jako własne SVG.
+
+**Odrzucono:** wyeksportowanie kwiatów i gór z Canvy jako plików PNG i wgranie ich do
+aplikacji. Szybsze i wierniejsze co do piksela.
+
+**Dlaczego:** dwa powody, jeden prawny i jeden praktyczny. Licencja Canvy pozwala użyć grafiki
+stockowej **w projekcie**, ale nie wyjąć jej z niego i rozprowadzać jako samodzielny element —
+a właśnie tym byłby plik w `public/`. Praktycznie: własne SVG waży tyle, co kawałek tekstu,
+skaluje się do każdej szerokości ekranu bez drugiego kompletu plików i bierze kolory z palety,
+więc zmiana tokenu przemalowuje też ozdobniki.
+
+Wartości nie są dobrane na oko. Ramka kafelka `#b7c29c`, obwódka kółka do zaznaczania
+`#9aa97b`, kolor podpisów `#525938` i wypełnienie pola `#fdfcf7` to te same liczby, którymi
+narysowana jest papierowa karta.
+
+**Konsekwencja — i jest to koszt w tej samej walucie co D12.** Dwie rodziny pisma zamiast
+jednej to cztery pliki w precache'u service workera zamiast dwóch: ~87 KB zamiast ~40 KB na
+pierwsze wejście. Manrope wyleciał, więc netto jest to jedna rodzina więcej, nie dwie,
+a pozostałe podzbiory Lory (cyrylica, matematyka, symbole, wietnamski) są wycięte z precache'a
+przez `globIgnores` — telefon w górach ich nie pobiera. Szczegóły: [docs/wizualia.md](docs/wizualia.md).
+
 ---
 
 ## 4. Gdzie mieszkają dane
@@ -502,9 +555,17 @@ Wszystko pod `/api/*`, jedna funkcja, router Hono.
 **Uwierzytelnienie panelu:** ciasteczko httpOnly, podpisane `SESSION_SECRET`. Nieudane próby PIN
 liczone w bazie; po 10 nietrafieniach panel blokuje się na godzinę.
 
-**Limity zdroworozsądkowe:** maksymalnie 3 zdjęcia na kafelek (podmiany) i 120 wysyłek na gościa.
-Przy 40 gościach nie ma zagrożenia nadużyciem — te limity chronią przed zapętloną kolejką
-w zepsutym telefonie, nie przed złośliwym gościem.
+**Limity zdroworozsądkowe — zaplanowane, jeszcze nie w kodzie.** Maksymalnie 3 zdjęcia
+na kafelek (podmiany) i 120 wysyłek na gościa. Przy 40 gościach nie ma zagrożenia
+nadużyciem — te limity chronią przed zapętloną kolejką w zepsutym telefonie, nie przed
+złośliwym gościem.
+
+**Dziś nic ich nie egzekwuje.** Jedyny hamulec w API to licznik nieudanych PIN-ów do
+panelu (`api/_lib/panel.ts`). Zapętlonej kolejce zdążył już zapobiec licznik po stronie
+telefonu (`MAX_STALLED_CHUNKS` w `src/lib/uploader.ts`), czyli dokładnie ten przypadek,
+dla którego limity wymyślono. Gdyby dopisywać je po stronie serwera, muszą liczyć
+**w bazie**, a nie w pamięci procesu — funkcja Vercela to kilka instancji budzących się
+na zimno, więc licznik w pamięci nie chroni przed niczym.
 
 ---
 
@@ -523,6 +584,12 @@ Ekran o zdjęciach (`PrivacyGate`) pokazuje się **raz, przed planszą**, ale do
 tożsamości — żeby nie stał na drodze skanowaniu QR. Zapamiętywana jest **data wersji tekstu**,
 a nie samo „zaakceptowano": gdyby zmieniło się to, gdzie zdjęcia lądują albo kto je widzi, gość
 musi zobaczyć nową treść, a nie zostać z decyzją podjętą wobec innego tekstu.
+
+**Wygląd planszy jest cytatem z papierowej karty** (D13): kremowy kafelek, cienka szałwiowa
+ramka, wyśrodkowany podpis i **kółko do zaznaczenia** pod nim, które zamalowuje się samo, gdy
+zdjęcie dojdzie. Kod pozycji (`R3K2`) z kafelków **zniknął** — papierowa karta go nie ma, a 25
+kodów na 25 polach hałasowało tam, gdzie liczy się podpis. Kod został w `aria-label`, na ekranie
+kategorii, w panelu i w nazwie pliku na Dysku, czyli wszędzie, gdzie do czegoś służy.
 
 Status wysyłki pokazywany wprost: **w kolejce → wysyłanie → zapisane ✓**, a dla oryginału osobno
 **oryginał w drodze → oryginał na Dysku ✓**.

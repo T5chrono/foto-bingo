@@ -17,7 +17,9 @@ dziwny komunikat, dopiero potem szukasz przyczyny.
 - [Google Drive i OAuth](#google-drive-i-oauth)
 - [Spike S1 — najciekawsza porażka projektu](#spike-s1--najciekawsza-porażka-projektu)
 - [Supabase](#supabase)
+- [Obciążenie i równoczesny ruch](#obciążenie-i-równoczesny-ruch)
 - [Przeglądarka i front](#przeglądarka-i-front)
+- [Wizualia](#wizualia)
 - [Vercel](#vercel)
 - [Środowisko lokalne (Windows)](#środowisko-lokalne-windows)
 - [Decyzje, które odwróciliśmy](#decyzje-które-odwróciliśmy)
@@ -37,10 +39,10 @@ Pięć etapów, każdy zamknięty własnym commitem na `master`.
 | 4 | Zgłoszenia bingo, panel, tryb rzutnika | `api/_lib/claims.ts`, `api/_lib/panel.ts`, `src/pages/PanelPage.tsx`, `src/pages/ClaimPage.tsx` |
 | 5 | Winietki QR, ekran o zdjęciach, instalacja, runbook | `scripts/generate-guests.mjs`, `src/components/PrivacyGate.tsx`, `src/components/InstallBanner.tsx` |
 
-Stan końcowy: **82 testy**, produkcja na https://foto-bingo.vercel.app.
+Stan końcowy: **90 testów**, produkcja na https://foto-bingo.vercel.app.
 
-Osobne dokumenty: [konfiguracja Google](google-setup.md), [Supabase](supabase-setup.md),
-[wdrożenie](vercel-deploy.md), [runbook weselny](runbook-weekend.md).
+Osobne dokumenty: [wizualia](wizualia.md), [konfiguracja Google](google-setup.md),
+[Supabase](supabase-setup.md), [wdrożenie](vercel-deploy.md), [runbook weselny](runbook-weekend.md).
 
 ---
 
@@ -177,6 +179,86 @@ jednym zapytaniem, a nie spacerem po 2400 plikach.
 
 ---
 
+## Obciążenie i równoczesny ruch
+
+Sekcja powstała z jednego pytania: **czy przy wielu gościach naraz powtórzy się to,
+co spotkało nas w SplitDecu.** Odpowiedź okazała się ciekawsza od pytania.
+
+### Nie — i to nie przypadek, tylko decyzja D8
+
+To są dwa różne sposoby rozmowy z bazą i tylko jeden z nich ma czym się zatkać.
+
+| | SplitDec | FotoBingo |
+|---|---|---|
+| Warstwa dostępu | SQLAlchemy + asyncpg, `DATABASE_URL` | `supabase-js` → PostgREST po HTTPS |
+| Co robi funkcja | otwiera **połączenie do Postgresa** | wysyła **żądanie HTTP** |
+| N równoległych wywołań | N połączeń do bazy | N żądań, zero nowych połączeń |
+| Konieczna obrona | pooler :6543, `NullPool`, `statement_cache_size=0` | żadna — pooling jest po stronie Supabase |
+
+W SplitDecu każda instancja funkcji zajmowała gniazdo w bazie, a serverless to dziesiątki
+instancji budzących się na zimno. Stąd cała ostrożna konfiguracja opisana w tamtejszym
+`CLAUDE.md`. Tutaj decyzja D8 odcięła ten problem u źródła, zanim zdążył się pojawić.
+
+**Zmierzone na żywym projekcie `foto-bingo`:** `max_connections` = 60, PostgREST trzymał
+w spoczynku **jedno** połączenie, żadna rola nie ma własnego limitu połączeń. Wolumen też
+nie jest problemem: ~27 zapytań na zdjęcie × 1200 zdjęć ≈ 32 tys. zapytań rozłożone
+na 72 godziny. Kształt ruchu mógł być problemem — patrz niżej.
+
+### Prawdziwe wąskie gardło leżało piętro dalej: podpisy do plików
+
+Szukaliśmy kłopotu w bazie, a siedział w magazynie. `GET /me` podpisywał każdy kafelek
+osobno, w pętli: **25 równoległych żądań do Storage na jedno odświeżenie planszy**,
+otwieranych z wnętrza funkcji, która ma 30 sekund do limitu. Kilkunastu gości naraz
+w czasie pierwszego tańca — czyli szczyt ruchu z sekcji 2 specyfikacji — to kilkaset
+połączeń i realna droga do 504.
+
+Gorsza połowa jest mniej oczywista. **Podpis zmienia adres**, bo token niesie znacznik
+czasu. Ten sam kafelek dostawał przy każdym odświeżeniu inny URL, więc przeglądarka
+nie trafiała w cache i pobierała miniaturę jeszcze raz — z pakietu danych gościa
+i z darmowego transferu Supabase, dzielonego przez całą organizację ze SplitDekiem.
+
+Naprawione (decyzja D12): jeden `createSignedUrls` na ekran, sześciogodzinna ważność,
+cache adresów w instancji funkcji, `cacheControl: 86400` przy wgrywaniu.
+
+**Morał:** pytanie „czy baza wytrzyma" było dobre, ale odpowiedź leżała o warstwę dalej.
+Warto policzyć żądania **wychodzące z funkcji**, nie tylko te do niej przychodzące.
+
+### Pętla wysyłki oryginału mogła kręcić się w miejscu
+
+`putChunk` przy odpowiedzi 308 bez nagłówka `range` zwraca przesunięcie 0. To jest
+wartość, nie `null`, więc `??` w pętli jej nie przykrywało i wysyłka wracała na początek
+pliku. Gdyby Google odpowiadał tak w kółko, telefon wysyłałby ten sam kawałek po 3 MB
+bez końca, a każde podejście to jeszcze trzy zapytania do bazy.
+
+**Nie zdarzyło się ani razu** — to znalezisko z czytania kodu, nie z awarii. Pętla ma
+teraz licznik `MAX_STALLED_CHUNKS`: po trzech próbach bez postępu zadanie wraca do
+kolejki i czeka na następny powrót sieci, zamiast zostać generatorem ruchu.
+
+### Czego naprawiać nie trzeba było: wyścig o kafelek
+
+Dwa równoległe `finalize` na ten sam kafelek nie zrobią dwóch aktywnych zdjęć — pilnuje
+tego częściowy indeks unikalny `photos_one_active_per_tile`. SplitDec potrzebował na to
+blokad wierszy `FOR SHARE`, protokołu opisanego w `CLAUDE.md` i osobnego testu na
+Postgresie, bo w SQLite te klauzule cicho znikają. Tutaj wystarczyła jedna linijka
+w migracji, bo model danych jest prostszy. Przegrane żądanie kończy się błędem 500,
+kolejka ponawia, drugie podejście przechodzi czysto.
+
+### Co zostało świadomie nieruszone
+
+- **Limity wysyłek na gościa.** Specyfikacja obiecuje w sekcji 11 trzy zdjęcia na kafelek
+  i 120 wysyłek na gościa. **W kodzie ich nie ma** — jedyny hamulec w API to licznik
+  nieudanych PIN-ów do panelu. Prawdziwy limit musi liczyć w bazie, nie w pamięci procesu,
+  bo funkcja Vercela to kilka instancji budzących się na zimno; SplitDec ma na to osobny
+  `ratelimit.py`. Przy 40 zaproszonych gościach to ochrona przed zepsutym telefonem,
+  nie przed złośliwością — a temu przypadkowi zdążył już zapobiec licznik w pętli wysyłki.
+- **Wyścig przy zakładaniu folderu na Dysku.** `ensureGuestFolder` szuka folderu po
+  nazwie, zanim go utworzy, i komentarz w kodzie twierdzi, że to chroni przed duplikatem.
+  Nie chroni: dwa równoległe żądania oba nie znajdują nic i oba tworzą folder. Trafia
+  tylko przy dwóch otwartych kartach naraz, a skutek jest kosmetyczny — zdublowany folder
+  w archiwum.
+
+---
+
 ## Przeglądarka i front
 
 ### WebP nie działał przez brakującą linijkę, i nikt tego nie widział
@@ -217,16 +299,68 @@ Kolejka trzyma `ArrayBuffer` plus typ MIME; Blob powstaje z powrotem tuż przed 
 Polskie liczebniki mają **trzy** formy, nie dwie. `src/lib/plural.ts`, z wyjątkiem
 na 12–14, który łapie też 112 i 213.
 
-### Manrope ciągnął pięć zestawów znaków
+### Czcionka ciągnie podzbiory, o których nikt nie prosił
 
 Przeglądarka pobiera tylko potrzebne (`unicode-range`), ale **precache service workera
-bierze wszystko jak leci** — 32 KB cyrylicy, greki i wietnamskiego przy pierwszym
-wejściu. Wykluczone w `workbox.globIgnores`.
+bierze wszystko jak leci** — czyli cyrylicę, grekę i wietnamski przy pierwszym wejściu,
+przy weselu w górach. Wykluczone w `workbox.globIgnores`.
+
+Pułapka jest w tym, że lista wykluczeń **nazywa pliki po imieniu**. Napisana była dla
+Manrope'a; przy zmianie wizualiów Manrope wyleciał, a wzorce zostałyby martwe i po cichu
+przepuściłyby cztery nowe podzbiory Lory. Zmiana rodziny pisma to zawsze także zmiana
+w `globIgnores` — sprawdzaj po buildzie, co naprawdę wylądowało w `dist/sw.js`, a nie
+co miało wylądować.
 
 ### Vercel ma limit 4,5 MB na ciało funkcji
 
 Dlatego kompresja dzieje się w telefonie, a oryginał idzie kawałkami po 3 MB
 (12 × 256 KB — Google wymaga wielokrotności 256 KB dla wszystkich kawałków poza ostatnim).
+
+---
+
+## Wizualia
+
+Pełny opis palety, typografii i ozdobników: [wizualia.md](wizualia.md). Tutaj to, na czym
+się nadzialiśmy po drodze.
+
+### Kolory czyta się z projektu, a nie dobiera na oko
+
+Projekt weselny w Canvie da się otworzyć narzędziem i **odczytać jego strukturę**, a nie
+tylko obejrzeć podgląd. Wyszło z tego, że ramka kafelka na papierowej karcie to `#b7c29c`,
+obwódka kółka `#9aa97b`, a wszystkie podpisy `#525938`. Dobieranie tych wartości z oka
+na podstawie miniatury dałoby paletę „w tej okolicy", a nie tę samą — i to widać, gdy
+telefon leży obok wydrukowanej karty.
+
+Przy okazji: nazwy tokenów zostały `brand-*` mimo zmiany z wina na zieleń. Dzięki temu
+przemalowanie całej aplikacji nie dotknęło **ani jednej klasy** w komponentach.
+
+### Build przeszedł, a fontów w `dist` nie było
+
+Weryfikację „czystego" `develop` robiłem w osobnym worktree na dysku C, podpinając
+`node_modules` z dysku D junctionem — żeby nie czekać na drugą instalację. Build
+zakończył się sukcesem, testy przeszły, wszystko wyglądało dobrze.
+
+Fontów nie było. Vite nie skopiował ich do `dist/assets`, tylko wstawił do CSS ścieżki
+w rodzaju `url(../../../../../../../../../../../../D:/Programowanie/FotoBingo/node_modules/...)`.
+Bez błędu, bez ostrzeżenia. Wyszło dopiero przy porównaniu liczby wpisów w precache'u:
+**23 zamiast 27**.
+
+**Morał:** `node_modules` podpięte przez junction na inny dysk to nie to samo co
+`node_modules`. Jeśli weryfikujesz build w osobnym worktree, zrób w nim prawdziwe
+`npm ci` — a wynik sprawdzaj po liczbie plików w `dist`, nie po tym, że polecenie
+wyszło z zerem.
+
+### Akwarelową dolinę trzeba było narysować trzy razy
+
+Pierwsze dwa podejścia rysowały wzgórza jako pełne wypełnienia schodzące do dolnej
+krawędzi, a rzekę jako kształt między nimi. Za każdym razem rzeka czytała się jak
+szczelina w zieleni, bo zbiegała się do punktu na horyzoncie i była tam węższa niż
+kreska. Kolejne poprawki geometrii niczego nie ratowały.
+
+Zadziałało dopiero odwrócenie problemu: rzeka **rozpuszcza się** w horyzoncie —
+jej gradient zaczyna się od przezroczystości — więc nie trzeba jej niczym zasłaniać
+ani do niczego dopasowywać krawędzi wzgórz. Cztery niezależne plany, każdy ciemniejszy
+i mniej rozmyty, i jeden kształt na wierzchu.
 
 ---
 
@@ -340,6 +474,9 @@ od decyzji.
 | Dynamiczny manifest per gość | jedno zdanie instrukcji | iOS jest dodatkiem, nie priorytetem |
 | Importy bez rozszerzeń → `.ts` | → `.js` | Trzy różne narzędzia, trzy różne wymagania |
 | 48 gości | 40 gości + 8 kodów zapasowych | Doprecyzowanie od Pary Młodej |
+| Podpis osobno na każdy kafelek | jeden podpis na cały ekran | 25 żądań na odświeżenie i cache przeglądarki bezużyteczny |
+| Wino i krem | akwarelowa zieleń z Canvy | Aplikacja leżała obok zaproszenia i jako jedyna była różowa |
+| Kod pozycji na każdym kafelku | tylko w `aria-label` i poza planszą | 25 kodów na 25 polach hałasowało tam, gdzie liczy się podpis |
 
 ---
 
@@ -355,6 +492,12 @@ w checkliście przedweselnej w specyfikacji.
   po minucie**.
 - **Kompresja realnego HEIC z iPhone'a.** Testowaliśmy na syntetycznym szumie, który
   jest dla kompresora przypadkiem skrajnym — ale to nie to samo co plik z aparatu.
+- **Nowa ścieżka podpisów na prawdziwym Storage.** Hurtowe `createSignedUrls` i cache
+  adresów mają testy jednostkowe na atrapie, ale przez prawdziwy bucket jeszcze nie
+  przeszły — do sprawdzenia przy pierwszym wejściu na planszę z danymi.
+- **Wizualia na fizycznym telefonie.** Pisanka w rozmiarze logotypu i podpisy kafelków
+  po 9 px oglądaliśmy wyłącznie w przeglądarce na biurku. Sprawdź czytelność podpisów
+  w słońcu i to, czy łąka na dole nie wchodzi pod pasek gestów.
 - **Zachowanie przy naprawdę słabym zasięgu.** Symulacja w DevTools to nie to samo,
   co jeden maszt i czterdzieści telefonów.
 

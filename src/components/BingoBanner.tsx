@@ -3,11 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, type ClaimKind, type GuestClaim } from "../lib/api";
 import { type Line, isFullCard, lineLabel } from "../lib/bingo";
+import { Sprig } from "./wedding/Sprig";
 
 type Props = { filled: ReadonlySet<number>; lines: Line[] };
 
 /**
  * Pasek bingo pod planszą.
+ *
+ * Jedyne miejsce w aplikacji poza logotypem, gdzie wchodzi pisanka — bo to
+ * jedyny moment, w którym coś się gościowi udało. Reszta ekranu jest spokojna
+ * właśnie po to, żeby ten pasek miał czym się wyróżnić.
  *
  * Zgłasza się **jedna, najlepsza rzecz naraz** — pełna karta ma pierwszeństwo
  * przed pojedynczą linią. Gość z trzema liniami i tak biegnie do Pary Młodej
@@ -38,9 +43,15 @@ export function BingoBanner({ filled, lines }: Props) {
   );
 
   return (
-    <section className="rounded-2xl bg-brand-50 px-4 py-3" role="status">
-      <p className="font-medium text-brand-800">
-        {best.kind === "full" ? "Pełna karta! Wszystkie 25 pól." : `Bingo: ${best.label}`}
+    <section
+      className="rounded-2xl border border-brand-300 bg-brand-50 px-4 py-4 text-center"
+      role="status"
+    >
+      <p className="font-script pb-1 text-3xl text-ink">
+        {best.kind === "full" ? "Pełna karta!" : "Bingo!"}
+      </p>
+      <p className="text-sm text-brand-800">
+        {best.kind === "full" ? "Wszystkie 25 pól." : best.label}
       </p>
 
       {lines.length > 1 && best.kind !== "full" && (
@@ -49,6 +60,8 @@ export function BingoBanner({ filled, lines }: Props) {
         </p>
       )}
 
+      <Sprig className="mx-auto my-3" />
+
       {existing ? (
         <ClaimStatus claim={existing} />
       ) : (
@@ -56,33 +69,29 @@ export function BingoBanner({ filled, lines }: Props) {
           type="button"
           onClick={() => send.mutate()}
           disabled={send.isPending}
-          className="mt-2 w-full rounded-xl bg-brand-700 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="w-full rounded-xl bg-brand-700 px-4 py-3 font-medium text-white disabled:opacity-50"
         >
           {send.isPending ? "Zgłaszam…" : "Zgłoś bingo!"}
         </button>
       )}
 
-      {error && <p className="mt-2 text-xs text-amber-900">{error}</p>}
+      {error && <p className="mt-2 text-xs text-clay-900">{error}</p>}
     </section>
   );
 }
 
 function ClaimStatus({ claim }: { claim: GuestClaim }) {
   if (claim.status === "accepted") {
-    return <p className="mt-2 text-sm font-medium text-brand-800">Uznane ✓</p>;
+    return <p className="text-sm font-medium text-brand-800">Uznane ✓</p>;
   }
   if (claim.status === "rejected") {
     return (
-      <p className="mt-2 text-sm text-amber-900">
+      <p className="text-sm text-clay-900">
         Nie uznane — dopytaj Parę Młodą, które zdjęcie nie pasowało.
       </p>
     );
   }
-  return (
-    <p className="mt-2 text-sm text-ink/60">
-      Zgłoszone — Para Młoda zaraz to obejrzy.
-    </p>
-  );
+  return <p className="text-sm text-brand-800/70">Zgłoszone — Para Młoda zaraz to obejrzy.</p>;
 }
 
 type Best = { kind: ClaimKind; lineIndex: number | null; label: string };

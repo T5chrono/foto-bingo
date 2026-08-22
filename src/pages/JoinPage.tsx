@@ -23,5 +23,5 @@ export default function JoinPage() {
     navigate("/", { replace: true });
   }, [token, navigate, client, setToken]);
 
-  return <p className="p-8 text-center text-ink/50">Chwileczkę…</p>;
+  return <p className="p-8 text-center text-brand-800/60">Chwileczkę…</p>;
 }

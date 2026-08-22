@@ -5,6 +5,7 @@ import { PRIVACY } from "../lib/legal";
 import * as queue from "../lib/queue";
 import { ORYGINALY, ZDJECIA, count } from "../lib/plural";
 import { setWifiOnly, wifiOnly } from "../lib/uploader";
+import { Meadow } from "../components/wedding/Meadow";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -24,9 +25,9 @@ export default function SettingsPage() {
         ← Plansza
       </button>
 
-      <h1 className="text-xl font-semibold text-brand-800">Ustawienia</h1>
+      <h1 className="font-script pb-1 text-3xl text-ink">Ustawienia</h1>
 
-      <section className="rounded-2xl bg-white px-4 py-4">
+      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -39,7 +40,7 @@ export default function SettingsPage() {
           />
           <span>
             <span className="font-medium">Oryginały tylko przez Wi-Fi</span>
-            <span className="mt-1 block text-sm text-ink/60">
+            <span className="mt-1 block text-sm text-brand-800/70">
               Zdjęcia pojawią się na planszy tak samo szybko — w tle poczeka
               tylko wersja pełnej jakości. Około 4 MB na zdjęcie.
             </span>
@@ -47,30 +48,31 @@ export default function SettingsPage() {
         </label>
       </section>
 
-      <section className="rounded-2xl bg-white px-4 py-4">
-        <h2 className="text-sm font-medium text-ink/50">Kolejka</h2>
+      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4">
+        <h2 className="text-sm font-medium text-brand-800/60">Kolejka</h2>
         {jobs.length === 0 ? (
-          <p className="mt-1 text-sm text-ink/60">Wszystko wysłane.</p>
+          <p className="mt-1 text-sm text-brand-800/70">Wszystko wysłane.</p>
         ) : (
-          <ul className="mt-1 text-sm text-ink/70">
+          <ul className="mt-1 text-sm text-brand-800/75">
             {czekaPodglad > 0 && <li>{count(czekaPodglad, ZDJECIA)} czeka na wysłanie</li>}
             {czekaOryginal > 0 && <li>{count(czekaOryginal, ORYGINALY)} w drodze na Dysk</li>}
           </ul>
         )}
-        <p className="mt-2 text-xs text-ink/40">
+        <p className="mt-2 text-xs text-brand-800/55">
           Kolejka rusza sama, gdy wróci zasięg. Nie trzeba nic klikać.
         </p>
       </section>
 
-      <section className="rounded-2xl bg-white px-4 py-4 text-sm text-ink/70">
-        <h2 className="mb-2 text-sm font-medium text-ink/50">Twoje zdjęcia</h2>
+      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4 text-sm text-brand-800/75">
+        <h2 className="mb-2 text-sm font-medium text-brand-800/60">Twoje zdjęcia</h2>
         {PRIVACY.paragraphs.slice(0, 2).map((p) => (
           <p key={p.slice(0, 24)} className="mb-2 last:mb-0">
             {p}
           </p>
         ))}
-        <p className="mt-2 text-xs text-ink/40">{PRIVACY.removal}</p>
+        <p className="mt-2 text-xs text-brand-800/55">{PRIVACY.removal}</p>
       </section>
+      <Meadow className="-mx-4 -mb-5 mt-auto pt-4" />
     </main>
   );
 }

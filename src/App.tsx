@@ -27,7 +27,7 @@ function Screens() {
   const { token } = useGuestToken();
 
   return (
-    <Suspense fallback={<p className="p-8 text-center text-ink/50">Chwileczkę…</p>}>
+    <Suspense fallback={<p className="p-8 text-center text-brand-800/60">Chwileczkę…</p>}>
       <Routes>
         {/* /g/:token działa zawsze — to jedyna droga zdobycia tożsamości. */}
         <Route path="/g/:token" element={<JoinPage />} />
