@@ -7,6 +7,8 @@ import { categoryById } from "../lib/board";
 import { prepare } from "../lib/image";
 import * as queue from "../lib/queue";
 import { drain } from "../lib/uploader";
+import { Meadow } from "../components/wedding/Meadow";
+import { Sprig } from "../components/wedding/Sprig";
 
 type Phase =
   | "idle"
@@ -34,7 +36,7 @@ export default function CategoryPage() {
 
   if (!category) {
     return (
-      <p className="p-6 text-center text-ink/60">
+      <p className="p-6 text-center text-brand-800/70">
         Nie ma takiej kategorii.{" "}
         <button className="underline" onClick={() => navigate("/")}>
           Wróć na planszę
@@ -120,13 +122,14 @@ export default function CategoryPage() {
         ← Plansza
       </button>
 
-      <header>
-        <p className="text-xs font-medium text-ink/40">
+      <header className="flex flex-col gap-1.5">
+        <p className="text-xs tracking-widest text-brand-500 uppercase">
           R{category.row}K{category.col}
         </p>
         <h1 className="text-2xl leading-tight font-semibold text-brand-800">
           {category.label}
         </h1>
+        <Sprig className="mt-1" />
       </header>
 
       {preview && (
@@ -166,9 +169,11 @@ export default function CategoryPage() {
         originalRatio={originalRatio}
       />
 
-      <p className="mt-auto text-center text-xs text-ink/40">
+      <p className="mt-auto text-center text-xs text-brand-800/55">
         Zdjęcie możesz wysłać bez zasięgu — poczeka w telefonie i doleci samo.
       </p>
+
+      <Meadow className="-mx-4 -mb-5" />
     </main>
   );
 }
@@ -190,8 +195,8 @@ function StatusLine({
     phase === "zapisane"
       ? "bg-brand-50 text-brand-800"
       : phase === "błąd"
-        ? "bg-amber-50 text-amber-900"
-        : "bg-white text-ink/70 border border-brand-200";
+        ? "bg-clay-50 text-clay-900"
+        : "bg-paper text-brand-800/75 border border-brand-200";
 
   return (
     <div className={`rounded-xl px-4 py-3 text-sm ${tone}`} role="status" aria-live="polite">

@@ -28,8 +28,9 @@ budżety miejsca, konfiguracja Google, etapy realizacji i checklista przedweseln
 pułapki opisane objawem, decyzje które odwróciliśmy i powody, oraz lista rzeczy, których
 nie da się sprawdzić inaczej niż na prawdziwym telefonie. **Zacznij tutaj, gdy coś nie działa.**
 
-Pozostałe: [konfiguracja Google](docs/google-setup.md) · [Supabase](docs/supabase-setup.md) ·
-[wdrożenie](docs/vercel-deploy.md) · [runbook weselny](docs/runbook-weekend.md)
+Pozostałe: [wizualia](docs/wizualia.md) · [konfiguracja Google](docs/google-setup.md) ·
+[Supabase](docs/supabase-setup.md) · [wdrożenie](docs/vercel-deploy.md) ·
+[runbook weselny](docs/runbook-weekend.md)
 
 ## Stack
 

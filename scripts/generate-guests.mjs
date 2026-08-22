@@ -140,12 +140,13 @@ async function renderHtml(cards) {
     <article class="card">
       <div class="qr">${c.qr}</div>
       <div class="txt">
+        <svg class="sprig" viewBox="0 0 120 18" xmlns="http://www.w3.org/2000/svg"><path d="M6 11 C34 4 86 4 114 11" stroke="#9aa97b" stroke-width="0.9" fill="none" stroke-linecap="round"/><path d="M0 0 C4 -1 6 -5 0 -9 C-6 -5 -4 -1 0 0 Z" fill="#9aa97b" opacity="0.85" transform="translate(20 8.3) rotate(-38)"/><path d="M0 0 C4 -1 6 -5 0 -9 C-6 -5 -4 -1 0 0 Z" fill="#9aa97b" opacity="0.85" transform="translate(36.4 6.6) rotate(152)"/><path d="M0 0 C4 -1 6 -5 0 -9 C-6 -5 -4 -1 0 0 Z" fill="#9aa97b" opacity="0.85" transform="translate(83.6 6.6) rotate(208)"/><path d="M0 0 C4 -1 6 -5 0 -9 C-6 -5 -4 -1 0 0 Z" fill="#9aa97b" opacity="0.85" transform="translate(99.9 8.3) rotate(38)"/><circle cx="60" cy="5.8" r="1.6" fill="#e4bd5b"/></svg>
         ${
           c.name
             ? `<p class="name">${escapeHtml(c.name)}</p>`
             : `<p class="name blank"><span></span></p>`
         }
-        <p class="lead">Zeskanuj i graj w Foto Bingo</p>
+        <p class="lead">Zeskanuj i graj w <em>Foto Bingo</em></p>
         <p class="url">${escapeHtml(c.url)}</p>
       </div>
     </article>`,
@@ -158,13 +159,19 @@ async function renderHtml(cards) {
 <meta charset="utf-8">
 <title>Foto Bingo — winietki</title>
 <style>
-  /* Cwiartki A4: 8 kart na strone, linie ciecia na krawedziach. */
+  /* Cwiartki A4: 8 kart na strone, linie ciecia na krawedziach.
+
+     Winietka jest pierwsza rzecza, ktora gosc bierze do reki, wiec wyglada jak
+     zaproszenie: szeryfowy krój, szalwiowa galazka i olwikowy podpis. Kolory
+     siedza w RAMKACH I TEKSCIE, nie w tlach — przegladarki domyslnie nie
+     drukuja teł, wiec karta z kremowym wypelnieniem wyszlaby z drukarki biala
+     i bez charakteru. To, co ma sie wydrukowac, musi byc kreska. */
   @page { size: A4; margin: 8mm; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    color: #1c1417;
+    font-family: Georgia, "Times New Roman", "Liberation Serif", serif;
+    color: #3b3b3b;
   }
   .sheet {
     display: grid;
@@ -174,29 +181,37 @@ async function renderHtml(cards) {
   .card {
     display: flex;
     align-items: center;
-    gap: 6mm;
+    gap: 5mm;
     padding: 6mm;
-    border: 0.2mm dashed #c9bfc2;
+    border: 0.2mm dashed #b7c29c;
     break-inside: avoid;
   }
-  .qr { width: 34mm; flex: 0 0 34mm; }
+  .qr {
+    width: 32mm;
+    flex: 0 0 32mm;
+    padding: 2mm;
+    border: 0.3mm solid #dfe4cd;
+    border-radius: 2mm;
+  }
   .qr svg { width: 100%; height: auto; display: block; }
   .txt { min-width: 0; }
+  .sprig { display: block; width: 20mm; height: auto; margin: 0 0 2mm; }
   .name { margin: 0 0 2mm; font-size: 15pt; font-weight: 600; line-height: 1.15; }
   .name.blank span {
     display: block;
-    width: 52mm;
-    border-bottom: 0.4mm solid #1c1417;
+    width: 50mm;
+    border-bottom: 0.4mm solid #b7c29c;
     height: 6mm;
   }
-  .lead { margin: 0 0 1.5mm; font-size: 9pt; color: #be123c; }
-  .url { margin: 0; font-size: 7pt; color: #8a8085; word-break: break-all; }
+  .lead { margin: 0 0 1.5mm; font-size: 9pt; color: #66744a; }
+  .lead em { font-style: italic; }
+  .url { margin: 0; font-size: 7pt; color: #9aa97b; word-break: break-all; }
 
   @media screen {
-    body { background: #f3eef0; padding: 10mm; }
-    .sheet { background: #fff; padding: 8mm; max-width: 210mm; margin: 0 auto; }
+    body { background: #f6f3e9; padding: 10mm; }
+    .sheet { background: #fdfcf7; padding: 8mm; max-width: 210mm; margin: 0 auto; }
     .hint {
-      max-width: 210mm; margin: 0 auto 6mm; font-size: 12pt; color: #5d545a;
+      max-width: 210mm; margin: 0 auto 6mm; font-size: 12pt; color: #525938;
     }
   }
   @media print { .hint { display: none; } }

@@ -40,8 +40,8 @@ export default defineConfig({
         short_name: "Foto Bingo",
         description: "Weselna gra w zdjęcia — zbierz linię, zgłoś bingo.",
         lang: "pl",
-        theme_color: "#be123c",
-        background_color: "#fdf8f6",
+        theme_color: "#66744a",
+        background_color: "#f6f3e9",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
@@ -64,16 +64,18 @@ export default defineConfig({
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
-        // Manrope wchodzi z pięcioma podzbiorami znaków. Przeglądarka i tak
-        // pobiera tylko te, których potrzebuje (unicode-range), ale precache
-        // service workera bierze wszystko jak leci — czyli 32 KB cyrylicy,
-        // greki i wietnamskiego na pierwsze wejście, przy weselu w górach.
+        // Lora jedzie z siedmioma podzbiorami znaków. Przeglądarka i tak pobiera
+        // tylko te, których potrzebuje (unicode-range), ale precache service
+        // workera bierze wszystko jak leci — czyli cyrylica, grecka matematyka,
+        // symbole i wietnamski na pierwsze wejście, przy weselu w górach.
         // Gdyby czyjeś imię ich jednak wymagało, dociągną się z sieci albo
-        // spadną na czcionkę systemową.
+        // spadną na czcionkę systemową. Yellowtail zostaje w całości: ma tylko
+        // latin i latin-ext, a bez latin-ext nie ma polskich ogonków.
         globIgnores: [
-          "**/manrope-cyrillic*",
-          "**/manrope-greek*",
-          "**/manrope-vietnamese*",
+          "**/lora-cyrillic*",
+          "**/lora-math*",
+          "**/lora-symbols*",
+          "**/lora-vietnamese*",
         ],
       },
     }),
