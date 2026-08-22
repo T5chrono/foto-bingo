@@ -703,6 +703,7 @@ foto-bingo/
 │       ├── claims.ts
 │       └── *.test.ts                 # testy backendu obok kodu
 ├── docs/
+│   ├── vercel-deploy.md              # trzy pułapki wdrożenia, zmienne, regiony
 │   ├── supabase-setup.md             # zakładanie projektu, bucket, klucze, pułapki
 │   ├── google-setup.md               # rozwinięcie sekcji 14, ze zrzutami
 │   └── runbook-weekend.md            # co robić, gdy w sobotę coś nie działa
@@ -852,6 +853,7 @@ runbook weekendowy, próba generalna.
       i realny zapis pliku testowego do folderu głównego.
 - [ ] OAuth consent screen w statusie **„In production"**, nie „Testing".
 - [ ] Refresh token wygenerowany, wgrany na Vercela, testowa wysyłka przechodzi.
+- [ ] **Produkcja działa**: `docs/vercel-deploy.md`, sekcja „Sprawdzenie po wdrożeniu".
 - [ ] Domena ustalona i podpięta. **Winietki drukujemy dopiero po tym** — zmiana adresu
       po druku unieważnia wszystkie kody.
 - [ ] `PUBLIC_BASE_URL` w `.env` ustawione na docelową domenę — **przed** generowaniem
