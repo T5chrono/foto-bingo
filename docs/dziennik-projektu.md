@@ -274,6 +274,36 @@ wyrzucone przez jedną brakującą linijkę.
 **Dlaczego testy tego nie złapały:** jsdom nie ma canvasu. Ten błąd może wyjść
 **wyłącznie w prawdziwej przeglądarce**.
 
+### Przycisk „Zainstaluj" pojawiał się dopiero przy drugim skanie kodu QR
+
+Zgłoszone z fizycznego Androida i potwierdzone: przy **pierwszym** zeskanowaniu
+winietki baner instalacji nie pokazywał się wcale, przy drugim był od razu.
+
+`beforeinstallprompt` leci **raz na załadowanie strony**, w momencie wybranym przez
+Chrome, i przepada bezpowrotnie, jeśli w tej sekundzie nikt nie słucha — nie da się
+o nie dopytać później. Nasłuch siedział w `useEffect` komponentu `InstallBanner`,
+a ten renderuje się na planszy, czyli **za bramką o zdjęciach**. Przy pierwszym
+skanie gość czyta wtedy ekran zgody przez kilkanaście sekund, Chrome strzela
+w próżnię i przycisku nie ma. Przy drugim wejściu zgoda jest już zapamiętana,
+plansza wchodzi od razu, nasłuch zdąża.
+
+Lekarstwem jest przeniesienie samego przechwycenia poza React —
+`src/lib/install.ts`, uruchamiane z `main.tsx` przed pierwszym renderem. Komponent
+tylko czyta przez `useSyncExternalStore` to, co już zostało złapane. Zdarzenie
+potrafi przyjść przed zamontowaniem czegokolwiek, więc stan musi je przeżyć bez
+żadnego drzewa komponentów — dlatego zwykły moduł, a nie kontekst.
+
+**Ogólniejszy wniosek, wart zapamiętania poza tym jednym przyciskiem:** zdarzenia
+okna, które lecą raz i nie wracają, nie mogą być nasłuchiwane z komponentu
+stojącego za jakąkolwiek bramką. Nie ma znaczenia, jak szybko ta bramka się
+przeklikuje — liczy się, że gość może przy niej stanąć.
+
+Testu nie dało się napisać na prawdziwym zdarzeniu (Chrome nie strzela nim na
+żądanie), ale scenariusz odtwarza się wiernie zdarzeniem syntetycznym wysłanym
+dokładnie w tym momencie, w którym gość czyta ekran zgody. Zanim uznaliśmy test
+za dobry, sprawdziliśmy, że **psuje się po zakomentowaniu jednej linijki**
+w `install.ts` — trzy przypadki na czerwono.
+
 ### Zapisanie kodu z QR nie odświeżało widoku
 
 **Objaw:** gość skanuje poprawny kod, a aplikacja pokazuje „Zeskanuj kod QR ze swojej
@@ -549,8 +579,11 @@ od decyzji.
 Rzeczy, których **nie da się** potwierdzić z linii poleceń — wszystkie są
 w checkliście przedweselnej w specyfikacji.
 
-- **Instalacja PWA na fizycznym Androidzie.** Prawdziwy skan QR, baner „Zainstaluj",
-  start bez paska adresu, pamiętanie tożsamości. To ścieżka większości gości.
+- **Instalacja PWA na fizycznym Androidzie.** Skan QR, wysyłka zdjęcia i baner
+  „Zainstaluj" — sprawdzone 23.08.2026 na produkcji; to właśnie tam wyszło, że baner
+  pojawia się dopiero za drugim razem (opisane wyżej, naprawione). **Nadal do
+  sprawdzenia:** sama instalacja, start bez paska adresu i to, czy zainstalowana
+  aplikacja pamięta tożsamość gościa.
 - **Tryb rzutnika na docelowym sprzęcie.** Pełny ekran i Wake Lock wymagają
   prawdziwego gestu i widocznej karty. Sprawdź szczególnie, **czy ekran nie gaśnie
   po minucie**.
