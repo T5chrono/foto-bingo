@@ -299,6 +299,11 @@ Kolejka trzyma `ArrayBuffer` plus typ MIME; Blob powstaje z powrotem tuż przed 
 Polskie liczebniki mają **trzy** formy, nie dwie. `src/lib/plural.ts`, z wyjątkiem
 na 12–14, który łapie też 112 i 213.
 
+Po dojściu angielskiego kusiło, żeby zrobić z tego jedną wspólną abstrakcję na oba języki.
+Nie zrobiliśmy: angielski ma dwie formy i `n === 1` załatwia je w jednej linijce, a wspólny
+mechanizm obsługiwałby oba języki gorzej niż każdy z nich osobno. **Każdy słownik rządzi się
+własną gramatyką** — polski woła `count()` z `plural.ts`, angielski liczy sam.
+
 ### Czcionka ciągnie podzbiory, o których nikt nie prosił
 
 Przeglądarka pobiera tylko potrzebne (`unicode-range`), ale **precache service workera
@@ -361,6 +366,61 @@ Zadziałało dopiero odwrócenie problemu: rzeka **rozpuszcza się** w horyzonci
 jej gradient zaczyna się od przezroczystości — więc nie trzeba jej niczym zasłaniać
 ani do niczego dopasowywać krawędzi wzgórz. Cztery niezależne plany, każdy ciemniejszy
 i mniej rozmyty, i jeden kształt na wierzchu.
+
+**Postscriptum: ten rysunek już nie istnieje.** Trzy podejścia poszły na coś, co i tak
+przegrało z bitmapą wyjętą z Canvy — patrz niżej. Wniosek o rozpuszczaniu krawędzi przeżył
+i został użyty jeszcze raz: dolina z Canvy gaśnie u dołu maską, bo prosta krawędź w środku
+strony czyta się jak przycięte zdjęcie.
+
+### Własne SVG przegrało z akwarelą, mimo że wygrywało w każdej tabelce
+
+Ozdobniki były najpierw rysowane od zera: łąka, dolina, gałązka. Argumenty były policzalne
+i wszystkie prawdziwe — kilka kilobajtów zamiast stu, skalowanie bez granic, kolory brane
+z palety. Rachunek wychodził na tyle jednoznacznie, że zapisaliśmy go jako decyzję D13.
+
+Przegrał z czymś, czego nie było w rachunku: **gość trzyma winietkę w ręku i patrzy
+w telefon**. Prawdziwa akwarela obok elipsy udającej kwiat nie wygląda jak wariant tego
+samego stylu, tylko jak podróbka. Żadna liczba w tabelce tego nie mierzyła.
+
+Co warto z tego zapamiętać: gdy porównanie wychodzi jednoznacznie, sprawdź najpierw, czy
+mierzysz to, co decyduje. Tu decydowało sąsiedztwo z papierem, a mierzyliśmy kilobajty.
+
+### Eksport z Canvy do PNG jest gorszy niż do PDF, i to nie po trochu
+
+Naturalny odruch to `export-design` z `format: png` i `width: 2000`. Wychodzą z tego dwa
+problemy naraz. Po pierwsze `width` (tak samo jak `export_quality: pro`) **wymaga Canva Pro**
+i bez niego API zwraca `Not allowed to access design` — komunikat, który wygląda na problem
+z uprawnieniami do projektu, a nie z parametrem. Eksport bez tych dwóch pól działa od ręki.
+
+Po drugie PNG bez `width` daje 1x, czyli 454 px na stronę, **i wypala białe tło**: kwiaty
+przyjeżdżają w białym prostokącie, który na kremowej stronie widać jak kafel.
+
+Rozwiązaniem jest eksport do **PDF**, który osadza oryginalne bitmapy razem z ich maskami
+przezroczystości (`smask`). Stamtąd wyjmuje się je w pełnej rozdzielczości i z gotową alfą.
+Robi to [scripts/canva-art.py](../scripts/canva-art.py).
+
+### Biel na akwareli to nie kolor, tylko papier
+
+Winietka nie ma maski — jest płaską bitmapą na białym tle. Zwykłe „usuń biały piksel"
+zostawia brzydkie obwódki, bo akwarela nie ma ostrych krawędzi, tylko rozmyte przejścia.
+
+Zadziałało potraktowanie obrazka tak, jak działa medium: akwarela **mnoży**, biel to goły
+papier prześwitujący przez farbę. Czyli `alpha = 1 - min(r,g,b)`, a potem dzielenie koloru
+przez alfę. Po złożeniu z powrotem na białym wychodzi piksel w piksel oryginał, a na kremowym —
+akwarela na kremowym papierze, z całą miękkością brzegów.
+
+### Precache nie pomaga ekranom, które ogląda się raz
+
+Pierwszy odruch po dodaniu trzech obrazków: wrzucić wszystkie do `globPatterns` i mieć
+spokój. To by kosztowało 127 KB na pierwsze wejście i **nie pomogło ani razu** dwóm z nich.
+
+Service worker instaluje się **po** załadowaniu strony, więc przy pierwszym wyświetleniu
+ekranu powitalnego precache i tak nie zdąży — obrazek leci z sieci normalnie. A przy drugim
+wejściu tego ekranu już nie ma: bramka o zdjęciach pokazuje się raz, a ekran bez kodu jest
+awaryjny. Płacilibyśmy więc za pobranie dwa razy i ani razu na czas.
+
+W precache'u została sama łąka, bo jest na każdym ekranie. Dolina i łuk mają `runtimeCaching`
+z `CacheFirst`: pobierają się raz, przy okazji, i zostają.
 
 ---
 
@@ -477,6 +537,10 @@ od decyzji.
 | Podpis osobno na każdy kafelek | jeden podpis na cały ekran | 25 żądań na odświeżenie i cache przeglądarki bezużyteczny |
 | Wino i krem | akwarelowa zieleń z Canvy | Aplikacja leżała obok zaproszenia i jako jedyna była różowa |
 | Kod pozycji na każdym kafelku | tylko w `aria-label` i poza planszą | 25 kodów na 25 polach hałasowało tam, gdzie liczy się podpis |
+| Ozdobniki rysowane od zera w SVG | bitmapy wyjęte z Canvy | Obok winietki w ręku gościa własny rysunek wyglądał jak podróbka |
+| Eksport grafik z Canvy do PNG | do PDF | PNG daje 1x i wypala białe tło; PDF osadza oryginały z maskami alfa |
+| Tylko po polsku | polski i angielski | Część gości jest z zagranicy — zaproszenia mają wersję EN od początku |
+| Etapy wysyłki trzymane jako polskie zdania | jako kody stanu | Stan aplikacji wyświetlany wprost nie da się przetłumaczyć |
 
 ---
 
@@ -498,6 +562,14 @@ w checkliście przedweselnej w specyfikacji.
 - **Wizualia na fizycznym telefonie.** Pisanka w rozmiarze logotypu i podpisy kafelków
   po 9 px oglądaliśmy wyłącznie w przeglądarce na biurku. Sprawdź czytelność podpisów
   w słońcu i to, czy łąka na dole nie wchodzi pod pasek gestów.
+- **Akwarele na ekranie z wysokim DPR.** Bitmapy mają 560–800 px szerokości i świadomie
+  ich nie powiększamy. Na biurku wygląda to dobrze, ale na telefonie z DPR 3 łąka jest
+  rozciągana ponad dwukrotnie — akwarela to wybacza, tylko trzeba to zobaczyć na szkle.
+- **Maska gasząca dolinę na starszym Safari.** `mask-image` bez prefiksu działa dopiero
+  od Safari 15.4; jest wersja `-webkit-`, ale sprawdzona wyłącznie na Chromie. Gdyby
+  nie zadziałała, wraca twarda krawędź — brzydko, ale nic się nie psuje.
+- **Angielska wersja u prawdziwego gościa z zagranicy.** Wykrywanie języka, długość
+  angielskich podpisów w kafelku 65 px i to, czy ktoś w ogóle zauważy przełącznik.
 - **Zachowanie przy naprawdę słabym zasięgu.** Symulacja w DevTools to nie to samo,
   co jeden maszt i czterdzieści telefonów.
 

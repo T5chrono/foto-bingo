@@ -250,30 +250,79 @@ Przy miniaturze zdjęcia, które i tak należy do tego gościa, to świadomy kur
 Pliki wgrywamy z `cacheControl: 86400`, bo ścieżka niesie `photoId` i pod jednym adresem
 zawsze leżą te same bajty.
 
-### D13 — Wizualia są zdjęte z projektu weselnego, a ozdobniki rysowane od zera
+### D13 — Wizualia są zdjęte z projektu weselnego, razem z akwarelami
 
 **Wybrano:** paleta i typografia **odczytane** z projektu w Canvie (tego samego, z którego
-powstały zaproszenia i papierowa karta Foto Bingo), a wszystkie ozdobniki — łąka polnych
-kwiatów, akwarelowa dolina, gałązka — narysowane jako własne SVG.
+powstały zaproszenia, winietka i papierowa karta Foto Bingo), a ozdobniki — łąka polnych
+kwiatów, dolina, kwiatowy łuk — **wyjęte z niego jako bitmapy** i zapisane jako WebP.
 
-**Odrzucono:** wyeksportowanie kwiatów i gór z Canvy jako plików PNG i wgranie ich do
-aplikacji. Szybsze i wierniejsze co do piksela.
+**Odrzucono:** rysowanie ozdobników od zera jako własnych SVG. Tak było w pierwszej wersji
+i przez chwilę wyglądało to na dobry interes: kilka kilobajtów zamiast stu, skalowanie bez
+końca i kolory brane wprost z palety.
 
-**Dlaczego:** dwa powody, jeden prawny i jeden praktyczny. Licencja Canvy pozwala użyć grafiki
-stockowej **w projekcie**, ale nie wyjąć jej z niego i rozprowadzać jako samodzielny element —
-a właśnie tym byłby plik w `public/`. Praktycznie: własne SVG waży tyle, co kawałek tekstu,
-skaluje się do każdej szerokości ekranu bez drugiego kompletu plików i bierze kolory z palety,
-więc zmiana tokenu przemalowuje też ozdobniki.
+**Dlaczego zmiana.** Własne SVG przegrywało jedyną konkurencję, która się liczy: leżało obok
+prawdziwej akwareli na tym samym stole. Gość ma w ręku winietkę z kwiatami i patrzy w telefon,
+w którym te same kwiaty są zbudowane z elips — i widać, że to nie ta sama ręka. Wierność
+całości okazała się warta więcej niż wszystkie zalety SVG razem wzięte.
 
-Wartości nie są dobrane na oko. Ramka kafelka `#b7c29c`, obwódka kółka do zaznaczania
+**Prawnie** jest to węższa sprawa, niż wyglądała. Licencja Canvy zabrania rozprowadzania
+grafiki stockowej **jako samodzielnego elementu** — do dalszego użycia przez kogoś innego.
+Nie zabrania opublikowania projektu, który tę grafikę zawiera, a aplikacja jest tym samym
+projektem co zaproszenie, tylko na ekranie. Pozostaje jeden cień: **to repozytorium jest
+publiczne**, więc plik `.webp` da się z niego pobrać. Ryzyko jest znikome i świadomie przyjęte;
+gdyby kiedyś przestało być znikome, wyjściem jest wyniesienie `src/assets/art/` poza repo
+i wstrzykiwanie go przy buildzie.
+
+**Technicznie** eksport idzie przez **PDF, nie PNG**. Eksport strony do PNG daje 1x i wypala
+białe tło pod kwiatami; PDF osadza oryginalne bitmapy razem z maskami przezroczystości.
+Dolinie, która maski nie ma, biel odejmuje się rachunkiem — akwarela jest medium mnożącym,
+więc biel to nie farba, tylko papier. Całość robi [scripts/canva-art.py](scripts/canva-art.py).
+
+Wartości palety nie są dobrane na oko. Ramka kafelka `#b7c29c`, obwódka kółka do zaznaczania
 `#9aa97b`, kolor podpisów `#525938` i wypełnienie pola `#fdfcf7` to te same liczby, którymi
 narysowana jest papierowa karta.
 
 **Konsekwencja — i jest to koszt w tej samej walucie co D12.** Dwie rodziny pisma zamiast
 jednej to cztery pliki w precache'u service workera zamiast dwóch: ~87 KB zamiast ~40 KB na
-pierwsze wejście. Manrope wyleciał, więc netto jest to jedna rodzina więcej, nie dwie,
-a pozostałe podzbiory Lory (cyrylica, matematyka, symbole, wietnamski) są wycięte z precache'a
+pierwsze wejście. Do tego dochodzą akwarele: 127 KB w trzech plikach, z czego **w precache'u
+ląduje tylko łąka (~54 KB)**, bo jest na każdym ekranie. Dolina i łuk wchodzą wyłącznie na
+ekranach powitalnych, a te ogląda się raz — precache i tak nie zdążyłby przed pierwszym
+wyświetleniem, a przy drugim wejściu nikt ich już nie zobaczy, więc łapie je `runtimeCaching`.
+Pozostałe podzbiory Lory (cyrylica, matematyka, symbole, wietnamski) są wycięte z precache'a
 przez `globIgnores` — telefon w górach ich nie pobiera. Szczegóły: [docs/wizualia.md](docs/wizualia.md).
+
+---
+
+### D14 — Dwa języki bez biblioteki, z angielskim jako domyślnym dla nie-Polaków
+
+**Wybrano:** polski i angielski, każdy jako jeden obiekt w `src/lib/strings/`, przełączane
+kontekstem Reacta. Angielski jest typowany jako `typeof pl`, więc **brakujące tłumaczenie
+nie kompiluje się**.
+
+**Odrzucono:** `react-i18next` i spółka. Biblioteka waży więcej niż oba słowniki razem wzięte
+i daje rzeczy, których tu nie ma po co mieć — ładowanie z sieci, przestrzenie nazw,
+interpolację w stringach. Przy dwóch językach i jednym ekranie na raz zwykły obiekt załatwia
+to samo, z pełnym sprawdzaniem typów.
+
+**Odrzucono też:** język przypisany gościowi w bazie. Para Młoda wie, kto mówi po angielsku,
+i dałoby się to wpisać obok imienia — ale to migracja tabeli i pole do wypełnienia przy
+czterdziestu osobach po to, żeby zaoszczędzić jedno dotknięcie komuś, kto i tak ma przełącznik
+na ekranie.
+
+**Dlaczego angielski jest domyślny poza Polską.** Wykrywanie patrzy na pierwszy język telefonu:
+`pl*` daje polski, wszystko inne angielski. Odwrotne domyślne zostawiłoby gościa z Serbii czy
+Anglii na **polskim ekranie zgody na zdjęcia** — czyli dokładnie tam, gdzie treść ma znaczenie
+prawne. Polak z telefonem po angielsku przełącza język jednym dotknięciem; ten drugi przypadek
+jest gorszy i to on decyduje.
+
+**Przełącznik stoi w trzech miejscach**, nie w samych ustawieniach: na bramce o zdjęciach (to
+pierwszy ekran i jedyny, który naprawdę trzeba zrozumieć), na ekranie bez kodu i przy
+logowaniu do panelu — oba leżą poza gałęzią, z której da się dojść do ustawień.
+
+**Nazwa pliku na Dysku zostaje polska, zawsze.** `slug` liczy się z polskiej etykiety
+kategorii, niezależnie od języka aplikacji, bo nazwę buduje serwer, który o telefonie gościa
+nie wie nic. Gdyby slug szedł za językiem, to samo pole lądowałoby w folderze pod dwiema
+nazwami i wyszłoby to dopiero po weselu. Pilnuje tego test w `board.test.ts`.
 
 ---
 

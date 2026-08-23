@@ -307,8 +307,16 @@ app.post("/claims", requireGuest, async (c) => {
   if (!result.ok) {
     // Plansza w telefonie moze byc nieodswiezona — to nie jest oszustwo,
     // tylko rozjazd, wiec komunikat ma o tym mowic wprost.
+    //
+    // `code` jest tu, bo to **jedyny blad walidacji, ktory gosc naprawdę
+    // zobaczy** — reszta w tym pliku wychodzi wylacznie przy naszej pomylce.
+    // Aplikacja tlumaczy go po swojej stronie; `error` zostaje dla logow
+    // i dla starszego klienta, ktory o kodach jeszcze nie wie.
     return c.json(
-      { error: "Ta linia nie jest jeszcze kompletna. Odswiez plansze i sprobuj ponownie." },
+      {
+        error: "Ta linia nie jest jeszcze kompletna. Odswiez plansze i sprobuj ponownie.",
+        code: "lineIncomplete",
+      },
       409,
     );
   }

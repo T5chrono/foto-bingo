@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   LINES,
+  claimLabel,
   completedLines,
   countFilled,
   highlightedIds,
   isFullCard,
   lineLabel,
 } from "./bingo.js";
+import { en } from "./strings/en.js";
+import { pl } from "./strings/pl.js";
 
 const ids = (...n: number[]) => new Set(n);
 const all = new Set(Array.from({ length: 25 }, (_, i) => i + 1));
@@ -110,9 +113,23 @@ describe("podświetlanie", () => {
 
 describe("etykiety linii", () => {
   it("opisuje linię po polsku", () => {
-    expect(lineLabel({ kind: "row", index: 2, ids: [] })).toBe("wiersz 2");
-    expect(lineLabel({ kind: "col", index: 4, ids: [] })).toBe("kolumna 4");
-    expect(lineLabel({ kind: "diag", index: 1, ids: [] })).toBe("przekątna ↘");
-    expect(lineLabel({ kind: "diag", index: 2, ids: [] })).toBe("przekątna ↙");
+    expect(lineLabel({ kind: "row", index: 2, ids: [] }, pl.bingo)).toBe("wiersz 2");
+    expect(lineLabel({ kind: "col", index: 4, ids: [] }, pl.bingo)).toBe("kolumna 4");
+    expect(lineLabel({ kind: "diag", index: 1, ids: [] }, pl.bingo)).toBe("przekątna ↘");
+    expect(lineLabel({ kind: "diag", index: 2, ids: [] }, pl.bingo)).toBe("przekątna ↙");
+  });
+
+  it("opisuje tę samą linię po angielsku", () => {
+    expect(lineLabel({ kind: "row", index: 2, ids: [] }, en.bingo)).toBe("row 2");
+    expect(lineLabel({ kind: "diag", index: 2, ids: [] }, en.bingo)).toBe("diagonal ↙");
+  });
+
+  /**
+   * Pełna karta nie jest linią, ale jest tym samym typem zgłoszenia — i to ona
+   * najłatwiej zostaje po polsku, bo nie przechodzi przez `lineLabel`.
+   */
+  it("opisuje pełną kartę w obu językach", () => {
+    expect(claimLabel({ kind: "full", index: null }, pl.bingo)).toBe("pełna karta");
+    expect(claimLabel({ kind: "full", index: null }, en.bingo)).toBe("full card");
   });
 });

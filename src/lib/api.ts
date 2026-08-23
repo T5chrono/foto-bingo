@@ -1,3 +1,4 @@
+import type { ErrorCode } from "./errors.js";
 import { readToken } from "./guest.js";
 import type { Budget } from "./image.js";
 
@@ -29,6 +30,11 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /**
+     * Kod do przetłumaczenia. Brak kodu znaczy „pokaż `message` tak, jak jest" —
+     * tak wracają komunikaty walidacyjne serwera, po polsku i dla nas, nie dla gościa.
+     */
+    readonly code?: ErrorCode,
   ) {
     super(message);
   }
@@ -62,12 +68,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (cause) {
     // Brak sieci wygląda tu identycznie jak awaria serwera — i dobrze,
     // bo w obu przypadkach zadanie ma wrócić do kolejki.
-    throw new ApiError(0, cause instanceof Error ? cause.message : "Brak połączenia");
+    throw new ApiError(0, cause instanceof Error ? cause.message : "Brak połączenia", "network");
   }
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new ApiError(response.status, body?.error ?? `Błąd ${response.status}`);
+    const body = (await response.json().catch(() => null)) as
+      | { error?: string; code?: ErrorCode }
+      | null;
+    // Kod z serwera wygrywa; bez niego 5xx dostaje ogólne „serwer nie odpowiada",
+    // a 4xx zostaje ze swoim zdaniem, bo to zwykle nasza pomyłka i chcemy ją widzieć.
+    const code = body?.code ?? (response.status >= 500 ? "server" : undefined);
+    throw new ApiError(response.status, body?.error ?? `Błąd ${response.status}`, code);
   }
 
   return (await response.json()) as T;

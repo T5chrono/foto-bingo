@@ -3,11 +3,14 @@ import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, type ClaimTile } from "../lib/api";
+import { useT } from "../hooks/useLocale";
+import type { Strings } from "../lib/strings/pl";
 import { describe } from "./PanelPage";
 
 export default function ClaimPage() {
   const { id = "" } = useParams();
   const client = useQueryClient();
+  const t = useT();
   const [projector, setProjector] = useState(false);
 
   const claim = useQuery({
@@ -21,9 +24,9 @@ export default function ClaimPage() {
     onSuccess: () => void client.invalidateQueries({ queryKey: ["panel"] }),
   });
 
-  if (claim.isLoading) return <p className="p-8 text-center text-brand-800/60">Chwileczkę…</p>;
+  if (claim.isLoading) return <p className="p-8 text-center text-brand-800/60">{t.app.loading}</p>;
   if (claim.isError || !claim.data) {
-    return <p className="p-8 text-center text-brand-800/70">Nie ma takiego zgłoszenia.</p>;
+    return <p className="p-8 text-center text-brand-800/70">{t.panel.noClaim}</p>;
   }
 
   const data = claim.data;
@@ -31,18 +34,25 @@ export default function ClaimPage() {
   const missing = data.tiles.length - withPhoto.length;
 
   if (projector) {
-    return <Projector tiles={withPhoto} guestName={data.guestName} onExit={() => setProjector(false)} />;
+    return (
+      <Projector
+        tiles={withPhoto}
+        guestName={data.guestName}
+        onExit={() => setProjector(false)}
+        t={t}
+      />
+    );
   }
 
   return (
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-5 px-4 py-6">
       <Link to="/panel" className="self-start text-sm text-brand-700 underline">
-        ← Panel
+        {t.panel.backToPanel}
       </Link>
 
       <header>
         <h1 className="text-2xl font-semibold text-brand-800">{data.guestName}</h1>
-        <p className="text-brand-800/70">{describe(data)}</p>
+        <p className="text-brand-800/70">{describe(data, t)}</p>
       </header>
 
       {missing > 0 && (
@@ -50,7 +60,7 @@ export default function ClaimPage() {
         // zostalo w miedzyczasie podmienione. Para Mloda ma zobaczyc dziure,
         // a nie krotsza liste i zgadywac, ktorego pola brakuje.
         <p className="rounded-xl bg-clay-50 px-4 py-3 text-sm text-clay-900">
-          Brakuje {missing} z {data.tiles.length} zdjęć tej linii.
+          {t.panel.missingTiles(missing, data.tiles.length)}
         </p>
       )}
 
@@ -61,7 +71,7 @@ export default function ClaimPage() {
               <img src={tile.url} alt={tile.label} className="aspect-square w-full object-cover" />
             ) : (
               <div className="flex aspect-square w-full items-center justify-center bg-clay-50 text-xs text-clay-900">
-                brak zdjęcia
+                {t.panel.noPhoto}
               </div>
             )}
             <figcaption className="px-2 py-1.5 text-[0.65rem] leading-tight text-brand-800/70">
@@ -76,7 +86,7 @@ export default function ClaimPage() {
           onClick={() => setProjector(true)}
           className="rounded-2xl bg-brand-700 px-5 py-4 text-lg font-medium text-white"
         >
-          Na rzutnik
+          {t.panel.projector}
         </button>
       )}
 
@@ -87,19 +97,19 @@ export default function ClaimPage() {
             disabled={resolve.isPending}
             className="flex-1 rounded-2xl bg-brand-700 px-4 py-4 font-medium text-white disabled:opacity-50"
           >
-            Uznaj
+            {t.panel.accept}
           </button>
           <button
             onClick={() => resolve.mutate("rejected")}
             disabled={resolve.isPending}
             className="flex-1 rounded-2xl border border-clay-400 bg-clay-50 px-4 py-4 font-medium text-clay-900 disabled:opacity-50"
           >
-            Odrzuć
+            {t.panel.reject}
           </button>
         </div>
       ) : (
         <p className="text-center text-sm text-brand-800/60">
-          {data.status === "accepted" ? "Uznane ✓" : "Odrzucone"}
+          {data.status === "accepted" ? t.panel.acceptedFinal : t.panel.rejectedFinal}
         </p>
       )}
     </main>
@@ -117,10 +127,12 @@ function Projector({
   tiles,
   guestName,
   onExit,
+  t,
 }: {
   tiles: ClaimTile[];
   guestName: string;
   onExit: () => void;
+  t: Strings;
 }) {
   const [index, setIndex] = useState(0);
   const box = useRef<HTMLDivElement>(null);
@@ -169,7 +181,7 @@ function Projector({
       onClick={() => go(1)}
       role="button"
       tabIndex={0}
-      aria-label="Następne zdjęcie"
+      aria-label={t.panel.nextPhoto}
     >
       <div className="flex min-h-0 flex-1 items-center justify-center p-4">
         {tile?.url && (
@@ -193,7 +205,7 @@ function Projector({
             }}
             className="rounded-lg border border-white/25 px-3 py-1.5 text-sm text-white/70"
           >
-            Zamknij
+            {t.panel.close}
           </button>
         </div>
       </div>

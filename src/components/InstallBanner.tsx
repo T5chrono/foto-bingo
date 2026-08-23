@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { useT } from "../hooks/useLocale";
+
 /**
  * Zachęta do zainstalowania aplikacji.
  *
@@ -21,6 +23,7 @@ type Prompt = Event & {
 const HIDDEN_KEY = "fotobingo.installHidden";
 
 export function InstallBanner() {
+  const t = useT();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [hidden, setHidden] = useState(() => {
     try {
@@ -56,9 +59,7 @@ export function InstallBanner() {
   if (prompt) {
     return (
       <Frame onHide={hide}>
-        <p className="text-sm text-brand-800">
-          Dodaj Foto Bingo na ekran główny — będzie pod ręką przez cały weekend.
-        </p>
+        <p className="text-sm text-brand-800">{t.install.prompt}</p>
         <button
           type="button"
           onClick={async () => {
@@ -68,7 +69,7 @@ export function InstallBanner() {
           }}
           className="mt-2 w-full rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-medium text-white"
         >
-          Zainstaluj
+          {t.install.action}
         </button>
       </Frame>
     );
@@ -78,9 +79,8 @@ export function InstallBanner() {
     return (
       <Frame onHide={hide}>
         <p className="text-sm text-brand-800">
-          Chcesz mieć Foto Bingo na ekranie głównym? Dotknij{" "}
-          <span aria-label="Udostępnij">Udostępnij</span> na dole ekranu, potem{" "}
-          <strong>Dodaj do ekranu początkowego</strong>.
+          {t.install.iosBefore} <strong>{t.install.iosShare}</strong> {t.install.iosBetween}{" "}
+          <strong>{t.install.iosAdd}</strong>.
         </p>
       </Frame>
     );
@@ -90,13 +90,15 @@ export function InstallBanner() {
 }
 
 function Frame({ children, onHide }: { children: React.ReactNode; onHide: () => void }) {
+  const t = useT();
+
   return (
     <section className="relative rounded-2xl border border-brand-200 bg-paper px-4 py-3">
       {children}
       <button
         type="button"
         onClick={onHide}
-        aria-label="Ukryj podpowiedź o instalacji"
+        aria-label={t.install.hide}
         className="absolute top-2 right-3 text-lg leading-none text-brand-800/50"
       >
         ×

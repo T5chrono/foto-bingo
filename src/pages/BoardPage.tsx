@@ -6,8 +6,9 @@ import { BingoBanner } from "../components/BingoBanner";
 import { InstallBanner } from "../components/InstallBanner";
 import { BoardGrid } from "../components/BoardGrid";
 import { Meadow } from "../components/wedding/Meadow";
-import { PARA, Wordmark } from "../components/wedding/Wordmark";
+import { Wordmark } from "../components/wedding/Wordmark";
 import { useBoard } from "../hooks/useBoard";
+import { useT } from "../hooks/useLocale";
 import { SIZE } from "../lib/board";
 import { completedLines, countFilled } from "../lib/bingo";
 import { autoDrain } from "../lib/uploader";
@@ -16,6 +17,7 @@ export default function BoardPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
   const { me, tiles, refreshJobs } = useBoard();
+  const t = useT();
 
   // Kolejka rusza sama, gdy wraca sieć albo aplikacja wraca na wierzch.
   // Gość, który wysłał zdjęcie na spacerze bez zasięgu, nie musi o niczym
@@ -47,13 +49,13 @@ export default function BoardPage() {
             karty — tak jak tytuł na papierowej wersji. */}
         <Link
           to="/ustawienia"
-          aria-label="Ustawienia"
+          aria-label={t.board.settings}
           className="absolute top-0 right-0 text-lg leading-none text-brand-600"
         >
           &#9881;
         </Link>
         <Wordmark size="sm" />
-        <p className="text-[0.7rem] text-brand-800/70">{PARA}</p>
+        <p className="text-[0.7rem] text-brand-800/70">{t.app.para}</p>
       </header>
 
       <div className="border-y border-brand-200 py-2">
@@ -75,7 +77,7 @@ export default function BoardPage() {
 
       {me.isError && (
         <p className="rounded-xl bg-clay-50 px-3 py-2 text-sm text-clay-900">
-          Nie mogę pobrać planszy. Zdjęcia i tak czekają w telefonie i wyślą się same.
+          {t.board.cantLoad}
         </p>
       )}
 

@@ -78,8 +78,35 @@ export function highlightedIds(filled: ReadonlySet<number>): Set<number> {
   return out;
 }
 
-export function lineLabel(line: Line): string {
-  if (line.kind === "row") return `wiersz ${line.index}`;
-  if (line.kind === "col") return `kolumna ${line.index}`;
-  return line.index === 1 ? "przekątna ↘" : "przekątna ↙";
+/**
+ * Nazwa linii w języku gościa.
+ *
+ * Teksty wchodzą parametrem, zamiast być zaszyte w tym pliku, bo nazwa linii
+ * pada w dwóch miejscach naraz — na pasku bingo u gościa i na liście zgłoszeń
+ * w panelu — i musi być tam identyczna. Gdyby każde z nich sklejało ją sobie
+ * samo, jedno z dwóch prędzej czy później zostałoby po polsku.
+ *
+ * `full` obsługuje ta sama funkcja, choć pełna karta nie jest linią: zgłoszenie
+ * ma jeden typ (`ClaimKind`) i jedna funkcja opisująca go w całości znaczy, że
+ * nie da się przetłumaczyć trzech przypadków i przeoczyć czwartego.
+ */
+export function claimLabel(
+  claim: { kind: LineKind | "full"; index: number | null },
+  t: {
+    row: (n: number) => string;
+    col: (n: number) => string;
+    diagDown: string;
+    diagUp: string;
+    full: string;
+  },
+): string {
+  if (claim.kind === "full") return t.full;
+  if (claim.kind === "row") return t.row(claim.index ?? 0);
+  if (claim.kind === "col") return t.col(claim.index ?? 0);
+  return claim.index === 1 ? t.diagDown : t.diagUp;
+}
+
+/** Skrót dla zdobytej linii, gdzie `index` jest zawsze znany. */
+export function lineLabel(line: Line, t: Parameters<typeof claimLabel>[1]): string {
+  return claimLabel({ kind: line.kind, index: line.index }, t);
 }
