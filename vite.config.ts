@@ -63,7 +63,7 @@ export default defineConfig({
         // submission, so /api/* must never be intercepted or served stale.
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//],
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,webp}"],
         // Lora jedzie z siedmioma podzbiorami znaków. Przeglądarka i tak pobiera
         // tylko te, których potrzebuje (unicode-range), ale precache service
         // workera bierze wszystko jak leci — czyli cyrylica, grecka matematyka,
@@ -76,6 +76,27 @@ export default defineConfig({
           "**/lora-math*",
           "**/lora-symbols*",
           "**/lora-vietnamese*",
+          // Akwarele z Canvy. W precache'u zostaje sama laka (~54 KB), bo jest
+          // na kazdym ekranie. Dolina i kwiatowy luk wchodza tylko na ekranach
+          // powitalnych, a te maja te wlasciwosc, ze **oglada sie je raz**:
+          // precache i tak nie zdazylby przed pierwszym wyswietleniem (service
+          // worker instaluje sie po zaladowaniu strony), a przy drugim wejsciu
+          // nikt ich juz nie zobaczy. Placilibysmy wiec za obrazek dwa razy
+          // i ani razu na czas. Zamiast tego lapie je runtimeCaching nizej.
+          "**/valley-*.webp",
+          "**/bloom-*.webp",
+        ],
+        // Raz pobrana akwarela nie zmieni sie do konca wesela — hash w nazwie
+        // pliku zalatwia uniewaznienie, wiec CacheFirst bez pytania sieci.
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/(valley|bloom)-[^/]+\.webp$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fotobingo-akwarele",
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 120 },
+            },
+          },
         ],
       },
     }),

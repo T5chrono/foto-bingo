@@ -57,19 +57,57 @@ w `dist/sw.js`.
 
 ## Ozdobniki
 
-Trzy komponenty w `src/components/wedding/`:
+Trzy obrazki w `src/assets/art/`, każdy w komponencie w `src/components/wedding/`:
 
-- **`Meadow`** — łąka polnych kwiatów zamykająca każdy ekran. Układ jest losowy,
-  ale **zawsze ten sam**: generator dostaje ziarno z daty ślubu.
-- **`Hills`** — akwarelowa dolina na ekranach powitalnych. Cztery plany, każdy
-  ciemniejszy i mniej rozmyty; rzeka **rozpuszcza się** w horyzoncie zamiast
-  kończyć ostrą krawędzią.
-- **`Sprig`** — gałązka pod tytułem, tam gdzie zwykła linia byłaby za twarda.
+- **`Meadow`** — łąka polnych kwiatów zamykająca każdy ekran. Ta sama, która wyrasta
+  z dolnej krawędzi zaproszenia i papierowej karty.
+- **`Valley`** — akwarelowa dolina na ekranach powitalnych (brak kodu, logowanie do
+  panelu). Wzięta z **winietki**, nie z zaproszenia: na winietce idzie na całą
+  szerokość, a na zaproszeniu jest wyspą z wystrzępionymi brzegami, która w pasku
+  nad tytułem zostawiałaby białe rogi.
+- **`Bloom`** — kwiatowy łuk z górnej połowy winietki. Stoi **tylko** na ekranie
+  pierwszego uruchomienia: gość dopiero co skanował kod z tej karteczki, więc to
+  jedyny moment, w którym warto powtórzyć obrazek trzymany w ręku.
 
-**Rysunki są własne, w SVG.** Grafik stockowych z Canvy nie wolno wyjąć
-z projektu jako osobne pliki i wgrać do aplikacji — licencja pozwala użyć ich
-w projekcie, nie rozprowadzać jako elementy. Przy okazji własne SVG waży tyle,
-co kawałek tekstu, skaluje się do każdego ekranu i bierze kolory z palety.
+**Rysunki są wyjęte wprost z Canvy** — patrz **D13** w
+[specyfikacji](../FotoBingo%20-%20specification.md), gdzie ta decyzja jest odwrócona
+w stosunku do pierwszej wersji. Wcześniej stały tu własne SVG; ważyły ułamek tego, co
+bitmapy, ale obok prawdziwej akwareli na tym samym stole było widać, że to nie ta sama ręka.
+
+`Sprig` **został w SVG** i to nie jest niedoróbka. To kreska z listkami wysoka na 12 px,
+a nie ilustracja: w tej skali bitmapa jest papką, a SVG zostaje ostry i bierze kolor
+z palety. Wymiana ma sens tam, gdzie rysunek udaje akwarelę — nie tam, gdzie zastępuje
+poziomą linię.
+
+### Jak się je odtwarza
+
+[scripts/canva-art.py](../scripts/canva-art.py) robi całość z jednego pliku PDF. Trzy
+rzeczy, które warto wiedzieć, zanim się to powtórzy:
+
+1. **Eksport idzie do PDF, nie do PNG.** PNG daje 1x (454 px na stronę) i wypala białe
+   tło pod kwiatami. PDF osadza oryginalne bitmapy razem z maskami przezroczystości.
+2. **`width` i `export_quality: pro` w Canva API wymagają Canva Pro** i zwracają mylące
+   `Not allowed to access design`. Eksport bez tych parametrów działa bez niczego.
+3. **Dolina nie ma maski** — jest płaską bitmapą na białym papierze. Biel odejmuje się
+   rachunkiem (`alpha = 1 - min(r,g,b)`, potem dzielenie przez alfę), bo akwarela jest
+   medium mnożącym: biel to nie farba, tylko goły papier. Po złożeniu z powrotem na białym
+   wychodzi piksel w piksel oryginał, a na kremowym — akwarela na kremowym papierze.
+
+Nic z tego nie jest częścią builda. Pliki leżą w repo, skrypt uruchamia się raz.
+
+### Ile to waży
+
+127 KB w trzech plikach WebP. **W precache'u service workera ląduje sama łąka (~54 KB)**,
+bo jest na każdym ekranie. Dolina i łuk są wycięte przez `globIgnores` w
+[vite.config.ts](../vite.config.ts) i łapie je `runtimeCaching` — ekrany powitalne ogląda
+się **raz**, więc precache i tak nie zdążyłby przed pierwszym wyświetleniem (service worker
+instaluje się po załadowaniu strony), a przy drugim wejściu nikt ich już nie zobaczy.
+Płacilibyśmy za obrazek dwa razy i ani razu na czas.
+
+Obrazki **nie są powiększane** przed zapisem. Bitmapy mają 560–800 px szerokości, a pas łąki
+zajmuje najwyżej ~470 px CSS; powiększenie nie dokłada ani jednego szczegółu, którego w źródle
+nie ma, tylko kilobajty. Akwarela nie ma ostrych krawędzi, więc przeglądarka rozciąga ją
+bez artefaktów.
 
 ## Plansza
 

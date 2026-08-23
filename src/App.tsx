@@ -7,6 +7,7 @@ import JoinPage from "./pages/JoinPage";
 import NoTokenPage from "./pages/NoTokenPage";
 import { PrivacyGate } from "./components/PrivacyGate";
 import { GuestTokenProvider, useGuestToken } from "./hooks/useGuestToken";
+import { LocaleProvider, useT } from "./hooks/useLocale";
 
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 
@@ -25,9 +26,10 @@ const client = new QueryClient({
 
 function Screens() {
   const { token } = useGuestToken();
+  const t = useT();
 
   return (
-    <Suspense fallback={<p className="p-8 text-center text-brand-800/60">Chwileczkę…</p>}>
+    <Suspense fallback={<p className="p-8 text-center text-brand-800/60">{t.app.loading}</p>}>
       <Routes>
         {/* /g/:token działa zawsze — to jedyna droga zdobycia tożsamości. */}
         <Route path="/g/:token" element={<JoinPage />} />
@@ -64,11 +66,15 @@ function Screens() {
 export default function App() {
   return (
     <QueryClientProvider client={client}>
-      <GuestTokenProvider>
-        <BrowserRouter>
-          <Screens />
-        </BrowserRouter>
-      </GuestTokenProvider>
+      {/* Język stoi najwyżej: każdy ekran pod spodem, łącznie z bramką
+          o zdjęciach i ekranem bez kodu, musi umieć się przetłumaczyć. */}
+      <LocaleProvider>
+        <GuestTokenProvider>
+          <BrowserRouter>
+            <Screens />
+          </BrowserRouter>
+        </GuestTokenProvider>
+      </LocaleProvider>
     </QueryClientProvider>
   );
 }

@@ -14,6 +14,8 @@
  *   - limit 4,5 MB na ciało funkcji Vercela.
  */
 
+import { AppError } from "./errors.js";
+
 export type Budget = { maxEdge: number; maxBytes: number };
 
 export type Encoded = {
@@ -93,7 +95,7 @@ function decodeViaElement(source: Blob): Promise<HTMLImageElement> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Nie udało się odczytać zdjęcia"));
+      reject(new AppError("imageRead", "Nie udało się odczytać zdjęcia"));
     };
     img.src = url;
   });
@@ -135,7 +137,7 @@ export async function encodeToBudget(
     }
   }
 
-  if (!smallest) throw new Error("Nie udało się zakodować zdjęcia");
+  if (!smallest) throw new AppError("imageEncode", "Nie udało się zakodować zdjęcia");
   return smallest;
 }
 

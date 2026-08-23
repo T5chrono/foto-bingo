@@ -1,11 +1,10 @@
 import { Sprig } from "./Sprig";
 
 /**
- * Podpis spod tytułu na papierowej karcie Foto Bingo. Aplikacja jest jedną
- * z rzeczy leżących tego weekendu na stole obok winietki i zaproszenia —
- * ma się przedstawiać tak samo jak one.
+ * Podpis spod tytułu („Karolina i Tomek · 2–4 października 2026") mieszka
+ * w słowniku jako `t.app.para`, bo po angielsku zmienia się w nim nie tylko
+ * spójnik, ale i zapis daty.
  */
-export const PARA = "Karolina i Tomek · 2–4 października 2026";
 
 const ROZMIARY = {
   sm: "text-3xl",

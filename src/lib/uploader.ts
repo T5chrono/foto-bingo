@@ -1,4 +1,5 @@
 import { ApiError, api } from "./api.js";
+import { AppError, type ErrorCode } from "./errors.js";
 import * as queue from "./queue.js";
 
 /**
@@ -38,7 +39,10 @@ export type Progress = {
   state: queue.JobState | "done";
   /** 0..1 dla oryginału — do paska postępu. */
   ratio?: number;
+  /** Polski tekst błędu — do logów i jako ostatnia deska ratunku na ekranie. */
   error?: string;
+  /** Kod do przetłumaczenia. Brak = błąd, dla którego nie mamy własnego zdania. */
+  code?: ErrorCode;
 };
 
 let running = false;
@@ -132,7 +136,7 @@ async function sendOriginal(job: queue.Job, onProgress?: (p: Progress) => void):
 
       if (next <= offset) {
         if (++stalled >= MAX_STALLED_CHUNKS) {
-          throw new Error("Wysyłka oryginału nie posuwa się do przodu — spróbujemy później");
+          throw new AppError("uploadStalled", "Wysyłka oryginału nie posuwa się do przodu");
         }
       } else {
         stalled = 0;
@@ -163,12 +167,15 @@ async function recordFailure(
 ): Promise<void> {
   const message = err instanceof Error ? err.message : String(err);
   const retryable = !(err instanceof ApiError) || err.isRetryable;
+  const code = (err as { code?: ErrorCode } | null)?.code;
 
   await queue.patch(job.photoId, {
     // Zadanie nieponawialne (400, 403) zostaje jako "failed" i czeka na
     // człowieka. Ponawialne wraca do kolejki i pójdzie, gdy wróci sieć.
     state: retryable ? "queued" : "failed",
     attempts: job.attempts + 1,
+    // W kolejce ląduje polski tekst, nie kod: to zapis diagnostyczny dla nas,
+    // czytany po weselu, a nie zdanie do pokazania komukolwiek.
     lastError: message,
   });
   onProgress?.({
@@ -176,6 +183,7 @@ async function recordFailure(
     phase,
     state: retryable ? "queued" : "failed",
     error: message,
+    code,
   });
 }
 

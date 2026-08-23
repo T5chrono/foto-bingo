@@ -1,7 +1,9 @@
-import { Hills } from "../components/wedding/Hills";
+import { LanguagePicker } from "../components/LanguagePicker";
+import { Valley } from "../components/wedding/Valley";
 import { Meadow } from "../components/wedding/Meadow";
 import { Sprig } from "../components/wedding/Sprig";
-import { PARA, Wordmark } from "../components/wedding/Wordmark";
+import { Wordmark } from "../components/wedding/Wordmark";
+import { useT } from "../hooks/useLocale";
 
 /**
  * Ekran dla kogoś, kto trafił na adres bez kodu — najczęściej po instalacji
@@ -13,24 +15,26 @@ import { PARA, Wordmark } from "../components/wedding/Wordmark";
  * a nie że pomylił adres.
  */
 export default function NoTokenPage() {
+  const t = useT();
+
   return (
     <main className="mx-auto flex min-h-full max-w-md flex-col">
-      <Hills className="h-44" />
+      <Valley className="h-44" />
 
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 pb-8 text-center">
         <div>
           <Wordmark size="lg" />
-          <p className="text-xs text-brand-800/70">{PARA}</p>
+          <p className="text-xs text-brand-800/70">{t.app.para}</p>
         </div>
 
         <Sprig />
 
-        <p className="text-brand-800/80">
-          Zeskanuj kod QR ze swojej winietki — to on mówi aplikacji, kim jesteś.
-        </p>
-        <p className="text-sm text-brand-800/60">
-          Jeśli winietka gdzieś przepadła, poproś Parę Młodą o nowy kod.
-        </p>
+        <p className="text-brand-800/80">{t.noToken.scan}</p>
+        <p className="text-sm text-brand-800/60">{t.noToken.lost}</p>
+
+        {/* Ekran bez kodu leży poza gałęzią z ustawieniami, więc to jedyne
+            miejsce, w którym gość może tu przestawić język. */}
+        <LanguagePicker className="mt-2" />
       </div>
 
       <Meadow />

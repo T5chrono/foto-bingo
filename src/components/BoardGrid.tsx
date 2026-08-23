@@ -1,5 +1,6 @@
-import { BOARD, SIZE, type Category } from "../lib/board";
+import { BOARD, SIZE, categoryLabel, type Category } from "../lib/board";
 import { highlightedIds } from "../lib/bingo";
+import { useLocale } from "../hooks/useLocale";
 
 export type TileView = {
   /** Miniatura z serwera; brak = kafelek jeszcze nie ma zdjęcia u nas. */
@@ -34,8 +35,10 @@ type Props = {
  * gość rozpoznaje własne zdjęcie szybciej niż nazwę kategorii.
  */
 export function BoardGrid({ tiles, onPick }: Props) {
+  const { locale, t } = useLocale();
+
   const filled = new Set(
-    [...tiles.entries()].filter(([, t]) => t.thumbUrl || t.pending).map(([id]) => id),
+    [...tiles.entries()].filter(([, tile]) => tile.thumbUrl || tile.pending).map(([id]) => id),
   );
   const highlighted = highlightedIds(filled);
 
@@ -44,7 +47,7 @@ export function BoardGrid({ tiles, onPick }: Props) {
       className="grid gap-1.5"
       style={{ gridTemplateColumns: `repeat(${SIZE}, minmax(0, 1fr))` }}
       role="grid"
-      aria-label="Plansza Foto Bingo, 5 na 5"
+      aria-label={t.board.grid}
     >
       {BOARD.map((cat) => {
         const tile = tiles.get(cat.id);
@@ -52,6 +55,15 @@ export function BoardGrid({ tiles, onPick }: Props) {
         const pending = Boolean(tile?.pending);
         const failed = Boolean(tile?.failed);
         const inLine = highlighted.has(cat.id);
+        const label = categoryLabel(cat, locale);
+
+        const state = done
+          ? t.board.tileDone
+          : pending
+            ? t.board.tileQueued
+            : failed
+              ? t.board.tileFailed
+              : null;
 
         return (
           <button
@@ -59,11 +71,8 @@ export function BoardGrid({ tiles, onPick }: Props) {
             type="button"
             role="gridcell"
             onClick={() => onPick?.(cat)}
-            title={cat.label}
-            aria-label={
-              `R${cat.row}K${cat.col} — ${cat.label}` +
-              (done ? " — zdobyte" : pending ? " — w kolejce" : failed ? " — błąd wysyłki" : "")
-            }
+            title={label}
+            aria-label={`R${cat.row}K${cat.col} — ${label}` + (state ? ` — ${state}` : "")}
             className={[
               "relative aspect-square overflow-hidden rounded-lg border transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700",
@@ -95,7 +104,7 @@ export function BoardGrid({ tiles, onPick }: Props) {
                     pending ? "text-brand-800" : failed ? "text-clay-900" : "text-brand-800",
                   ].join(" ")}
                 >
-                  {pending ? "wysyłanie…" : failed ? "błąd — dotknij" : cat.label}
+                  {pending ? t.board.sending : failed ? t.board.failedTap : label}
                 </span>
                 <Kolko state={pending ? "pending" : failed ? "failed" : "empty"} />
               </span>

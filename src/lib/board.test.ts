@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BOARD, SIZE, categoryById } from "./board.js";
+import { BOARD, SIZE, categoryById, categoryLabel } from "./board.js";
+import { slugify } from "./slug.js";
 
 describe("plansza", () => {
   it("ma 25 kategorii ponumerowanych 1..25 wierszami", () => {
@@ -15,11 +16,11 @@ describe("plansza", () => {
     }
   });
 
-  it("zachowuje kolumny z oryginalnej tabeli Pary Młodej", () => {
+  it("zachowuje wiersze z tabeli Pary Młodej", () => {
     expect(categoryById(1)?.label).toBe("Selfie z parą młodą");
     expect(categoryById(3)?.label).toBe("Ognisko z iskrami");
     expect(categoryById(11)?.label).toBe("Trzy pokolenia na jednym zdjęciu");
-    expect(categoryById(25)?.label).toBe("Cała drużyna z gry oczepinowej");
+    expect(categoryById(25)?.label).toBe("Cała drużyna z gry weselnej");
   });
 
   it("nie ma dwóch kategorii o tym samym slugu", () => {
@@ -55,20 +56,51 @@ describe("plansza", () => {
       "zdjecie-z-obiema-mamami",
       "ktos-kto-zasnal",
       "trzy-pokolenia-na-jednym-zdjeciu",
-      "moment-ceremonii",
+      "moment-ceremonii-slubnej",
       "pierwszy-taniec",
       "uchwycona-wpadka",
       "ktos-tanczacy-z-zamknietymi-oczami",
       "ktos-owiniety-kocem",
       "tort-przed-pokrojeniem",
       "swiadkowie-razem",
-      "zdjecie-z-basenu",
+      "kreatywne-zdjecie-z-basenu",
       "najlepszy-widok-z-tarasu",
       "ktos-kto-trzyma-dwa-drinki-naraz",
       "gwiazdy-albo-nocne-niebo",
       "ktos-kto-probuje-uciec-przed-zdjeciem",
       "ktos-kto-placze-ze-wzruszenia",
-      "cala-druzyna-z-gry-oczepinowej",
+      "cala-druzyna-z-gry-weselnej",
     ]);
+  });
+});
+
+describe("etykiety po angielsku", () => {
+  it("ma tłumaczenie każdego z 25 pól", () => {
+    for (const cat of BOARD) {
+      expect(cat.labelEn, `pole ${cat.id}`).toBeTruthy();
+      expect(cat.labelEn, `pole ${cat.id} zostało po polsku`).not.toBe(cat.label);
+    }
+  });
+
+  it("nie powtarza tej samej etykiety na dwóch polach", () => {
+    expect(new Set(BOARD.map((c) => c.labelEn)).size).toBe(BOARD.length);
+  });
+
+  it("podaje etykietę zgodną z językiem", () => {
+    const cat = categoryById(12)!;
+    expect(categoryLabel(cat, "pl")).toBe("Moment ceremonii ślubnej");
+    expect(categoryLabel(cat, "en")).toBe("A moment from the wedding ceremony");
+  });
+
+  /**
+   * Nazwa pliku na Dysku powstaje na serwerze, który nie wie, w jakim języku
+   * jest telefon gościa. Gdyby slug szedł za angielską etykietą, to samo pole
+   * lądowałoby w folderze pod dwiema nazwami — i wyszłoby to dopiero po weselu.
+   */
+  it("liczy slug z polskiej etykiety, nie z angielskiej", () => {
+    for (const cat of BOARD) {
+      expect(cat.slug).toBe(slugify(cat.label));
+      expect(cat.slug).not.toBe(slugify(cat.labelEn));
+    }
   });
 });
