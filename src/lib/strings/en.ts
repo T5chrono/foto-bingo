@@ -75,7 +75,7 @@ export const en: Strings = {
     replace: "Replace photo",
     remove: "Delete photo",
     removeAsk: "Delete this photo?",
-    removeNote: "The square opens up again. The full-size photo stays on Karolina & Tomek's Drive.",
+    removeNote: "It leaves your board and Karolina & Tomek's Drive folder.",
     removeYes: "Delete",
     removeNo: "Keep it",
     removing: "Deleting…",
@@ -130,7 +130,9 @@ export const en: Strings = {
         "everything waits on your phone and sends itself later.",
     ],
     short: "Photos go to Karolina & Tomek's private Drive. Nobody else will see them.",
-    removal: "Want a photo gone? Tell Karolina & Tomek — they'll delete it from the Drive.",
+    removal:
+      "Want a photo gone? Delete it on its square — it leaves the board and the Drive " +
+      "folder alike.",
     accept: "Got it, let's play",
   },
 

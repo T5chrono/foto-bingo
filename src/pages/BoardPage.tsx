@@ -55,7 +55,7 @@ export default function BoardPage() {
       <header className="relative flex items-center justify-center">
         {/* Zębatka wychodzi z układu na bok, żeby logotyp mógł stać na środku
             karty — tak jak tytuł na papierowej wersji. */}
-        <Wordmark size="sm" />
+        <Wordmark size="md" />
         <Link
           to="/ustawienia"
           aria-label={t.board.settings}

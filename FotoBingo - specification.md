@@ -363,8 +363,9 @@ Trzy rzeczy pilnują, żeby to się nie rozjechało:
 1. **Budżet jest twardy** (D10). Kompresor schodzi z jakością i, jeśli trzeba, z rozdzielczością,
    aż plik zmieści się w limicie. Nie ma zdjęcia, które przekroczy 350 KB.
 2. **Podmiany nie kumulują się.** Gdy gość podmienia zdjęcie na kafelku, poprzedni podgląd
-   **usuwamy z Supabase** — jego oryginał jest już bezpieczny na Dysku, a wersja robocza nie
-   jest do niczego potrzebna. Baza pamięta, że podmiana była.
+   **usuwamy z Supabase**, a poprzedni oryginał ląduje **w koszu Dysku** — w kategorii ma
+   zostać to, co gość naprawdę wybrał, a nie stos wersji roboczych z całego weekendu.
+   Baza pamięta, że podmiana była.
 3. **Licznik z alarmem.** Panel pokazuje `zajęte / 1000 MB`, liczone jako `SUM(bytes)` z bazy.
    Po przekroczeniu **750 MB** panel wyświetla ostrzeżenie, a budżet podglądu dla nowych zdjęć
    schodzi automatycznie do 200 KB. Przy realnym ruchu ten mechanizm nigdy się nie uruchomi —
@@ -545,9 +546,17 @@ Dysku, gdyby Supabase kiedyś zniknął.
 usunęło wiele folderów w 2020). Folder-na-gościa i folder-na-kategorię wykluczają się. Dlatego
 widok „wszystkie zdjęcia z danej kategorii" żyje w panelu aplikacji, nie na Dysku.
 
-**Podmiany:** nowe zdjęcie na zajętym kafelku nie kasuje starego pliku na Dysku. Do nazwy
-poprzedniego dopisujemy `__zastapione`, w bazie `is_active=false`, a podgląd z Supabase usuwamy.
-Na weselu nic się nie kasuje bezpowrotnie.
+**Podmiany i usunięcia:** nowe zdjęcie na zajętym kafelku odkłada poprzednie do **kosza
+Dysku**, w bazie zostaje `is_active=false`, a podgląd z Supabase usuwamy. Tak samo działa
+„Usuń zdjęcie" na ekranie kategorii — z tą różnicą, że kafelek zostaje pusty. Poprzednik idzie
+do kosza dopiero wtedy, gdy następca naprawdę leży na Dysku; przy usuwaniu kolejność jest
+odwrotna i równie celowa — **najpierw kosz, potem baza**, żeby pad Google nie zostawił pustego
+kafelka nad zdjęciem, które dalej leży w folderze.
+
+Kosz, a nie kasowanie bezpowrotne: z folderu gościa plik znika natychmiast, ale przez 30 dni
+Para Młoda może go przywrócić jednym kliknięciem. „Usuń" dotknięte po ciemku i jedną ręką bywa
+dotknięte przez pomyłkę, a zdjęcia z wesela nie da się zrobić drugi raz. Na weselu nic nie
+kasuje się bezpowrotnie **jednym gestem gościa**.
 
 ---
 

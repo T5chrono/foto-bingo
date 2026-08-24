@@ -76,9 +76,20 @@
        tych dwoch liczb to albo pasek kremu nad laka, albo podpis wchodzacy
        w maki.
 
-       `clamp` zamiast stalej: na niskim ekranie laka ma ustapic planszy,
-       na wysokim moze urosnac do naturalnych proporcji bitmapy (560x206). */
-    --meadow-h: clamp(72px, 14svh, 132px);
+       Pierwszy skladnik to **naturalna wysokosc bitmapy** (560x206) rozciagnietej
+       na cala szerokosc okna. Dzieki niemu na telefonie laka idzie od krawedzi
+       do krawedzi i nie jest przy tym niczym przycieta — a przyciecie od gory
+       ucinaloby glowki kwiatow, czyli jedyne, co w tym pasku widac.
+
+       Dwa pozostale to hamulce na wypadek, gdyby okno bylo bardzo szerokie
+       albo bardzo niskie: przy 1280 px naturalna wysokosc siegnelaby 470 px
+       i laka zjadlaby plansze. Do 543 px szerokosci — czyli na kazdym telefonie
+       i na malym tablecie — hamulce nie dzialaja i pas idzie od krawedzi do
+       krawedzi. Szerzej obrazek przestaje byc pelnoekranowy: zmniejsza sie
+       i staje na srodku, ale nadal jest caly (`object-contain` w komponencie).
+       Pelna szerokosc i brak przyciecia wykluczaja sie przy jednej bitmapie
+       560x206 — wybieramy brak przyciecia, bo to na nie patrzy gosc. */
+    --meadow-h: min(calc(100vw * 206 / 560), 22svh, 200px);
   }
 
   html {

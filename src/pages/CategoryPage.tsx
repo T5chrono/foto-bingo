@@ -183,11 +183,64 @@ export default function CategoryPage() {
     }
   }
 
+  /**
+   * Guziki ekranu. Stoją w zmiennej, bo trafiają w dwa różne miejsca układu:
+   * pod zdjęciem albo tuż pod nazwą kategorii — a to ma być ten sam guzik,
+   * nie dwa podobne.
+   */
+  const akcje = confirmingRemoval ? (
+    <section className="rounded-2xl border border-clay-300 bg-clay-50 px-4 py-3">
+      <p className="font-medium text-clay-900">{t.category.removeAsk}</p>
+      <p className="mt-1 text-xs text-clay-900/70">{t.category.removeNote}</p>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => void handleRemove()}
+          disabled={removing}
+          className="flex-1 rounded-xl bg-clay-700 px-4 py-3 font-medium text-white disabled:opacity-50"
+        >
+          {removing ? t.category.removing : t.category.removeYes}
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirmingRemoval(false)}
+          disabled={removing}
+          className="flex-1 rounded-xl border border-brand-300 bg-paper px-4 py-3 font-medium text-brand-800"
+        >
+          {t.category.removeNo}
+        </button>
+      </div>
+    </section>
+  ) : (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={() => fileInput.current?.click()}
+        disabled={phase === "processing"}
+        className="rounded-2xl bg-brand-700 px-5 py-3.5 text-lg font-medium text-white disabled:opacity-50"
+      >
+        {shown ? t.category.replace : t.category.pick}
+      </button>
+
+      {canRemove && (
+        <button
+          type="button"
+          onClick={() => setConfirmingRemoval(true)}
+          className="rounded-2xl border border-clay-300 bg-paper px-5 py-2.5 font-medium text-clay-700"
+        >
+          {t.category.remove}
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <main className="mx-auto flex h-dvh max-w-md flex-col gap-3 overflow-hidden px-4 pt-3 pb-[var(--meadow-h)]">
       <BackButton />
 
-      <header className="flex flex-col gap-1">
+      {/* Nazwa kategorii stoi na środku razem z gałązką pod spodem — tak samo,
+          jak nagłówki na zaproszeniu i jak podpis na papierowym kafelku. */}
+      <header className="flex flex-col items-center gap-1 text-center">
         <p className="text-xs tracking-widest text-brand-500 uppercase">
           R{category.row}K{category.col}
         </p>
@@ -197,19 +250,29 @@ export default function CategoryPage() {
         <Sprig />
       </header>
 
-      {/* Zdjęcie bierze całą wolną wysokość — a gdy kafelek jest pusty, stoi
-          tu zdanie o wysyłce bez zasięgu, żeby to miejsce nie było dziurą. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        {shown ? (
-          <img
-            src={shown}
-            alt={preview ? t.category.chosenPhoto : t.category.yourPhoto}
-            className="max-h-full max-w-full rounded-2xl border border-brand-200 object-contain"
-          />
-        ) : (
+      {shown ? (
+        <>
+          {/* Zdjęcie bierze całą wolną wysokość, ale siada na dole swojego
+              pola (`items-end`), żeby guziki leżały tuż pod nim, a nie pod
+              pustym prostokątem. Zapas idzie nad zdjęcie, gdzie go nie widać. */}
+          <div className="flex min-h-0 flex-1 items-end justify-center">
+            <img
+              src={shown}
+              alt={preview ? t.category.chosenPhoto : t.category.yourPhoto}
+              className="max-h-full max-w-full rounded-2xl object-contain"
+            />
+          </div>
+          {akcje}
+        </>
+      ) : (
+        <>
+          {/* Pusty kafelek to jedno pytanie: „które zdjęcie?". Guzik stoi
+              od razu pod nazwą kategorii, bo między jednym a drugim nie ma
+              nic do przeczytania. */}
+          {akcje}
           <p className="text-center text-sm text-brand-800/55">{t.category.offline}</p>
-        )}
-      </div>
+        </>
+      )}
 
       <input
         ref={fileInput}
@@ -223,52 +286,6 @@ export default function CategoryPage() {
           if (file) void handleFile(file);
         }}
       />
-
-      {confirmingRemoval ? (
-        <section className="rounded-2xl border border-clay-300 bg-clay-50 px-4 py-3">
-          <p className="font-medium text-clay-900">{t.category.removeAsk}</p>
-          <p className="mt-1 text-xs text-clay-900/70">{t.category.removeNote}</p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={() => void handleRemove()}
-              disabled={removing}
-              className="flex-1 rounded-xl bg-clay-700 px-4 py-3 font-medium text-white disabled:opacity-50"
-            >
-              {removing ? t.category.removing : t.category.removeYes}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingRemoval(false)}
-              disabled={removing}
-              className="flex-1 rounded-xl border border-brand-300 bg-paper px-4 py-3 font-medium text-brand-800"
-            >
-              {t.category.removeNo}
-            </button>
-          </div>
-        </section>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => fileInput.current?.click()}
-            disabled={phase === "processing"}
-            className="rounded-2xl bg-brand-700 px-5 py-3.5 text-lg font-medium text-white disabled:opacity-50"
-          >
-            {shown ? t.category.replace : t.category.pick}
-          </button>
-
-          {canRemove && (
-            <button
-              type="button"
-              onClick={() => setConfirmingRemoval(true)}
-              className="rounded-2xl border border-clay-300 bg-paper px-5 py-2.5 font-medium text-clay-700"
-            >
-              {t.category.remove}
-            </button>
-          )}
-        </div>
-      )}
 
       <StatusLine
         phase={phase}

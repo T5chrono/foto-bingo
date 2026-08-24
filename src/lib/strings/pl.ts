@@ -80,7 +80,7 @@ export const pl = {
     remove: "Usuń zdjęcie",
     /** Pytanie przed skasowaniem — jedno zdanie, bo pada w środku zabawy. */
     removeAsk: "Usunąć to zdjęcie?",
-    removeNote: "Kafelek zwolni się na planszy. Oryginał zostaje na Dysku Pary Młodej.",
+    removeNote: "Zniknie z planszy i z folderu na Dysku Pary Młodej.",
     removeYes: "Usuń",
     removeNo: "Zostaw",
     removing: "Usuwam…",
@@ -137,7 +137,9 @@ export const pl = {
     ],
     /** Zdanie, które musi dać się przeczytać w dwie sekundy przy ognisku. */
     short: "Zdjęcia trafiają na prywatny Dysk Pary Młodej. Nikt inny ich nie zobaczy.",
-    removal: "Chcesz, żeby jakieś zdjęcie zniknęło? Powiedz Parze Młodej — usuną je z Dysku.",
+    removal:
+      "Chcesz, żeby jakieś zdjęcie zniknęło? Usuń je na jego kafelku — zejdzie z planszy " +
+      "i z Dysku Pary Młodej.",
     accept: "Rozumiem, gramy",
   },
 

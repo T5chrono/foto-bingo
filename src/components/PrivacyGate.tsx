@@ -46,14 +46,14 @@ export function PrivacyGate({ children }: { children: React.ReactNode }) {
           chwilą zeskanował kod. Jedyny ekran, na którym się pojawia. */}
       <Bloom className="-mt-2 shrink-0" />
 
-      <div className="flex min-h-0 flex-1 flex-col justify-center gap-2 px-6 pb-2">
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-1.5 px-6 pb-1">
         <div className="flex justify-center">
           <LanguagePicker />
         </div>
 
         <ScreenTitle>{t.privacy.title}</ScreenTitle>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-sm text-brand-800/80">
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto text-sm leading-snug text-brand-800/80">
           {t.privacy.paragraphs.map((p) => (
             <p key={p.slice(0, 24)}>{p}</p>
           ))}

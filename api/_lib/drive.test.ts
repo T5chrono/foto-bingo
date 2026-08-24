@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CHUNK_SIZE, extensionFor, putChunk, sessionOffset } from "./drive.js";
+import {
+  CHUNK_SIZE,
+  __setToken,
+  extensionFor,
+  putChunk,
+  sessionOffset,
+  trashFile,
+} from "./drive.js";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => {
@@ -122,5 +129,40 @@ describe("rozszerzenie oryginału", () => {
   it("przy zupełnie nieznanym wejściu daje jpg zamiast pliku bez rozszerzenia", () => {
     expect(extensionFor("", "application/octet-stream")).toBe("jpg");
     expect(extensionFor("", "")).toBe("jpg");
+  });
+});
+
+describe("kosz na Dysku", () => {
+  // Zdjęcie zdjęte z kafelka ma wyjść z folderu gościa, ale nie z Dysku
+  // do zera: `trashed` daje Parze Młodej 30 dni na odkręcenie cudzej pomyłki.
+  // Gdyby kiedyś zamieniło się to na DELETE, ten test ma o tym powiedzieć.
+  it("prosi o kosz, a nie o skasowanie pliku", async () => {
+    __setToken("token-testowy");
+    const calls = stubFetch(new Response("{}", { status: 200 }));
+
+    await trashFile("plik-1");
+
+    expect(calls[0]?.url).toContain("/files/plik-1");
+    expect(calls[0]?.init.method).toBe("PATCH");
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({ trashed: true });
+    __setToken(null);
+  });
+
+  it("na 404 nie robi afery — pliku i tak już nie ma", async () => {
+    __setToken("token-testowy");
+    stubFetch(new Response("brak", { status: 404 }));
+
+    await expect(trashFile("plik-2")).resolves.toBeUndefined();
+    __setToken(null);
+  });
+
+  // Od tego rzutu zależy, czy trasa kasująca zatrzyma się przed bazą. Połknięty
+  // błąd znaczyłby pusty kafelek nad zdjęciem, które dalej leży w folderze.
+  it("nie połyka odmowy Google", async () => {
+    __setToken("token-testowy");
+    stubFetch(new Response("nie dzisiaj", { status: 500 }));
+
+    await expect(trashFile("plik-3")).rejects.toThrow();
+    __setToken(null);
   });
 });
