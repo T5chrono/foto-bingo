@@ -31,7 +31,7 @@ export function useBoard() {
 
   const tiles = new Map<number, TileView>();
   for (const tile of me.data?.tiles ?? []) {
-    tiles.set(tile.categoryId, { thumbUrl: tile.thumbUrl });
+    tiles.set(tile.categoryId, { thumbUrl: tile.thumbUrl, previewUrl: tile.previewUrl });
   }
   for (const job of jobs) {
     if (job.state === "done") continue;

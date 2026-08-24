@@ -69,6 +69,18 @@
 }
 
 @layer base {
+  :root {
+    /* Wysokosc pasa laki u dolu okna. Siedzi w zmiennej, bo dwa miejsca musza
+       sie zgadzac co do piksela: sam pas (jest `fixed`, wiec wypada z ukladu)
+       i dolny margines ekranow, ktory trzyma tresc nad kwiatami. Rozjazd
+       tych dwoch liczb to albo pasek kremu nad laka, albo podpis wchodzacy
+       w maki.
+
+       `clamp` zamiast stalej: na niskim ekranie laka ma ustapic planszy,
+       na wysokim moze urosnac do naturalnych proporcji bitmapy (560x206). */
+    --meadow-h: clamp(72px, 14svh, 132px);
+  }
+
   html {
     color-scheme: light;
     /* Plansza 5x5 na telefonie ma być całą stroną, bez gumowego odbicia

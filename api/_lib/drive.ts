@@ -216,12 +216,34 @@ export async function sessionOffset(sessionUri: string, total: number): Promise<
 /** Podmienione zdjęcia zostają na Dysku — dostają tylko przyrostek w nazwie.
  *  Na weselu nic nie ginie bezpowrotnie (sekcja 9 specyfikacji). */
 export async function markSuperseded(fileId: string, currentName: string): Promise<void> {
-  if (currentName.includes("__zastapione")) return;
+  await renameWithSuffix(fileId, currentName, "__zastapione");
+}
+
+/**
+ * Zdjęcie zdjęte z kafelka przez samego gościa.
+ *
+ * Plik zostaje na Dysku — kasuje się wyłącznie wersja robocza z Supabase.
+ * Gość mówi tym gestem „nie chcę tego u siebie na planszy", a nie „wymażcie
+ * to z archiwum": po weselu nikt nie odzyska zdjęcia, którego nie ma.
+ * Przyrostek jest po to, żeby Para Młoda widziała różnicę przy przeglądaniu
+ * folderu — inaczej plik wyglądałby jak każdy inny.
+ */
+export async function markRemoved(fileId: string, currentName: string): Promise<void> {
+  await renameWithSuffix(fileId, currentName, "__usuniete");
+}
+
+/** Przyrostek wchodzi przed kropkę, żeby plik nie stracił rozszerzenia. */
+async function renameWithSuffix(
+  fileId: string,
+  currentName: string,
+  suffix: string,
+): Promise<void> {
+  if (currentName.includes(suffix)) return;
   const dot = currentName.lastIndexOf(".");
   const name =
     dot > 0
-      ? `${currentName.slice(0, dot)}__zastapione${currentName.slice(dot)}`
-      : `${currentName}__zastapione`;
+      ? `${currentName.slice(0, dot)}${suffix}${currentName.slice(dot)}`
+      : `${currentName}${suffix}`;
 
   await driveFetch(`${API}/files/${fileId}`, {
     method: "PATCH",

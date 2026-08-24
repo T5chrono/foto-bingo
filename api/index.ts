@@ -5,7 +5,7 @@ import { createMiddleware } from "hono/factory";
 import { guestByToken } from "./_lib/auth.js";
 import { BUDGET, config } from "./_lib/config.js";
 import { db, type Guest } from "./_lib/db.js";
-import { boardState, finalizePhoto } from "./_lib/photos.js";
+import { boardState, finalizePhoto, removeActivePhoto } from "./_lib/photos.js";
 import {
   createDownloadUrls,
   createUploadUrl,
@@ -16,6 +16,7 @@ import {
 import {
   CHUNK_SIZE,
   ensureGuestFolder,
+  markRemoved,
   markSuperseded,
   putChunk,
   sessionOffset,
@@ -73,7 +74,14 @@ app.get("/health", (c) => c.json({ ok: true }));
 app.get("/me", requireGuest, async (c) => {
   const guest = c.get("guest");
   const tiles = await boardState(guest.id);
-  const urls = await createDownloadUrls(tiles.map((tile) => tile.thumbPath));
+  // Podglad jedzie razem z miniatura, choc na planszy nie jest potrzebny:
+  // ekran kategorii pokazuje zdobyte zdjecie duze i bez tego musialby pytac
+  // serwer o jeden adres — czyli akurat wtedy, gdy gosc stoi na dworze
+  // i chce tylko zobaczyc, co tam wczoraj wyslal. Podpisy powstaja jednym
+  // wywolaniem, wiec drugi adres nie kosztuje round-tripa, tylko bajty.
+  const urls = await createDownloadUrls(
+    tiles.flatMap((tile) => [tile.thumbPath, tile.previewPath]),
+  );
 
   return c.json({
     guest: { name: guest.name, slug: guest.slug },
@@ -82,6 +90,7 @@ app.get("/me", requireGuest, async (c) => {
       photoId: tile.photoId,
       driveStatus: tile.driveStatus,
       thumbUrl: signedUrl(urls, tile.thumbPath),
+      previewUrl: signedUrl(urls, tile.previewPath),
     })),
     budget: await currentBudget(),
   });
@@ -273,6 +282,41 @@ app.post("/photos/original/chunk", requireGuest, async (c) => {
   await renameSuperseded(guest.id, photo.category_id, photo.id);
 
   return c.json({ done: true, fileId: result.fileId, name: result.fileName });
+});
+
+/**
+ * Zdejmuje zdjecie z kafelka. Gosc dostaje z powrotem puste pole i moze
+ * wyslac w tej kategorii cokolwiek innego.
+ *
+ * Kasuje sie **wylacznie podglad i miniatura** z Supabase. Oryginal zostaje
+ * na Dysku Pary Mlodej i dostaje przyrostek w nazwie — tak samo, jak przy
+ * podmianie (sekcja 9 specyfikacji: na weselu nic nie ginie bezpowrotnie).
+ * Gosc, ktory dotknal "usun" o jedno zdjecie za daleko, nie kasuje wspomnienia,
+ * tylko zwalnia kafelek.
+ *
+ * Odpowiedz 200 wraca takze wtedy, gdy kafelek juz byl pusty: powtorzone
+ * dotkniecie przy slabym zasiegu ma dac ten sam wynik, a nie 404 na ekranie.
+ */
+app.delete("/photos/category/:id", requireGuest, async (c) => {
+  const guest = c.get("guest");
+  const categoryId = Number(c.req.param("id"));
+
+  if (!Number.isInteger(categoryId) || categoryId < 1 || categoryId > 25) {
+    return c.json({ error: "categoryId musi być z zakresu 1..25" }, 400);
+  }
+
+  const removed = await removeActivePhoto(guest.id, categoryId);
+  if (!removed) return c.json({ ok: true, removed: false });
+
+  if (removed.driveFileId && removed.driveFileName) {
+    // Przyrostek to kosmetyka archiwum — kafelek jest juz zwolniony i gosc
+    // nie ma po co czekac na Google ani ogladac bledu, ktory go nie dotyczy.
+    await markRemoved(removed.driveFileId, removed.driveFileName).catch((err) =>
+      console.error("Nie udalo sie oznaczyc usunietego pliku:", err),
+    );
+  }
+
+  return c.json({ ok: true, removed: true });
 });
 
 /** Wszystkie trasy panelu wymagaja podpisanego ciasteczka. */

@@ -5,6 +5,9 @@ import { useLocale } from "../hooks/useLocale";
 export type TileView = {
   /** Miniatura z serwera; brak = kafelek jeszcze nie ma zdjęcia u nas. */
   thumbUrl?: string;
+  /** Ta sama fotografia w wersji na cały ekran — potrzebna dopiero na ekranie
+   *  kategorii, ale przychodzi razem z planszą, więc leży tu obok miniatury. */
+  previewUrl?: string;
   /** Zdjęcie czeka w kolejce w telefonie albo właśnie leci. */
   pending?: boolean;
   /** Nieponawialny błąd — czeka na człowieka. */
@@ -14,6 +17,8 @@ export type TileView = {
 type Props = {
   tiles: ReadonlyMap<number, TileView>;
   onPick?: (category: Category) => void;
+  /** Rozmiar planszy ustala ekran, nie ona sama — patrz komentarz niżej. */
+  className?: string;
 };
 
 /**
@@ -33,8 +38,16 @@ type Props = {
  *
  * Kafelek zdobyty pokazuje miniaturę, a nie tekst: po dwóch dniach zbierania
  * gość rozpoznaje własne zdjęcie szybciej niż nazwę kategorii.
+ *
+ * **Wiersze są `1fr`, a nie wysokością kafelka.** Plansza dostaje z ekranu
+ * kwadratowe pudełko przycięte do wolnej wysokości (`aspect-square max-h-full`),
+ * a rząd dzieli to, co zostało. Na typowym telefonie kafelki wychodzą kwadratowe
+ * co do piksela; na niskim ekranie — albo takim, gdzie pod planszą stanął pasek
+ * bingo i zachęta do instalacji — ściskają się o kilka procent, zamiast zepchnąć
+ * ostatni rząd pod krawędź. Plansza, po której trzeba przewijać, przestaje być
+ * kartą do bingo.
  */
-export function BoardGrid({ tiles, onPick }: Props) {
+export function BoardGrid({ tiles, onPick, className = "" }: Props) {
   const { locale, t } = useLocale();
 
   const filled = new Set(
@@ -44,8 +57,11 @@ export function BoardGrid({ tiles, onPick }: Props) {
 
   return (
     <div
-      className="grid gap-1.5"
-      style={{ gridTemplateColumns: `repeat(${SIZE}, minmax(0, 1fr))` }}
+      className={`grid gap-1.5 ${className}`}
+      style={{
+        gridTemplateColumns: `repeat(${SIZE}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${SIZE}, minmax(0, 1fr))`,
+      }}
       role="grid"
       aria-label={t.board.grid}
     >
@@ -74,7 +90,7 @@ export function BoardGrid({ tiles, onPick }: Props) {
             title={label}
             aria-label={`R${cat.row}K${cat.col} — ${label}` + (state ? ` — ${state}` : "")}
             className={[
-              "relative aspect-square overflow-hidden rounded-lg border transition-colors",
+              "relative h-full w-full overflow-hidden rounded-lg border transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700",
               failed
                 ? "border-clay-400 bg-clay-50"

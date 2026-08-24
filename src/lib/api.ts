@@ -9,6 +9,9 @@ export type Tile = {
   photoId: string;
   driveStatus: "pending" | "ok" | "failed";
   thumbUrl: string;
+  /** Ta sama fotografia w wersji na cały ekran — ekran kategorii pokazuje ją
+   *  gościowi, gdy wraca na zdobyty kafelek. */
+  previewUrl: string;
 };
 
 export type Me = {
@@ -139,6 +142,15 @@ export type PanelStats = {
 
 export const api = {
   me: () => request<Me>("/me"),
+
+  /**
+   * Zdejmuje zdjęcie z kafelka. Oryginał zostaje na Dysku Pary Młodej —
+   * znika tylko podgląd i miniatura, czyli to, co widać w aplikacji.
+   */
+  removePhoto: (categoryId: number) =>
+    request<{ ok: boolean; removed: boolean }>(`/photos/category/${categoryId}`, {
+      method: "DELETE",
+    }),
 
   uploadTargets: (body: { photoId: string; categoryId: number; ext: string }) =>
     request<UploadTargets>("/photos/upload-url", {

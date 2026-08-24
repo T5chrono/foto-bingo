@@ -8,9 +8,11 @@ import { errorText } from "../lib/errors";
 import { prepare } from "../lib/image";
 import * as queue from "../lib/queue";
 import { drain } from "../lib/uploader";
+import { useBoard } from "../hooks/useBoard";
 import { useLocale } from "../hooks/useLocale";
 import type { Strings } from "../lib/strings/pl";
-import { Meadow } from "../components/wedding/Meadow";
+import { BackButton } from "../components/BackButton";
+import { MeadowBand } from "../components/wedding/Meadow";
 import { Sprig } from "../components/wedding/Sprig";
 
 /**
@@ -27,19 +29,35 @@ type Phase =
   | "originalOnTheWay"
   | "failed";
 
+/**
+ * Jeden kafelek z bliska.
+ *
+ * Ekran ma dwa życia. Na pustym kafelku jest formularzem: jeden duży przycisk
+ * i zdanie o tym, że zasięg nie jest do niczego potrzebny. Na zdobytym jest
+ * **zdjęciem** — gość wraca tu głównie po to, żeby zobaczyć, co właściwie
+ * wysłał wczoraj wieczorem, a nie żeby cokolwiek zmieniać. Dlatego fotografia
+ * dostaje całą wolną wysokość, a obie decyzje stoją pod nią w kolejności
+ * odwrotnej do ryzyka: zamiana jest dużym przyciskiem, usunięcie zwykłym,
+ * i dopiero po dotknięciu pyta o potwierdzenie.
+ */
 export default function CategoryPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const client = useQueryClient();
   const { locale, t } = useLocale();
   const fileInput = useRef<HTMLInputElement>(null);
+  const { tiles, refreshJobs } = useBoard();
 
   const category = categoryById(Number(id));
+  const tile = category ? tiles.get(category.id) : undefined;
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [sizeInfo, setSizeInfo] = useState<string | null>(null);
   const [originalRatio, setOriginalRatio] = useState(0);
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
 
@@ -53,6 +71,14 @@ export default function CategoryPage() {
       </p>
     );
   }
+
+  // Świeżo wybrane zdjęcie wygrywa z tym z serwera: leży już w pamięci telefonu
+  // i pokazuje się natychmiast, także wtedy, gdy podgląd dopiero leci w górę.
+  const shown = preview ?? tile?.previewUrl ?? tile?.thumbUrl ?? null;
+  const onServer = Boolean(tile?.thumbUrl);
+  // Zablokowany kafelek (nieudana wysyłka) też da się zwolnić — inaczej gość
+  // zostaje z polem, którego nie umie ani wysłać, ani wyczyścić.
+  const canRemove = Boolean(shown || tile?.pending || tile?.failed);
 
   async function handleFile(file: File) {
     setError(null);
@@ -123,32 +149,67 @@ export default function CategoryPage() {
     }
   }
 
-  return (
-    <main className="mx-auto flex min-h-full max-w-md flex-col gap-5 px-4 py-5">
-      <button
-        onClick={() => navigate("/")}
-        className="self-start text-sm text-brand-700 underline"
-      >
-        {t.category.board}
-      </button>
+  /**
+   * Zdejmuje zdjęcie z kafelka — z telefonu i z serwera.
+   *
+   * Kolejność ma znaczenie: najpierw znika zadanie z kolejki, bo zdjęcie,
+   * które właśnie leci w górę, wróciłoby na kafelek chwilę po tym, jak serwer
+   * je stamtąd zdjął. Oryginał na Dysku zostaje — kasuje się wersja robocza,
+   * a nie wspomnienie.
+   */
+  async function handleRemove() {
+    setRemoving(true);
+    setError(null);
 
-      <header className="flex flex-col gap-1.5">
+    try {
+      const job = await queue.jobFor(category!.id);
+      if (job) await queue.remove(job.photoId);
+      await refreshJobs();
+
+      if (onServer) await api.removePhoto(category!.id);
+      // Zdjęcie, które nigdy nie doszło do serwera, kasuje się w całości
+      // w telefonie. Brak zasięgu nie jest tu awarią, tylko brakiem roboty.
+      else await api.removePhoto(category!.id).catch(() => null);
+
+      await client.invalidateQueries({ queryKey: ["me"] });
+      // Powrót na planszę jest potwierdzeniem: gość widzi zwolniony kafelek,
+      // a nie zdanie o tym, że coś się udało.
+      navigate("/");
+    } catch (err) {
+      setRemoving(false);
+      setConfirmingRemoval(false);
+      setPhase("failed");
+      setError(errorText(err, t, t.category.removeFailed));
+    }
+  }
+
+  return (
+    <main className="mx-auto flex h-dvh max-w-md flex-col gap-3 overflow-hidden px-4 pt-3 pb-[var(--meadow-h)]">
+      <BackButton />
+
+      <header className="flex flex-col gap-1">
         <p className="text-xs tracking-widest text-brand-500 uppercase">
           R{category.row}K{category.col}
         </p>
-        <h1 className="text-2xl leading-tight font-semibold text-brand-800">
+        <h1 className="text-xl leading-tight font-semibold text-brand-800">
           {categoryLabel(category, locale)}
         </h1>
-        <Sprig className="mt-1" />
+        <Sprig />
       </header>
 
-      {preview && (
-        <img
-          src={preview}
-          alt={t.category.chosenPhoto}
-          className="w-full rounded-2xl border border-brand-200 object-cover"
-        />
-      )}
+      {/* Zdjęcie bierze całą wolną wysokość — a gdy kafelek jest pusty, stoi
+          tu zdanie o wysyłce bez zasięgu, żeby to miejsce nie było dziurą. */}
+      <div className="flex min-h-0 flex-1 items-center justify-center">
+        {shown ? (
+          <img
+            src={shown}
+            alt={preview ? t.category.chosenPhoto : t.category.yourPhoto}
+            className="max-h-full max-w-full rounded-2xl border border-brand-200 object-contain"
+          />
+        ) : (
+          <p className="text-center text-sm text-brand-800/55">{t.category.offline}</p>
+        )}
+      </div>
 
       <input
         ref={fileInput}
@@ -163,14 +224,51 @@ export default function CategoryPage() {
         }}
       />
 
-      <button
-        type="button"
-        onClick={() => fileInput.current?.click()}
-        disabled={phase === "processing"}
-        className="rounded-2xl bg-brand-700 px-5 py-4 text-lg font-medium text-white disabled:opacity-50"
-      >
-        {preview ? t.category.change : t.category.pick}
-      </button>
+      {confirmingRemoval ? (
+        <section className="rounded-2xl border border-clay-300 bg-clay-50 px-4 py-3">
+          <p className="font-medium text-clay-900">{t.category.removeAsk}</p>
+          <p className="mt-1 text-xs text-clay-900/70">{t.category.removeNote}</p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => void handleRemove()}
+              disabled={removing}
+              className="flex-1 rounded-xl bg-clay-700 px-4 py-3 font-medium text-white disabled:opacity-50"
+            >
+              {removing ? t.category.removing : t.category.removeYes}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingRemoval(false)}
+              disabled={removing}
+              className="flex-1 rounded-xl border border-brand-300 bg-paper px-4 py-3 font-medium text-brand-800"
+            >
+              {t.category.removeNo}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            disabled={phase === "processing"}
+            className="rounded-2xl bg-brand-700 px-5 py-3.5 text-lg font-medium text-white disabled:opacity-50"
+          >
+            {shown ? t.category.replace : t.category.pick}
+          </button>
+
+          {canRemove && (
+            <button
+              type="button"
+              onClick={() => setConfirmingRemoval(true)}
+              className="rounded-2xl border border-clay-300 bg-paper px-5 py-2.5 font-medium text-clay-700"
+            >
+              {t.category.remove}
+            </button>
+          )}
+        </div>
+      )}
 
       <StatusLine
         phase={phase}
@@ -180,9 +278,7 @@ export default function CategoryPage() {
         t={t}
       />
 
-      <p className="mt-auto text-center text-xs text-brand-800/55">{t.category.offline}</p>
-
-      <Meadow className="-mx-4 -mb-5" />
+      <MeadowBand />
     </main>
   );
 }
@@ -218,7 +314,7 @@ function StatusLine({
         : `${t.category.phase[phase]}…`;
 
   return (
-    <div className={`rounded-xl px-4 py-3 text-sm ${tone}`} role="status" aria-live="polite">
+    <div className={`rounded-xl px-4 py-2.5 text-sm ${tone}`} role="status" aria-live="polite">
       <p className="font-medium">{headline}</p>
       {error && <p className="mt-1 text-xs">{error}</p>}
       {sizeInfo && !error && <p className="mt-1 text-xs opacity-60">{sizeInfo}</p>}

@@ -4,7 +4,7 @@ import { useT } from "../hooks/useLocale";
 import { LEGAL_UPDATED } from "../lib/legal";
 import { LanguagePicker } from "./LanguagePicker";
 import { Bloom } from "./wedding/Bloom";
-import { Meadow } from "./wedding/Meadow";
+import { MeadowBand } from "./wedding/Meadow";
 import { ScreenTitle } from "./wedding/Wordmark";
 
 const KEY = "fotobingo.privacyAccepted";
@@ -36,25 +36,30 @@ export function PrivacyGate({ children }: { children: React.ReactNode }) {
   if (accepted) return <>{children}</>;
 
   return (
-    <main className="mx-auto flex min-h-full max-w-md flex-col">
+    // Jedyny ekran gościa, na którym treści może zabraknąć miejsca — cztery
+    // akapity o zdjęciach nie skrócą się do wysokości telefonu, a skracać ich
+    // nie wolno. Przewija się więc **sam tekst**, w swoim polu, a nie strona:
+    // przycisk „rozumiem" zostaje na widoku i nikt nie utknie na ekranie,
+    // z którego nie widać wyjścia.
+    <main className="mx-auto flex h-dvh max-w-md flex-col overflow-hidden pb-[var(--meadow-h)]">
       {/* Kwiatowy łuk z winietki — tej samej karteczki, z której gość przed
           chwilą zeskanował kod. Jedyny ekran, na którym się pojawia. */}
-      <Bloom className="-mt-2" />
+      <Bloom className="-mt-2 shrink-0" />
 
-      <div className="flex flex-1 flex-col justify-center gap-5 px-6 pb-6">
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-2 px-6 pb-2">
         <div className="flex justify-center">
           <LanguagePicker />
         </div>
 
         <ScreenTitle>{t.privacy.title}</ScreenTitle>
 
-        <div className="flex flex-col gap-3 text-brand-800/80">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-sm text-brand-800/80">
           {t.privacy.paragraphs.map((p) => (
             <p key={p.slice(0, 24)}>{p}</p>
           ))}
         </div>
 
-        <p className="text-sm text-brand-800/60">{t.privacy.removal}</p>
+        <p className="text-xs text-brand-800/60">{t.privacy.removal}</p>
 
         <button
           type="button"
@@ -66,13 +71,13 @@ export function PrivacyGate({ children }: { children: React.ReactNode }) {
             }
             setAccepted(true);
           }}
-          className="rounded-2xl bg-brand-700 px-5 py-4 text-lg font-medium text-white"
+          className="shrink-0 rounded-2xl bg-brand-700 px-5 py-3.5 text-lg font-medium text-white"
         >
           {t.privacy.accept}
         </button>
       </div>
 
-      <Meadow className="mt-auto" />
+      <MeadowBand />
     </main>
   );
 }

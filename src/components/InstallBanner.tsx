@@ -56,14 +56,19 @@ export function InstallBanner() {
   if (prompt) {
     return (
       <Frame onHide={hide}>
-        <p className="text-sm text-brand-800">{t.install.prompt}</p>
-        <button
-          type="button"
-          onClick={() => void showInstallPrompt()}
-          className="mt-2 w-full rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-medium text-white"
-        >
-          {t.install.action}
-        </button>
+        {/* Napis i przycisk stoją w jednym rzędzie, nie jeden pod drugim:
+            zachęta dzieli ekran z planszą i każde jej 40 pikseli schodzi
+            kafelkom z wysokości. */}
+        <div className="flex items-center gap-3">
+          <p className="min-w-0 flex-1 text-xs text-brand-800">{t.install.prompt}</p>
+          <button
+            type="button"
+            onClick={() => void showInstallPrompt()}
+            className="shrink-0 rounded-xl bg-brand-700 px-4 py-2 text-sm font-medium text-white"
+          >
+            {t.install.action}
+          </button>
+        </div>
       </Frame>
     );
   }
@@ -71,7 +76,7 @@ export function InstallBanner() {
   if (isIos()) {
     return (
       <Frame onHide={hide}>
-        <p className="text-sm text-brand-800">
+        <p className="text-xs text-brand-800">
           {t.install.iosBefore} <strong>{t.install.iosShare}</strong> {t.install.iosBetween}{" "}
           <strong>{t.install.iosAdd}</strong>.
         </p>
@@ -86,13 +91,13 @@ function Frame({ children, onHide }: { children: React.ReactNode; onHide: () => 
   const t = useT();
 
   return (
-    <section className="relative rounded-2xl border border-brand-200 bg-paper px-4 py-3">
+    <section className="relative shrink-0 rounded-2xl border border-brand-200 bg-paper py-2.5 pr-9 pl-4">
       {children}
       <button
         type="button"
         onClick={onHide}
         aria-label={t.install.hide}
-        className="absolute top-2 right-3 text-lg leading-none text-brand-800/50"
+        className="absolute top-1.5 right-2.5 text-lg leading-none text-brand-800/50"
       >
         ×
       </button>

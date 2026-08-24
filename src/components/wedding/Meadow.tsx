@@ -30,3 +30,19 @@ export function Meadow({ className = "" }: { className?: string }) {
     />
   );
 }
+
+/**
+ * Ta sama łąka w roli pasa u dołu **całego okna**, a nie kolumny z treścią.
+ *
+ * Ekrany aplikacji stoją w kolumnie szerokiej na `max-w-md` i wyśrodkowanej —
+ * łąka wpisana w tę kolumnę kończyła się razem z nią, więc na szerszym ekranie
+ * kwiaty wyglądały jak wycinek naklejony na środku dołu strony. Na papierowej
+ * karcie łąka idzie od krawędzi do krawędzi i tutaj ma tak samo.
+ *
+ * `fixed` jest tu ceną za tę pełną szerokość: pas wypada z układu, więc każdy
+ * ekran musi zostawić nad nim miejsce przez `pb-[var(--meadow-h)]`. Ta sama
+ * zmienna trzyma obie liczby zgodne.
+ */
+export function MeadowBand() {
+  return <Meadow className="fixed inset-x-0 bottom-0 h-[var(--meadow-h)]" />;
+}
