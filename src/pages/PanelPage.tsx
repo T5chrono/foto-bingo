@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, type PanelClaim, type PanelStats } from "../lib/api";
-import { BOARD } from "../lib/board";
+import { BOARD, SIZE } from "../lib/board";
 import { claimLabel } from "../lib/bingo";
 import { useT } from "../hooks/useLocale";
 import type { Strings } from "../lib/strings/pl";
@@ -132,17 +132,32 @@ function Dashboard() {
 
       <section>
         <h2 className="mb-2 text-sm font-medium text-brand-800/60">{t.panel.byCategory}</h2>
-        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        {/* Kategorie leżą tu **w planszy 5×5**, nie w liście — bo Para Młoda
+            szuka ich tak samo jak gość: „to pole z prawej u góry", a nie
+            „dwudziesta trzecia pozycja". `BOARD` jest ułożone wierszami, więc
+            pięć kolumn odtwarza papierową kartę co do kafelka.
+
+            Etykieta jest przycięta wizualnie, tak jak na planszy gościa —
+            w `title` i `aria-label` zostaje w całości, żeby dotknięcie
+            w kafelek z długą nazwą nie było loterią. */}
+        <div
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${SIZE}, minmax(0, 1fr))` }}
+        >
           {BOARD.map((cat) => (
             <Link
               key={cat.id}
               to={`/panel/kategoria/${cat.id}`}
-              className="rounded-lg border border-brand-400 bg-paper px-3 py-2 text-xs leading-tight text-brand-800 hover:border-brand-600"
+              title={cat.label}
+              aria-label={`R${cat.row}K${cat.col} — ${cat.label}`}
+              className="flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border border-brand-400 bg-paper px-1 text-center text-brand-800 hover:border-brand-600"
             >
-              <span className="block text-[0.6rem] text-brand-800/50">
+              <span className="text-[0.55rem] text-brand-800/50 sm:text-[0.65rem]">
                 R{cat.row}K{cat.col}
               </span>
-              {cat.label}
+              <span className="line-clamp-4 text-[0.56rem] leading-[1.12] sm:text-xs sm:leading-tight">
+                {cat.label}
+              </span>
             </Link>
           ))}
         </div>
