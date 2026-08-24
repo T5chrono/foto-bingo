@@ -43,7 +43,7 @@ export function ScreenTitle({
 }) {
   return (
     <span className={`flex flex-col items-center gap-1.5 ${className}`}>
-      <span className="font-script pb-1 text-center text-4xl text-ink">{children}</span>
+      <span className="font-script pb-1 text-center text-3xl text-ink">{children}</span>
       <Sprig />
     </span>
   );

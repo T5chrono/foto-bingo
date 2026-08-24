@@ -12,9 +12,13 @@ import meadow from "../../assets/art/meadow.webp";
  * Grafika ma **własną maskę przezroczystości**, nie białe tło: kwiaty siadają
  * wprost na kremowym papierze aplikacji, bez widocznej krawędzi kafla.
  *
- * `object-bottom` jest tu istotne: gdy wywołanie ograniczy wysokość, obraz ma
- * zostać przycięty od góry, bo łodygi rosną z dołu. Przycięcie od dołu
- * ucięłoby je w połowie i zostałyby wiszące główki.
+ * `object-contain` znaczy: **łąka nigdy nie jest przycięta**. Kadrowanie
+ * obcinało jej górę, czyli dokładnie główki maków i chabrów — jedyne, co
+ * w tym pasku widać. Gdy pole jest niższe od naturalnych proporcji bitmapy,
+ * kwiaty mają zmaleć, a nie stracić kwiaty.
+ *
+ * `object-bottom` przy tym zostaje: gdy pole jest wyższe niż obrazek, łąka
+ * ma siedzieć na dolnej krawędzi ekranu, a nie unosić się nad nią.
  */
 export function Meadow({ className = "" }: { className?: string }) {
   return (
@@ -26,7 +30,7 @@ export function Meadow({ className = "" }: { className?: string }) {
       // Łąka jest na każdym ekranie i nigdy nie jest treścią — nie ma po co
       // zatrzymywać na niej pierwszego malowania ani łapać na nią dotknięcia.
       decoding="async"
-      className={`pointer-events-none block w-full object-cover object-bottom select-none ${className}`}
+      className={`pointer-events-none block w-full object-contain object-bottom select-none ${className}`}
     />
   );
 }

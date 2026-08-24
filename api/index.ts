@@ -5,7 +5,7 @@ import { createMiddleware } from "hono/factory";
 import { guestByToken } from "./_lib/auth.js";
 import { BUDGET, config } from "./_lib/config.js";
 import { db, type Guest } from "./_lib/db.js";
-import { boardState, finalizePhoto, removeActivePhoto } from "./_lib/photos.js";
+import { activePhoto, boardState, dropPhoto, finalizePhoto } from "./_lib/photos.js";
 import {
   createDownloadUrls,
   createUploadUrl,
@@ -16,11 +16,10 @@ import {
 import {
   CHUNK_SIZE,
   ensureGuestFolder,
-  markRemoved,
-  markSuperseded,
   putChunk,
   sessionOffset,
   startResumable,
+  trashFile,
   extensionFor,
 } from "./_lib/drive.js";
 import { categoryById } from "../src/lib/board.js";
@@ -276,23 +275,26 @@ app.post("/photos/original/chunk", requireGuest, async (c) => {
     })
     .eq("id", photo.id);
 
-  // Podmienione zdjecie tego kafelka dostaje przyrostek dopiero teraz — gdy
-  // nastepca naprawde lezy na Dysku. Wczesniej zostawaloby oznaczenie
-  // "zastapione" przy pliku, ktorego nastepca nigdy nie dojechal.
-  await renameSuperseded(guest.id, photo.category_id, photo.id);
+  // Poprzednie zdjecie tego kafelka idzie do kosza dopiero teraz — gdy
+  // nastepca naprawde lezy na Dysku. Wczesniej folder goscia zostawalby
+  // pusty w tej kategorii, gdyby podmiana utknela w polowie.
+  await trashSuperseded(guest.id, photo.category_id, photo.id);
 
   return c.json({ done: true, fileId: result.fileId, name: result.fileName });
 });
 
 /**
- * Zdejmuje zdjecie z kafelka. Gosc dostaje z powrotem puste pole i moze
- * wyslac w tej kategorii cokolwiek innego.
+ * Zdejmuje zdjecie z kafelka — z planszy i z Dysku.
  *
- * Kasuje sie **wylacznie podglad i miniatura** z Supabase. Oryginal zostaje
- * na Dysku Pary Mlodej i dostaje przyrostek w nazwie — tak samo, jak przy
- * podmianie (sekcja 9 specyfikacji: na weselu nic nie ginie bezpowrotnie).
- * Gosc, ktory dotknal "usun" o jedno zdjecie za daleko, nie kasuje wspomnienia,
- * tylko zwalnia kafelek.
+ * Kolejnosc jest tu cala trescia: **najpierw kosz na Dysku, potem baza**.
+ * Gdy Google odmowi, nie zmienia sie nic i gosc dostaje blad, ktory da sie
+ * powtorzyc. Odwrotna kolejnosc zostawialaby pusty kafelek i zdjecie dalej
+ * lezace w folderze — czyli obietnice "usuniete", ktora nie jest prawdziwa.
+ *
+ * Na Dysku plik laduje w koszu, nie znika bezpowrotnie: z folderu goscia
+ * wychodzi natychmiast, ale przez 30 dni Para Mloda moze go przywrocic.
+ * "Usun" dotkniete po ciemku i jedna reka bywa dotkniete przez pomylke,
+ * a zdjecia z wesela nie da sie zrobic drugi raz.
  *
  * Odpowiedz 200 wraca takze wtedy, gdy kafelek juz byl pusty: powtorzone
  * dotkniecie przy slabym zasiegu ma dac ten sam wynik, a nie 404 na ekranie.
@@ -305,17 +307,22 @@ app.delete("/photos/category/:id", requireGuest, async (c) => {
     return c.json({ error: "categoryId musi być z zakresu 1..25" }, 400);
   }
 
-  const removed = await removeActivePhoto(guest.id, categoryId);
-  if (!removed) return c.json({ ok: true, removed: false });
+  const photo = await activePhoto(guest.id, categoryId);
+  if (!photo) return c.json({ ok: true, removed: false });
 
-  if (removed.driveFileId && removed.driveFileName) {
-    // Przyrostek to kosmetyka archiwum — kafelek jest juz zwolniony i gosc
-    // nie ma po co czekac na Google ani ogladac bledu, ktory go nie dotyczy.
-    await markRemoved(removed.driveFileId, removed.driveFileName).catch((err) =>
-      console.error("Nie udalo sie oznaczyc usunietego pliku:", err),
-    );
+  if (photo.driveFileId) {
+    try {
+      await trashFile(photo.driveFileId);
+    } catch (err) {
+      console.error("Kosz na Dysku odmowil:", err);
+      return c.json(
+        { error: "Nie udało się usunąć zdjęcia z Dysku. Spróbuj za chwilę.", code: "server" },
+        502,
+      );
+    }
   }
 
+  await dropPhoto(photo);
   return c.json({ ok: true, removed: true });
 });
 
@@ -604,11 +611,17 @@ async function ownPhoto(photoId: string, guestId: string) {
   return data;
 }
 
-/** Poprzednie zdjecia tego kafelka, ktore doszly na Dysk, dostaja przyrostek. */
-async function renameSuperseded(guestId: string, categoryId: number, keepPhotoId: string) {
+/**
+ * Poprzednie zdjecia tego kafelka wedruja do kosza na Dysku.
+ *
+ * W kategorii ma zostac to, co gosc naprawde wybral — po podmianie jedno
+ * zdjecie, nie stos wersji roboczych z calego weekendu. Kosz, nie kasowanie
+ * bezpowrotne: przez 30 dni poprzednik da sie przywrocic.
+ */
+async function trashSuperseded(guestId: string, categoryId: number, keepPhotoId: string) {
   const { data } = await db()
     .from("photos")
-    .select("drive_file_id, drive_file_name")
+    .select("drive_file_id")
     .eq("guest_id", guestId)
     .eq("category_id", categoryId)
     .eq("is_active", false)
@@ -616,11 +629,11 @@ async function renameSuperseded(guestId: string, categoryId: number, keepPhotoId
     .neq("id", keepPhotoId);
 
   for (const row of data ?? []) {
-    if (row.drive_file_id && row.drive_file_name) {
-      await markSuperseded(row.drive_file_id as string, row.drive_file_name as string).catch(
-        // Przyrostek to kosmetyka archiwum, nie moze wywrocic wysylki zdjecia,
-        // ktore wlasnie sie udala.
-        (err) => console.error("Nie udalo sie oznaczyc zastapionego pliku:", err),
+    if (row.drive_file_id) {
+      await trashFile(row.drive_file_id as string).catch(
+        // Porzadki w folderze nie moga wywrocic wysylki zdjecia, ktora wlasnie
+        // sie udala — nastepca lezy juz na Dysku i to jest wazniejsze.
+        (err) => console.error("Nie udalo sie wyrzucic zastapionego pliku:", err),
       );
     }
   }
