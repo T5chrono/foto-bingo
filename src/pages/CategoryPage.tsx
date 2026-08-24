@@ -252,24 +252,32 @@ export default function CategoryPage() {
 
       {shown ? (
         <>
-          {/* Zdjęcie bierze całą wolną wysokość, ale siada na dole swojego
-              pola (`items-end`), żeby guziki leżały tuż pod nim, a nie pod
-              pustym prostokątem. Zapas idzie nad zdjęcie, gdzie go nie widać. */}
-          <div className="flex min-h-0 flex-1 items-end justify-center">
+          {/* Zdjęcie i guziki są **jedną grupą** i to jest tu cały trik.
+              Obrazek dostaje `max-h-full`, czyli tyle wysokości, ile zostało
+              po nagłówku, i kurczy się razem z kolumną, gdy trzeba zrobić
+              miejsce na guziki — a szerokość idzie za wysokością, bo proporcje
+              trzyma sam plik. Pudełko obrazka kończy się więc dokładnie tam,
+              gdzie kończy się fotografia: kategoria styka się z nią od góry,
+              guziki od dołu, i nigdzie nie ma pasa pustego papieru.
+
+              Działa tak samo dla zdjęć pionowych i poziomych. Przy poziomych
+              zapas zostaje pod guzikami, czyli tam, gdzie i tak rośnie łąka. */}
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
             <img
               src={shown}
               alt={preview ? t.category.chosenPhoto : t.category.yourPhoto}
-              className="max-h-full max-w-full rounded-2xl object-contain"
+              className="mx-auto max-h-full max-w-full min-h-0 rounded-2xl object-contain"
             />
+            {akcje}
           </div>
-          {akcje}
         </>
       ) : (
         <>
-          {/* Pusty kafelek to jedno pytanie: „które zdjęcie?". Guzik stoi
-              od razu pod nazwą kategorii, bo między jednym a drugim nie ma
-              nic do przeczytania. */}
-          {akcje}
+          {/* Pusty kafelek to jedno pytanie: „które zdjęcie?". Guzik zostaje
+              tuż pod nazwą kategorii, bo między jednym a drugim nie ma nic do
+              przeczytania — ale z odstępem, żeby nie wyglądał jak część
+              nagłówka i żeby kciuk nie sięgał po niego w biegu. */}
+          <div className="mt-6">{akcje}</div>
           <p className="text-center text-sm text-brand-800/55">{t.category.offline}</p>
         </>
       )}
