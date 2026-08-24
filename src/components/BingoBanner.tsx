@@ -48,10 +48,10 @@ export function BingoBanner({ filled, lines }: Props) {
 
   return (
     <section
-      className="rounded-2xl border border-brand-300 bg-brand-50 px-4 py-4 text-center"
+      className="shrink-0 rounded-2xl border border-brand-300 bg-brand-50 px-4 py-3 text-center"
       role="status"
     >
-      <p className="font-script pb-1 text-3xl text-ink">
+      <p className="font-script pb-0.5 text-2xl text-ink">
         {best.kind === "full" ? t.bingo.fullCard : t.bingo.line}
       </p>
       <p className="text-sm text-brand-800">
@@ -64,7 +64,7 @@ export function BingoBanner({ filled, lines }: Props) {
         </p>
       )}
 
-      <Sprig className="mx-auto my-3" />
+      <Sprig className="mx-auto my-2" />
 
       {existing ? (
         <ClaimStatus claim={existing} t={t} />
@@ -73,7 +73,7 @@ export function BingoBanner({ filled, lines }: Props) {
           type="button"
           onClick={() => send.mutate()}
           disabled={send.isPending}
-          className="w-full rounded-xl bg-brand-700 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="w-full rounded-xl bg-brand-700 px-4 py-2.5 font-medium text-white disabled:opacity-50"
         >
           {send.isPending ? t.bingo.submitting : t.bingo.submit}
         </button>

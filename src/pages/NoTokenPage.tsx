@@ -1,6 +1,6 @@
 import { LanguagePicker } from "../components/LanguagePicker";
 import { Valley } from "../components/wedding/Valley";
-import { Meadow } from "../components/wedding/Meadow";
+import { MeadowBand } from "../components/wedding/Meadow";
 import { Sprig } from "../components/wedding/Sprig";
 import { Wordmark } from "../components/wedding/Wordmark";
 import { useT } from "../hooks/useLocale";
@@ -18,10 +18,10 @@ export default function NoTokenPage() {
   const t = useT();
 
   return (
-    <main className="mx-auto flex min-h-full max-w-md flex-col">
-      <Valley className="h-44" />
+    <main className="mx-auto flex h-dvh max-w-md flex-col overflow-hidden pb-[var(--meadow-h)]">
+      <Valley className="h-40 shrink-0" />
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 pb-8 text-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-6 pb-4 text-center">
         <div>
           <Wordmark size="lg" />
           <p className="text-xs text-brand-800/70">{t.app.para}</p>
@@ -37,7 +37,7 @@ export default function NoTokenPage() {
         <LanguagePicker className="mt-2" />
       </div>
 
-      <Meadow />
+      <MeadowBand />
     </main>
   );
 }

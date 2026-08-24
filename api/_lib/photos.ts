@@ -130,3 +130,58 @@ export async function finalizePhoto(input: FinalizeInput): Promise<FinalizeResul
 
   return { photoId: input.photoId, replaced: Boolean(previous), alreadyExisted: false };
 }
+
+export type RemovedPhoto = {
+  photoId: string;
+  /** Puste, gdy oryginał nie zdążył dojechać na Dysk — nie ma czego oznaczać. */
+  driveFileId: string | null;
+  driveFileName: string | null;
+};
+
+/**
+ * Zdejmuje zdjęcie z kafelka gościa — odwrotność `finalizePhoto`.
+ *
+ * Zdjęcie **nie znika z archiwum**: wiersz zostaje z `is_active=false`, a plik
+ * na Dysku dostaje przyrostek (robi to `index.ts`, bo tylko tam sięgamy do
+ * Google). Kasujemy wyłącznie podgląd i miniaturę z bucketa — dokładnie te
+ * same dwa pliki, które kasuje podmiana, i z tego samego powodu: wersja
+ * robocza po zdjętym kafelku nie służy już niczemu, a miejsce w Supabase jest
+ * jedynym zasobem, którego w tym projekcie naprawdę brakuje.
+ *
+ * Kolejność jest ta sama co przy podmianie i celowa: najpierw baza, potem
+ * bucket. Nieudane kasowanie zostawia osierocony plik — nieprzyjemne, ale
+ * niewidoczne. Odwrotna kolejność zostawiłaby gościa z kafelkiem, pod którym
+ * nie ma już czego pokazać.
+ */
+export async function removeActivePhoto(
+  guestId: string,
+  categoryId: number,
+): Promise<RemovedPhoto | null> {
+  const client = db();
+
+  const { data: photo, error } = await client
+    .from("photos")
+    .select("id, preview_path, thumb_path, drive_file_id, drive_file_name")
+    .eq("guest_id", guestId)
+    .eq("category_id", categoryId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!photo) return null;
+
+  const { error: updateError } = await client
+    .from("photos")
+    .update({ is_active: false })
+    .eq("id", photo.id);
+  if (updateError) throw updateError;
+
+  await removeObjects(
+    [photo.preview_path as string, photo.thumb_path as string].filter(Boolean),
+  );
+
+  return {
+    photoId: photo.id as string,
+    driveFileId: (photo.drive_file_id as string | null) ?? null,
+    driveFileName: (photo.drive_file_name as string | null) ?? null,
+  };
+}

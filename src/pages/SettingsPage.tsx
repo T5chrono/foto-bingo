@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import * as queue from "../lib/queue";
 import { setWifiOnly, wifiOnly } from "../lib/uploader";
 import { useT } from "../hooks/useLocale";
+import { BackButton } from "../components/BackButton";
 import { LanguagePicker } from "../components/LanguagePicker";
-import { Meadow } from "../components/wedding/Meadow";
+import { MeadowBand } from "../components/wedding/Meadow";
 
 export default function SettingsPage() {
-  const navigate = useNavigate();
   const t = useT();
   const [onlyWifi, setOnlyWifi] = useState(wifiOnly);
   const [jobs, setJobs] = useState<queue.Job[]>([]);
@@ -21,19 +20,17 @@ export default function SettingsPage() {
   const czekaOryginal = jobs.filter((j) => j.previewDone && j.original).length;
 
   return (
-    <main className="mx-auto flex min-h-full max-w-md flex-col gap-6 px-4 py-5">
-      <button onClick={() => navigate("/")} className="self-start text-sm text-brand-700 underline">
-        {t.category.board}
-      </button>
+    <main className="mx-auto flex h-dvh max-w-md flex-col gap-3 overflow-hidden px-4 pt-3 pb-[var(--meadow-h)]">
+      <BackButton />
 
       <h1 className="font-script pb-1 text-3xl text-ink">{t.settings.title}</h1>
 
-      <section className="flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-paper px-4 py-4">
+      <section className="flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-paper px-4 py-3">
         <span className="font-medium">{t.app.language}</span>
         <LanguagePicker />
       </section>
 
-      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4">
+      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-3">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -46,12 +43,12 @@ export default function SettingsPage() {
           />
           <span>
             <span className="font-medium">{t.settings.wifiOnly}</span>
-            <span className="mt-1 block text-sm text-brand-800/70">{t.settings.wifiOnlyHint}</span>
+            <span className="mt-1 block text-xs text-brand-800/70">{t.settings.wifiOnlyHint}</span>
           </span>
         </label>
       </section>
 
-      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4">
+      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-3">
         <h2 className="text-sm font-medium text-brand-800/60">{t.settings.queue}</h2>
         {jobs.length === 0 ? (
           <p className="mt-1 text-sm text-brand-800/70">{t.settings.queueEmpty}</p>
@@ -64,16 +61,18 @@ export default function SettingsPage() {
         <p className="mt-2 text-xs text-brand-800/55">{t.settings.queueHint}</p>
       </section>
 
-      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4 text-sm text-brand-800/75">
-        <h2 className="mb-2 text-sm font-medium text-brand-800/60">{t.settings.yourPhotos}</h2>
-        {t.privacy.paragraphs.slice(0, 2).map((p) => (
-          <p key={p.slice(0, 24)} className="mb-2 last:mb-0">
-            {p}
-          </p>
-        ))}
+      {/* Tu stoi **zdanie**, nie cztery akapity z bramki. Pełny tekst gość
+          czytał raz, przy wejściu; ustawienia otwiera po to, żeby przestawić
+          Wi-Fi albo zobaczyć, czy coś jeszcze wisi w kolejce, i ma to zobaczyć
+          bez przewijania. Zostaje sedno i jedno zdanie o tym, do kogo się
+          zgłosić po usunięcie zdjęcia z Dysku. */}
+      <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-3 text-sm text-brand-800/75">
+        <h2 className="mb-1 text-sm font-medium text-brand-800/60">{t.settings.yourPhotos}</h2>
+        <p>{t.privacy.short}</p>
         <p className="mt-2 text-xs text-brand-800/55">{t.privacy.removal}</p>
       </section>
-      <Meadow className="-mx-4 -mb-5 mt-auto pt-4" />
+
+      <MeadowBand />
     </main>
   );
 }
