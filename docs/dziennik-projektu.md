@@ -525,6 +525,16 @@ w obrębie `^8.6.0`, bez ruszania `package.json`.
 `glob@11.1.0 invalid` dopóki katalogu nie skasowałem ręcznie. Świeża instalacja,
 taka jak na Vercelu, tego problemu nie ma.
 
+**Trzecie ostrzeżenie widać dopiero na Vercelu:** `npm warn allow-scripts` dla dwóch kopii
+esbuilda (jedna z `tsx`, druga z `vite`). Lokalny npm 11.11.0 tej funkcji jeszcze nie ma,
+więc czysta instalacja na Windowsie milczała — komunikat wyszedł dopiero z loga wdrożenia.
+Nowszy npm domyślnie **pomija** skrypty instalacyjne zależności i czeka na jawną zgodę;
+build i tak przechodzi, bo binarki esbuilda przychodzą przez `optionalDependencies`, a nie
+przez `postinstall`. Zgoda siedzi w polu `allowScripts` w `package.json` i jest **pinowana
+do wersji** — przy każdym podbiciu esbuilda wpis trzeba odświeżyć, inaczej ostrzeżenie
+wraca. **Czysta instalacja lokalnie nie dowodzi czystego loga na Vercelu**: ostatnie słowo
+ma log wdrożenia, nie terminal.
+
 **Morał:** `npm audit fix --force` proponował tutaj **cofnięcie** `@vercel/node`
 z 5.10.2 do 3.0.1 i nazywał to „breaking change". Zanim się to odpali, warto sprawdzić,
 czy winna zależność jest w ogóle do czegokolwiek używana.

@@ -59,5 +59,9 @@
     "workbox-build": {
       "glob": "^13.0.6"
     }
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
   }
 }
