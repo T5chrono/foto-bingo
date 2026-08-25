@@ -495,6 +495,40 @@ Piszą do tej samej bazy i tego samego folderu na Dysku. Są chronione logowanie
 Vercela, więc nie są publicznie dostępne — ale warto o tym wiedzieć, zanim ktoś otworzy
 podgląd niedokończonej gałęzi w weekend wesela.
 
+### Ostrzeżenia w logu builda: `@vercel/node` nie był nikomu potrzebny
+
+**Objaw:** każdy build kończy się `5 vulnerabilities (2 moderate, 3 high)` oraz
+`npm warn deprecated glob@11.1.0`. Aplikacja działa, ale log wygląda jak zaniedbany.
+
+**Przyczyna:** dwie osobne sprawy, które w logu wyglądają na jedną.
+
+- **Wszystkie pięć podatności** (`path-to-regexp`, `undici`, `ajv`) ciągnęło się
+  z `@vercel/node`. Pakiet siedział w `devDependencies` i **nikt go nie importował** —
+  handler eksportuje `fetch` z `hono/vercel`, a typy `VercelRequest`/`VercelResponse`
+  nie występują w kodzie ani razu. Runtime Node dla `api/` daje sama platforma; obecność
+  pakietu w `package.json` niczego nie przypina.
+- **`glob@11.1.0`** to zależność `workbox-build`, czyli `vite-plugin-pwa`. Autor `glob`
+  zdeprecjonował stare wydania i nasz kod nie ma tu nic do powiedzenia.
+
+**Rozwiązanie:** `@vercel/node` usunięty z `devDependencies`. Na `glob` wpis w `overrides`
+zawężony do `workbox-build` — workbox woła wyłącznie `globSync(wzorzec, {cwd, follow,
+ignore})`, API niezmienne od v9, więc 13 wchodzi bez zmiany zachowania. `ajv` (jedyna
+podatność, jaka została po usunięciu `@vercel/node`) podniesiony w `package-lock.json`
+w obrębie `^8.6.0`, bez ruszania `package.json`.
+
+**Sprawdzenie:** manifest precache po zmianie jest **co do wpisu identyczny** — te same
+28 pozycji, 758,88 KiB, wszystkie testy zielone. Czysta instalacja z samego
+`package.json` + `package-lock.json`: zero ostrzeżeń, `found 0 vulnerabilities`.
+
+**Pułapka przy `overrides`:** samo `npm install` nie podmieniło już rozpakowanego
+`node_modules/workbox-build/node_modules/glob` — `npm ls glob` pokazywał
+`glob@11.1.0 invalid` dopóki katalogu nie skasowałem ręcznie. Świeża instalacja,
+taka jak na Vercelu, tego problemu nie ma.
+
+**Morał:** `npm audit fix --force` proponował tutaj **cofnięcie** `@vercel/node`
+z 5.10.2 do 3.0.1 i nazywał to „breaking change". Zanim się to odpali, warto sprawdzić,
+czy winna zależność jest w ogóle do czegokolwiek używana.
+
 ---
 
 ## Środowisko lokalne (Windows)
