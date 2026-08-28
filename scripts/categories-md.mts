@@ -14,6 +14,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { BOARD, SIZE } from "../src/lib/board.js";
+import { LOCALES, STRINGS } from "../src/lib/locale.js";
 
 const OUT = fileURLToPath(new URL("../docs/kategorie.md", import.meta.url));
 
@@ -33,30 +34,33 @@ function grid(label: (i: number) => string): string[] {
 const doc = [
   "# Kategorie planszy",
   "",
-  "**Ten plik jest generowany.** Źródłem prawdy jest `LABELS` i `LABELS_EN`",
+  "**Ten plik jest generowany.** Źródłem prawdy jest `LABELS`",
   "w [src/lib/board.ts](../src/lib/board.ts); po każdej zmianie etykiet uruchom",
   "`npm run kategorie`, żeby ta lista nie zaczęła kłamać.",
   "",
-  "Angielskie etykiety są **wyłącznie do pokazania gościowi**. Numer pola, slug",
+  "Tłumaczenia są **wyłącznie do pokazania gościowi**. Numer pola, slug",
   "i nazwa pliku na Dysku wiszą na polskiej etykiecie i nie zmieniają się razem",
   "z językiem aplikacji — patrz **D14** w [specyfikacji](../FotoBingo%20-%20specification.md).",
   "",
-  "## Po angielsku, w układzie karty",
-  "",
-  ...grid((i) => BOARD[i]!.labelEn),
-  "",
-  "## Po polsku, w układzie karty",
-  "",
-  ...grid((i) => BOARD[i]!.label),
-  "",
+  ...LOCALES.flatMap((code) => [
+    `## ${STRINGS[code].languageName}, w układzie karty`,
+    "",
+    ...grid((i) => BOARD[i]!.labels[code]),
+    "",
+  ]),
   "## Wszystko obok siebie",
   "",
   "Slug wchodzi w nazwę pliku na Dysku — `R3K2_moment-ceremonii-slubnej__anna-kowalska__…`.",
   "",
-  line(["#", "Pole", "Polski", "English", "Slug"]),
-  divider(5),
+  line(["#", "Pole", ...LOCALES.map((code) => STRINGS[code].languageName), "Slug"]),
+  divider(LOCALES.length + 2),
   ...BOARD.map((c) =>
-    line([String(c.id), `R${c.row}K${c.col}`, c.label, c.labelEn, `\`${c.slug}\``]),
+    line([
+      String(c.id),
+      `R${c.row}K${c.col}`,
+      ...LOCALES.map((code) => c.labels[code]),
+      `\`${c.slug}\``,
+    ]),
   ),
   "",
 ].join("\n");

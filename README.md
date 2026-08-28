@@ -4,7 +4,8 @@ Aplikacja weselna do gry Foto Bingo. Goście dostają planszę 5×5 z 25 kategor
 wysyłają zdjęcia z telefonu, a Para Młoda weryfikuje zgłoszenia bingo i wyświetla je na rzutniku.
 
 Instalowalna PWA — bez sklepu, bez logowania, bez kont. Gość skanuje QR z winietki i gra.
-Po polsku albo po angielsku, zależnie od telefonu; przełącznik jest w zasięgu ręki.
+Po polsku, angielsku, serbsku albo niemiecku, zależnie od telefonu; przełącznik jest
+w zasięgu ręki.
 
 ## Jak to działa
 
@@ -53,14 +54,16 @@ npm run build    # tsc -b && vite build (tu mieszka type-check)
 ### Teksty i języki
 
 Wszystkie zdania widoczne dla człowieka leżą w `src/lib/strings/`. Polski (`pl.ts`) jest
-źródłem prawdy, angielski (`en.ts`) ma typ `typeof pl` — **brakujące tłumaczenie nie
-kompiluje się**, więc nowy tekst dopisuje się po polsku i `npm run build` mówi, czego
-brakuje po drugiej stronie. Dlaczego bez biblioteki i dlaczego angielski jest domyślny
-poza Polską: **D14** w [specyfikacji](FotoBingo%20-%20specification.md).
+źródłem prawdy, a angielski (`en.ts`), serbski (`sr.ts`) i niemiecki (`de.ts`) mają typ
+`typeof pl` — **brakujące tłumaczenie nie kompiluje się**, więc nowy tekst dopisuje się po
+polsku i `npm run build` mówi, czego brakuje po pozostałych stronach. Dlaczego bez
+biblioteki, dlaczego angielski jest domyślny dla reszty świata i dlaczego serbski jedzie
+latinicą: **D14** w [specyfikacji](FotoBingo%20-%20specification.md).
 
-Etykiety 25 kategorii są wyjątkiem — mieszkają w `src/lib/board.ts` razem z planszą.
+Etykiety 25 kategorii są wyjątkiem — mieszkają w `src/lib/board.ts` razem z planszą,
+w mapie `Record<Locale, …>`, więc nowy język nie skompiluje się bez kompletu 25 podpisów.
 **Slug do nazwy pliku na Dysku liczy się zawsze z polskiej etykiety**, niezależnie od
-języka aplikacji. Po zmianie etykiet odśwież zestawienie obu wersji:
+języka aplikacji. Po zmianie etykiet odśwież zestawienie wszystkich wersji:
 
 ```bash
 npm run kategorie   # -> docs/kategorie.md

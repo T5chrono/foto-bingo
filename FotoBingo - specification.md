@@ -293,27 +293,43 @@ przez `globIgnores` — telefon w górach ich nie pobiera. Szczegóły: [docs/wi
 
 ---
 
-### D14 — Dwa języki bez biblioteki, z angielskim jako domyślnym dla nie-Polaków
+### D14 — Cztery języki bez biblioteki, z angielskim jako domyślnym dla reszty świata
 
-**Wybrano:** polski i angielski, każdy jako jeden obiekt w `src/lib/strings/`, przełączane
-kontekstem Reacta. Angielski jest typowany jako `typeof pl`, więc **brakujące tłumaczenie
-nie kompiluje się**.
+**Wybrano:** polski, angielski, serbski i niemiecki, każdy jako jeden obiekt
+w `src/lib/strings/`, przełączane kontekstem Reacta. Polski jest źródłem prawdy, pozostałe
+mają typ `typeof pl`, więc **brakujące tłumaczenie nie kompiluje się**. Etykiety 25 pól
+planszy siedzą osobno, w `Record<Locale, …>` w `board.ts` — dołożenie języka do `Locale`
+nie skompiluje się, dopóki nie dojdzie tam 25 podpisów.
 
-**Odrzucono:** `react-i18next` i spółka. Biblioteka waży więcej niż oba słowniki razem wzięte
-i daje rzeczy, których tu nie ma po co mieć — ładowanie z sieci, przestrzenie nazw,
-interpolację w stringach. Przy dwóch językach i jednym ekranie na raz zwykły obiekt załatwia
-to samo, z pełnym sprawdzaniem typów.
+**Odrzucono:** `react-i18next` i spółka. Biblioteka waży więcej niż wszystkie słowniki razem
+wzięte i daje rzeczy, których tu nie ma po co mieć — ładowanie z sieci, przestrzenie nazw,
+interpolację w stringach. Przy jednym ekranie na raz zwykły obiekt załatwia to samo, z pełnym
+sprawdzaniem typów. Arytmetyka trzyma się do kilku języków; przy kilkunastu trzeba by ją
+policzyć jeszcze raz, razem z leniwym ładowaniem.
 
 **Odrzucono też:** język przypisany gościowi w bazie. Para Młoda wie, kto mówi po angielsku,
 i dałoby się to wpisać obok imienia — ale to migracja tabeli i pole do wypełnienia przy
 czterdziestu osobach po to, żeby zaoszczędzić jedno dotknięcie komuś, kto i tak ma przełącznik
 na ekranie.
 
-**Dlaczego angielski jest domyślny poza Polską.** Wykrywanie patrzy na pierwszy język telefonu:
-`pl*` daje polski, wszystko inne angielski. Odwrotne domyślne zostawiłoby gościa z Serbii czy
-Anglii na **polskim ekranie zgody na zdjęcia** — czyli dokładnie tam, gdzie treść ma znaczenie
-prawne. Polak z telefonem po angielsku przełącza język jednym dotknięciem; ten drugi przypadek
-jest gorszy i to on decyduje.
+**Dlaczego angielski jest domyślny dla reszty świata.** Wykrywanie patrzy na pierwszy język
+telefonu: `pl*`, `sr*` i `de*` dostają swój słownik, wszystko inne angielski. Odwrotne domyślne
+zostawiłoby gościa z zagranicy na **polskim ekranie zgody na zdjęcia** — czyli dokładnie tam,
+gdzie treść ma znaczenie prawne. Polak z telefonem po angielsku przełącza język jednym
+dotknięciem; ten drugi przypadek jest gorszy i to on decyduje.
+
+**Serbski jedzie latinicą, nie cyrylicą.** Oba pisma są w Serbii urzędowe, ale to latinicą
+pisze się na telefonie — i tylko ona jest w podzbiorach Lory wchodzących do precache'u service
+workera (`lora-cyrillic*` jest tam wykluczony wprost, patrz D13). Cyrylica oznaczałaby albo
+dociąganie kolejnego pliku czcionki przy jednej kresce zasięgu, albo napisy czcionką systemową.
+`<html lang>` deklaruje `sr-Latn`, bo domyślnym pismem dla samego `sr` jest cyrylica.
+Chorwacki i bośniacki **celowo** nie wpadają na serbski, choć byłby dla nich zrozumiały:
+podanie go bez pytania jest w tamtej części Europy gestem, którego lepiej nie robić.
+
+**Liczebniki zostają osobno w każdym słowniku.** Polski ma trzy formy, serbski też trzy, ale
+inaczej rozdzielone (21 bierze pojedynczą, po polsku dopełniaczową), angielski i niemiecki po
+dwie — a niemiecki i serbski odmieniają jeszcze czasownik, więc formą jest cała fraza, nie sam
+rzeczownik. Jedna wspólna abstrakcja obsługiwałaby każdy z tych języków gorzej niż on sam.
 
 **Przełącznik stoi w trzech miejscach**, nie w samych ustawieniach: na bramce o zdjęciach (to
 pierwszy ekran i jedyny, który naprawdę trzeba zrozumieć), na ekranie bez kodu i przy
@@ -321,7 +337,7 @@ logowaniu do panelu — oba leżą poza gałęzią, z której da się dojść do
 
 **Nazwa pliku na Dysku zostaje polska, zawsze.** `slug` liczy się z polskiej etykiety
 kategorii, niezależnie od języka aplikacji, bo nazwę buduje serwer, który o telefonie gościa
-nie wie nic. Gdyby slug szedł za językiem, to samo pole lądowałoby w folderze pod dwiema
+nie wie nic. Gdyby slug szedł za językiem, ta sama kategoria lądowałaby na Dysku pod czterema
 nazwami i wyszłoby to dopiero po weselu. Pilnuje tego test w `board.test.ts`.
 
 ---

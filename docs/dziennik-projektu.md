@@ -330,9 +330,18 @@ Polskie liczebniki mają **trzy** formy, nie dwie. `src/lib/plural.ts`, z wyjąt
 na 12–14, który łapie też 112 i 213.
 
 Po dojściu angielskiego kusiło, żeby zrobić z tego jedną wspólną abstrakcję na oba języki.
-Nie zrobiliśmy: angielski ma dwie formy i `n === 1` załatwia je w jednej linijce, a wspólny
-mechanizm obsługiwałby oba języki gorzej niż każdy z nich osobno. **Każdy słownik rządzi się
-własną gramatyką** — polski woła `count()` z `plural.ts`, angielski liczy sam.
+Nie zrobiliśmy — i serbski pokazał później, ile to było warte. Serbski ma **też trzy formy,
+ale inaczej rozdzielone**: 21 bierze formę pojedynczą („21 fotografija"), gdy polski bierze
+dopełniaczową („21 zdjęć"). Wspólny mechanizm musiałby więc i tak trzymać dwie reguły pod
+jednym interfejsem.
+
+Drugi haczyk wyszedł przy niemieckim i serbskim: odmienia się nie tylko rzeczownik, ale
+i **czasownik** („1 Foto wartet", ale „2 Fotos warten"), więc formą jest cała fraza, a nie
+samo słowo. Sklejanie liczby z rzeczownikiem i doklejanie reszty zdania z zewnątrz psuje
+liczbę mnogą w połowie języków.
+
+**Każdy słownik rządzi się własną gramatyką** — polski woła `count()` z `plural.ts`,
+a angielski, serbski i niemiecki liczą u siebie, każdy w kilku linijkach.
 
 ### Czcionka ciągnie podzbiory, o których nikt nie prosił
 
@@ -614,6 +623,8 @@ od decyzji.
 | Ozdobniki rysowane od zera w SVG | bitmapy wyjęte z Canvy | Obok winietki w ręku gościa własny rysunek wyglądał jak podróbka |
 | Eksport grafik z Canvy do PNG | do PDF | PNG daje 1x i wypala białe tło; PDF osadza oryginały z maskami alfa |
 | Tylko po polsku | polski i angielski | Część gości jest z zagranicy — zaproszenia mają wersję EN od początku |
+| Angielski dla wszystkich spoza Polski | osobny serbski i niemiecki | Angielski jako drugi język to nie to samo, co ekran zgody na zdjęcia we własnym |
+| Osobna stała `LABELS_EN` obok polskich etykiet | `Record<Locale, …>` w `board.ts` | Przy trzecim języku osobne stałe przepuszczają planszę bez kompletu podpisów |
 | Etapy wysyłki trzymane jako polskie zdania | jako kody stanu | Stan aplikacji wyświetlany wprost nie da się przetłumaczyć |
 
 ---
@@ -645,8 +656,12 @@ w checkliście przedweselnej w specyfikacji.
 - **Maska gasząca dolinę na starszym Safari.** `mask-image` bez prefiksu działa dopiero
   od Safari 15.4; jest wersja `-webkit-`, ale sprawdzona wyłącznie na Chromie. Gdyby
   nie zadziałała, wraca twarda krawędź — brzydko, ale nic się nie psuje.
-- **Angielska wersja u prawdziwego gościa z zagranicy.** Wykrywanie języka, długość
-  angielskich podpisów w kafelku 65 px i to, czy ktoś w ogóle zauważy przełącznik.
+- **Obce wersje u prawdziwego gościa z zagranicy.** Wykrywanie języka, długość podpisów
+  w kafelku 65 px i to, czy ktoś w ogóle zauważy przełącznik. Do serbskiego i niemieckiego
+  dochodzi jedno pytanie, na które nie odpowie żaden test: **czy zdania brzmią jak
+  zaproszenie, a nie jak tłumaczenie**. Warto dać je przeczytać komuś, kto mówi tym językiem
+  na co dzień — zwłaszcza cztery akapity o zdjęciach, bo to jedyny ekran, który naprawdę
+  trzeba zrozumieć.
 - **Zachowanie przy naprawdę słabym zasięgu.** Symulacja w DevTools to nie to samo,
   co jeden maszt i czterdzieści telefonów.
 

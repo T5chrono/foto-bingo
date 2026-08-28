@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BOARD, SIZE, categoryById, categoryLabel } from "./board.js";
+import { LOCALES } from "./locale.js";
 import { slugify } from "./slug.js";
 
 describe("plansza", () => {
@@ -74,33 +75,48 @@ describe("plansza", () => {
   });
 });
 
-describe("etykiety po angielsku", () => {
-  it("ma tłumaczenie każdego z 25 pól", () => {
+describe("etykiety w językach gości", () => {
+  /** Języki inne niż kanoniczny — tylko one mogą zostać nieprzetłumaczone. */
+  const TRANSLATED = LOCALES.filter((code) => code !== "pl");
+
+  it("ma tłumaczenie każdego z 25 pól w każdym języku", () => {
     for (const cat of BOARD) {
-      expect(cat.labelEn, `pole ${cat.id}`).toBeTruthy();
-      expect(cat.labelEn, `pole ${cat.id} zostało po polsku`).not.toBe(cat.label);
+      for (const code of TRANSLATED) {
+        expect(cat.labels[code], `pole ${cat.id} po ${code}`).toBeTruthy();
+        expect(cat.labels[code], `pole ${cat.id} zostało po polsku w ${code}`).not.toBe(cat.label);
+      }
     }
   });
 
   it("nie powtarza tej samej etykiety na dwóch polach", () => {
-    expect(new Set(BOARD.map((c) => c.labelEn)).size).toBe(BOARD.length);
+    for (const code of LOCALES) {
+      expect(new Set(BOARD.map((c) => c.labels[code])).size, code).toBe(BOARD.length);
+    }
   });
 
   it("podaje etykietę zgodną z językiem", () => {
     const cat = categoryById(12)!;
     expect(categoryLabel(cat, "pl")).toBe("Moment ceremonii ślubnej");
     expect(categoryLabel(cat, "en")).toBe("A moment from the wedding ceremony");
+    expect(categoryLabel(cat, "sr")).toBe("Trenutak sa venčanja");
+    expect(categoryLabel(cat, "de")).toBe("Ein Moment der Trauung");
+  });
+
+  it("trzyma polską etykietę także w mapie języków", () => {
+    for (const cat of BOARD) expect(cat.labels.pl).toBe(cat.label);
   });
 
   /**
    * Nazwa pliku na Dysku powstaje na serwerze, który nie wie, w jakim języku
-   * jest telefon gościa. Gdyby slug szedł za angielską etykietą, to samo pole
-   * lądowałoby w folderze pod dwiema nazwami — i wyszłoby to dopiero po weselu.
+   * jest telefon gościa. Gdyby slug szedł za tłumaczeniem, to samo pole
+   * lądowałoby w folderze pod czterema nazwami — i wyszłoby to dopiero po weselu.
    */
-  it("liczy slug z polskiej etykiety, nie z angielskiej", () => {
+  it("liczy slug z polskiej etykiety, nie z tłumaczenia", () => {
     for (const cat of BOARD) {
       expect(cat.slug).toBe(slugify(cat.label));
-      expect(cat.slug).not.toBe(slugify(cat.labelEn));
+      for (const code of TRANSLATED) {
+        expect(cat.slug, `pole ${cat.id} po ${code}`).not.toBe(slugify(cat.labels[code]));
+      }
     }
   });
 });
