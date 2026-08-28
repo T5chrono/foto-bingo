@@ -30,7 +30,10 @@ export default function SettingsPage() {
           Wyjście na planszę zostaje wtedy tam, gdzie było, zamiast uciekać
           pod dolną krawędź razem z resztą. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-        <section className="flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-paper px-4 py-2.5">
+        {/* `flex-wrap`, bo od czterech języków pasek i podpis nie mieszczą się
+            w jednym rzędzie na najwęższych telefonach. Wtedy przełącznik schodzi
+            pod podpis, zamiast wypchnąć kartę poza ekran. */}
+        <section className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-2xl border border-brand-200 bg-paper px-4 py-2.5">
           <span className="font-medium">{t.app.language}</span>
           <LanguagePicker />
         </section>
