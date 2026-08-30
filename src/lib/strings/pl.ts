@@ -58,6 +58,29 @@ export const pl = {
     full: "pełna karta",
   },
 
+  /**
+   * Za co są nagrody.
+   *
+   * Zasada gry, nie ozdobnik: gość ma wiedzieć, po co biega z telefonem, zanim
+   * zdobędzie pierwszą linię. Dlatego ten sam tekst stoi w dwóch miejscach —
+   * na pasku pod planszą przy pierwszym wejściu i na stałe w ustawieniach,
+   * dla kogoś, kto dopyta w sobotę wieczorem.
+   */
+  prizes: {
+    title: "Nagrody",
+    /** Krótka wersja na pasek pod planszą — musi zmieścić się w dwóch linijkach. */
+    short:
+      "Za każdy wiersz, każdą kolumnę i każdą przekątną jest nagroda — dla tego, " +
+      "kto zgłosi ją pierwszy. Na koniec czeka jeszcze nagroda główna.",
+    lines:
+      "Każdy wiersz, każda kolumna i każda przekątna to osobna nagroda. Dostaje ją " +
+      "ten, kto zgłosi daną linię jako pierwszy.",
+    main:
+      "Nagroda główna czeka na osobę, która zbierze wszystkie zdjęcia z planszy — " +
+      "a jeśli nikomu nie uda się skompletować całej, na tę z największą liczbą pól.",
+    hide: "Ukryj informację o nagrodach",
+  },
+
   install: {
     prompt: "Dodaj Foto Bingo na ekran główny — będzie pod ręką przez cały weekend.",
     action: "Zainstaluj",

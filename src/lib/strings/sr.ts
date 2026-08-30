@@ -85,6 +85,20 @@ export const sr: Strings = {
     full: "puna karta",
   },
 
+  prizes: {
+    title: "Nagrade",
+    short:
+      "Za svaki red, svaku kolonu i svaku dijagonalu ide nagrada — onome ko je prvi " +
+      "prijavi. A na kraju čeka i glavna nagrada.",
+    lines:
+      "Svaki red, svaka kolona i svaka dijagonala je posebna nagrada. Dobija je onaj " +
+      "ko tu liniju prvi prijavi.",
+    main:
+      "Glavna nagrada čeka onoga ko sakupi sve fotografije sa table — a ako niko ne " +
+      "popuni celu, onoga ko ima najpuniju tablu.",
+    hide: "Sakrij obaveštenje o nagradama",
+  },
+
   install: {
     prompt: "Dodaj Foto Bingo na početni ekran — biće ti pri ruci celog vikenda.",
     action: "Instaliraj",
