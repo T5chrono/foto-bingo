@@ -1,6 +1,7 @@
 import type { ErrorCode } from "./errors.js";
 import { readToken } from "./guest.js";
 import type { Budget } from "./image.js";
+import type { Results } from "./results.js";
 
 const BASE = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -132,6 +133,8 @@ export type CategoryView = {
   photos: { photoId: string; guestName: string; driveStatus: string; url: string }[];
 };
 
+export type { Results, LineStanding, Finisher, Leader } from "./results.js";
+
 export type PanelStats = {
   usedBytes: number;
   limitBytes: number;
@@ -228,4 +231,6 @@ export const api = {
     request<CategoryView>(`/panel/category/${categoryId}`),
 
   panelStats: () => request<PanelStats>("/panel/stats"),
+
+  panelResults: () => request<Results>("/panel/results"),
 };

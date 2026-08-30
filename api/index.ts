@@ -32,6 +32,7 @@ import {
   type ClaimKind,
 } from "./_lib/claims.js";
 import { clearCookie, login, verifyCookie } from "./_lib/panel.js";
+import { collectResults } from "./_lib/results.js";
 
 type Vars = { guest: Guest };
 
@@ -523,6 +524,21 @@ app.get("/panel/category/:id", requirePanel, async (c) => {
     photos,
   });
 });
+
+/**
+ * Arkusz sedziowski: kto pierwszy skompletowal ktora linie i kto prowadzi
+ * w liczbie zdjec.
+ *
+ * Liczy sie z samych zdjec, nie ze zgloszen — zgloszenie mowi tylko, kto
+ * zdazyl kliknac. Gosc, ktoremu padla bateria, zanim zglosil linie, jest tu
+ * widoczny na swoim miejscu i to Para Mloda decyduje, co z tym zrobic.
+ *
+ * Caly rachunek idzie w pamieci funkcji, a nie w SQL-u: dwanascie linii razy
+ * czterdziestu gosci to kilka tysiecy porownan, czyli mniej niz milisekunda,
+ * a regula rozstrzygania zostaje w jednym miejscu razem z testami zamiast
+ * rozjezdzac sie miedzy zapytaniem a kodem.
+ */
+app.get("/panel/results", requirePanel, async (c) => c.json(await collectResults()));
 
 /**
  * Stan zbiorki: zajete miejsce i oryginaly w drodze.

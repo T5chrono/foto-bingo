@@ -181,6 +181,17 @@ export const en: Strings = {
     pendingOriginals: "Full-size photos on the way",
     pendingCount: (count: number) => n(count, "full-size photo", "full-size photos"),
     pendingHint: "Ask these people to open the app — the photos will arrive by themselves.",
+    lineWinners: "Lines completed",
+    lineWinnersHint:
+      "Who was first to collect all five photos of a line. The time is the moment the " +
+      "last missing photo arrived.",
+    lineNobody: "nobody yet",
+    moreFinishers: (count: number) => `${count} more`,
+    mainPrize: "Grand prize",
+    mainPrizeHint:
+      "Who has the most squares right now. On a tie, whoever got there first ranks higher.",
+    noPhotosYet: "No photos yet.",
+
     noCategory: "No such category.",
     backToPanel: "← Panel",
     categoryEmpty: "Nobody has sent a photo in this category yet.",

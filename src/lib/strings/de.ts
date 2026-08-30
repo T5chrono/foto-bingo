@@ -200,6 +200,17 @@ export const de: Strings = {
     pendingOriginals: "Originale unterwegs",
     pendingCount: (count: number) => n(count, "Original", "Originale"),
     pendingHint: "Bitte diese Leute, die App zu öffnen — die Fotos kommen dann von selbst.",
+    lineWinners: "Geschaffte Linien",
+    lineWinnersHint:
+      "Wer zuerst alle fünf Fotos einer Linie beisammen hatte. Die Uhrzeit ist der " +
+      "Moment, in dem das letzte fehlende Foto ankam.",
+    lineNobody: "noch niemand",
+    moreFinishers: (count: number) => `noch ${count}`,
+    mainPrize: "Hauptpreis",
+    mainPrizeHint:
+      "Wer gerade die meisten Felder hat. Bei Gleichstand steht oben, wer zuerst dort war.",
+    noPhotosYet: "Noch keine Fotos.",
+
     noCategory: "Diese Kategorie gibt es nicht.",
     backToPanel: "← Panel",
     categoryEmpty: "In dieser Kategorie hat noch niemand ein Foto geschickt.",
