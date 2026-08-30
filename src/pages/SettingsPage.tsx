@@ -81,6 +81,18 @@ export default function SettingsPage() {
           </p>
         </section>
 
+        {/* Zasady nagród na stałe. Pasek pod planszą gość zamyka raz i już
+          nie wraca, a pytanie „to za co właściwie są te nagrody" pada w sobotę
+          wieczorem, nie przy pierwszym uruchomieniu. Tutaj tekst stoi w pełnej
+          wersji — rozbity na dwa akapity, bo to dwie różne nagrody. */}
+        <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-2.5 text-sm text-brand-800/75">
+          <h2 className="mb-1 text-sm font-medium text-brand-800/60">
+            {t.prizes.title}
+          </h2>
+          <p>{t.prizes.lines}</p>
+          <p className="mt-2">{t.prizes.main}</p>
+        </section>
+
         {/* Tu stoi **zdanie**, nie cztery akapity z bramki. Pełny tekst gość
           czytał raz, przy wejściu; ustawienia otwiera po to, żeby przestawić
           Wi-Fi albo zobaczyć, czy coś jeszcze wisi w kolejce, i ma to zobaczyć

@@ -64,6 +64,20 @@ export const de: Strings = {
     full: "volle Karte",
   },
 
+  prizes: {
+    title: "Preise",
+    short:
+      "Für jede Reihe, jede Spalte und jede Diagonale gibt es einen Preis — für den, " +
+      "der sie zuerst meldet. Und am Ende wartet noch der Hauptpreis.",
+    lines:
+      "Jede Reihe, jede Spalte und jede Diagonale ist ein eigener Preis. Er geht an " +
+      "den, der die Linie zuerst meldet.",
+    main:
+      "Der Hauptpreis wartet auf die Person, die alle Fotos der Karte zusammenbekommt " +
+      "— und wenn es niemand ganz schafft, auf die vollste Karte.",
+    hide: "Hinweis zu den Preisen ausblenden",
+  },
+
   install: {
     prompt:
       "Leg Foto Bingo auf den Startbildschirm — dann ist es das ganze Wochenende " +

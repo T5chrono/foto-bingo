@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BingoBanner } from "../components/BingoBanner";
 import { InstallBanner } from "../components/InstallBanner";
 import { BoardGrid } from "../components/BoardGrid";
+import { PrizesBanner, usePrizesSeen } from "../components/PrizesBanner";
 import { MeadowBand } from "../components/wedding/Meadow";
 import { Wordmark } from "../components/wedding/Wordmark";
 import { useBoard } from "../hooks/useBoard";
@@ -18,6 +19,7 @@ export default function BoardPage() {
   const client = useQueryClient();
   const { me, tiles, refreshJobs } = useBoard();
   const t = useT();
+  const [prizesSeen, hidePrizes] = usePrizesSeen();
 
   // Kolejka rusza sama, gdy wraca sieć albo aplikacja wraca na wierzch.
   // Gość, który wysłał zdjęcie na spacerze bez zasięgu, nie musi o niczym
@@ -104,10 +106,13 @@ export default function BoardPage() {
 
       <BingoBanner filled={filled} lines={lines} />
 
-      {/* Zachęta do instalacji ustępuje miejsca zdobytej linii. To jedyny
-          moment, w którym gościowi coś się udało — nie dzieli go z podpowiedzią
-          techniczną, a plansza nie oddaje wtedy wysokości dwóm paskom naraz. */}
-      {lines.length === 0 && <InstallBanner />}
+      {/* Pod planszą stoi naraz **jeden** pasek — plansza nie oddaje wysokości
+          dwóm ani trzem. Zdobyta linia bije wszystko: to jedyny moment, w którym
+          gościowi coś się udało, i nie dzieli go z niczym. Póki nic nie zdobył,
+          pierwszeństwo mają zasady gry, a zachęta techniczna czeka na swoją kolej
+          — o nagrodach trzeba wiedzieć wcześniej, o instalacji można później. */}
+      {lines.length === 0 &&
+        (prizesSeen ? <InstallBanner /> : <PrizesBanner onHide={hidePrizes} />)}
 
       <MeadowBand />
     </main>

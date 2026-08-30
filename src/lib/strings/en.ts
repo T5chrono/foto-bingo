@@ -55,6 +55,20 @@ export const en: Strings = {
     full: "full card",
   },
 
+  prizes: {
+    title: "Prizes",
+    short:
+      "Every row, every column and every diagonal wins a prize — for whoever claims " +
+      "it first. And there's a grand prize waiting at the end.",
+    lines:
+      "Every row, every column and every diagonal is a prize of its own. It goes to " +
+      "whoever claims that line first.",
+    main:
+      "The grand prize is waiting for whoever collects every photo on the board — " +
+      "or, if nobody fills it completely, for the fullest board of all.",
+    hide: "Hide the note about prizes",
+  },
+
   install: {
     prompt: "Add Foto Bingo to your home screen — it'll be one tap away all weekend.",
     action: "Install",
