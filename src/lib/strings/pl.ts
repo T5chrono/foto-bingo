@@ -202,6 +202,22 @@ export const pl = {
     pendingCount: (n: number) => count(n, ORYGINALY),
     /** Serwer nie dośle oryginału — leży na telefonie gościa. Zostaje poprosić człowieka. */
     pendingHint: "Poproś te osoby o otwarcie aplikacji — zdjęcia dojdą same.",
+    /**
+     * Arkusz sędziowski. Liczy się ze zdjęć, nie ze zgłoszeń — zgłoszenie mówi
+     * tylko, kto zdążył kliknąć.
+     */
+    lineWinners: "Zdobyte linie",
+    lineWinnersHint:
+      "Kto pierwszy skompletował wszystkie pięć zdjęć danej linii. Godzina to moment, " +
+      "w którym doszło ostatnie brakujące zdjęcie.",
+    lineNobody: "jeszcze nikt",
+    moreFinishers: (n: number) => `jeszcze ${count(n, GOSCIE)}`,
+    mainPrize: "Nagroda główna",
+    mainPrizeHint:
+      "Kto ma teraz najwięcej pól. Przy remisie wyżej stoi ten, kto doszedł do tej " +
+      "liczby wcześniej.",
+    noPhotosYet: "Jeszcze nikt nie wysłał zdjęcia.",
+
     noCategory: "Nie ma takiej kategorii.",
     backToPanel: "← Panel",
     categoryEmpty: "Jeszcze nikt nie wysłał zdjęcia w tej kategorii.",

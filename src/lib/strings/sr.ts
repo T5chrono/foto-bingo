@@ -224,6 +224,18 @@ export const sr: Strings = {
     pendingOriginals: "Originali na putu",
     pendingCount: (n: number) => count(n, "original", "originala", "originala"),
     pendingHint: "Zamoli ove ljude da otvore aplikaciju — fotografije će stići same.",
+    lineWinners: "Osvojene linije",
+    lineWinnersHint:
+      "Ko je prvi sakupio svih pet fotografija jedne linije. Vreme je trenutak kada je " +
+      "stigla poslednja fotografija koja je nedostajala.",
+    lineNobody: "još niko",
+    moreFinishers: (n: number) => `još ${n}`,
+    mainPrize: "Glavna nagrada",
+    mainPrizeHint:
+      "Ko trenutno ima najviše polja. Pri izjednačenju gore stoji onaj ko je prvi " +
+      "stigao dotle.",
+    noPhotosYet: "Još niko nije poslao fotografiju.",
+
     noCategory: "Nema takve kategorije.",
     backToPanel: "← Panel",
     categoryEmpty: "Još niko nije poslao fotografiju u ovoj kategoriji.",

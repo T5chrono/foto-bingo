@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, type PanelClaim, type PanelStats } from "../lib/api";
+import {
+  api,
+  type Leader,
+  type LineStanding,
+  type PanelClaim,
+  type PanelStats,
+} from "../lib/api";
 import { BOARD, SIZE } from "../lib/board";
 import { claimLabel } from "../lib/bingo";
 import { useT } from "../hooks/useLocale";
@@ -94,6 +100,15 @@ function Dashboard() {
     queryFn: api.panelStats,
     refetchInterval: 60_000,
   });
+  // Wolniej niz zgloszenia, bo to jedyne zapytanie, ktore czyta cala tabele
+  // zdjec. Pol minuty wystarczy: nagrode za wiersz wreczy sie i tak dopiero
+  // wtedy, gdy ktos podejdzie z telefonem, a panel odswieza sie tez sam po
+  // powrocie na wierzch.
+  const results = useQuery({
+    queryKey: ["panel", "results"],
+    queryFn: api.panelResults,
+    refetchInterval: 30_000,
+  });
 
   const nowe = (claims.data ?? []).filter((c) => c.status === "new");
   const reszta = (claims.data ?? []).filter((c) => c.status !== "new");
@@ -130,6 +145,9 @@ function Dashboard() {
         )}
       </section>
 
+      {results.data && <LineWinners lines={results.data.lines} t={t} />}
+      {results.data && <MainPrize leaders={results.data.leaders} t={t} />}
+
       <section>
         <h2 className="mb-2 text-sm font-medium text-brand-800/60">{t.panel.byCategory}</h2>
         {/* Kategorie leżą tu **w planszy 5×5**, nie w liście — bo Para Młoda
@@ -165,6 +183,133 @@ function Dashboard() {
 
       {stats.data && <Stats stats={stats.data} t={t} />}
     </main>
+  );
+}
+
+/**
+ * Godzina ukonczenia, nie data.
+ *
+ * Wesele trwa jeden weekend, wiec dzien tygodnia plus godzina mowi wszystko,
+ * a pelna data zajmowalaby pol wiersza. Format bierze jezyk panelu, zeby
+ * "sob 21:37" i "Sa. 21:37" nie stalo obok siebie w jednej tabelce.
+ */
+function useClock(lang: string) {
+  return useMemo(
+    () =>
+      new Intl.DateTimeFormat(lang, {
+        weekday: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [lang],
+  );
+}
+
+/**
+ * Dwanascie linii i osoba, ktora zamknela kazda z nich jako pierwsza.
+ *
+ * Linie nieukonczone tez tu stoja, wyszarzone. Para Mloda ma widziec **komplet
+ * nagrod**, takze te jeszcze nierozdane — lista, ktora rosnie z niczego, nie
+ * mowi, ile zostalo do konca zabawy.
+ *
+ * Kolejnosc jest kolejnoscia zdjec, nie zgloszen. Zgloszenie mowi tylko, kto
+ * zdazyl kliknac "Zglos bingo"; tutaj liczy sie moment, w ktorym doszlo ostatnie
+ * brakujace zdjecie linii. Kto zglosil, widac w sekcji zgloszen wyzej.
+ */
+function LineWinners({ lines, t }: { lines: LineStanding[]; t: Strings }) {
+  const clock = useClock(t.htmlLang);
+
+  return (
+    <section>
+      <h2 className="mb-1 text-sm font-medium text-brand-800/60">{t.panel.lineWinners}</h2>
+      <p className="mb-2 text-xs text-brand-800/55">{t.panel.lineWinnersHint}</p>
+
+      <ul className="flex flex-col gap-1">
+        {lines.map((line) => {
+          const [winner, ...rest] = line.finishers;
+
+          return (
+            <li
+              key={`${line.kind}-${line.index}`}
+              className={`flex items-baseline justify-between gap-3 rounded-xl border px-4 py-2 ${
+                winner ? "border-brand-300 bg-brand-50" : "border-brand-200 bg-paper"
+              }`}
+            >
+              <span className="shrink-0 text-sm text-brand-800/70">
+                {claimLabel({ kind: line.kind, index: line.index }, t.bingo)}
+              </span>
+
+              {winner ? (
+                <span className="flex min-w-0 items-baseline justify-end gap-2">
+                  <span className="truncate font-medium text-ink">{winner.guestName}</span>
+                  <span className="shrink-0 text-xs text-brand-800/55">
+                    {clock.format(new Date(winner.completedAt))}
+                  </span>
+                  {rest.length > 0 && (
+                    <span
+                      title={t.panel.moreFinishers(rest.length)}
+                      className="shrink-0 rounded-full bg-brand-200 px-1.5 text-[0.65rem] text-brand-800/70"
+                    >
+                      +{rest.length}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="text-sm text-brand-800/40">{t.panel.lineNobody}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * Pretendent do nagrody glownej i pierwsza piatka za nim.
+ *
+ * Piatka, a nie wszyscy: przy czterdziestu gosciach pelna lista to ekran
+ * przewijania, na ktorym i tak liczy sie gora. Kto stoi nizej, widac po
+ * kategoriach.
+ */
+function MainPrize({ leaders, t }: { leaders: Leader[]; t: Strings }) {
+  const top = leaders.slice(0, 5);
+
+  return (
+    <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-4">
+      <h2 className="text-sm font-medium text-brand-800/60">{t.panel.mainPrize}</h2>
+      <p className="mt-1 text-xs text-brand-800/55">{t.panel.mainPrizeHint}</p>
+
+      {top.length === 0 ? (
+        <p className="mt-3 text-sm text-brand-800/55">{t.panel.noPhotosYet}</p>
+      ) : (
+        <ol className="mt-3 flex flex-col gap-1.5">
+          {top.map((leader, i) => (
+            <li key={leader.guestId} className="flex items-baseline gap-3">
+              <span className="w-4 shrink-0 text-xs text-brand-800/45">{i + 1}.</span>
+              <span
+                className={`min-w-0 flex-1 truncate ${
+                  i === 0 ? "font-medium text-ink" : "text-brand-800/80"
+                }`}
+              >
+                {leader.guestName}
+              </span>
+              <span className="shrink-0 text-sm text-brand-800/70">
+                {t.panel.photoCount(leader.photos)}
+              </span>
+              {/* Pasek zamiast drugiej liczby: roznica miedzy 18 a 11 zdjeciami
+                  ma byc widoczna z drugiego konca stolu, a nie do przeczytania. */}
+              <span className="hidden h-1 w-20 shrink-0 overflow-hidden rounded-full bg-brand-100 sm:block">
+                <span
+                  className="block h-full rounded-full bg-brand-500"
+                  style={{ width: `${Math.round((leader.photos / (top[0]?.photos || 1)) * 100)}%` }}
+                />
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 
