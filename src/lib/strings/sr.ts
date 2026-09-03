@@ -182,6 +182,7 @@ export const sr: Strings = {
       "Na iPhone-u kreću tek posle „Pošalji odmah”.",
     queueVideos: (n: number) => `${count(n, "snimak čeka", "snimka čekaju", "snimaka čeka")} Wi-Fi`,
     sendVideosNow: "Pošalji snimke odmah",
+    sendingNow: (sta: string) => `Šaljem: ${sta}`,
     yourPhotos: "Tvoje fotografije",
   },
 

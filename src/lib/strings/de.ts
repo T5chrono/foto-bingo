@@ -157,6 +157,7 @@ export const de: Strings = {
       "warten mit. Auf dem iPhone startet sie erst „Jetzt senden“.",
     queueVideos: (count: number) => `${n(count, "Video wartet", "Videos warten")} auf WLAN`,
     sendVideosNow: "Videos jetzt senden",
+    sendingNow: (was: string) => `Wird gesendet: ${was}`,
     yourPhotos: "Deine Fotos",
   },
 
