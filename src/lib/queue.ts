@@ -232,6 +232,12 @@ export async function readOriginal(photoId: string, start: number, end: number):
   return out.buffer;
 }
 
+/** Jedno zadanie po identyfikatorze. Wysyłka pyta o nie przed każdym krokiem,
+ *  żeby wiedzieć, czy gość nie zwolnił kafelka w międzyczasie. */
+export async function jobById(photoId: string): Promise<Job | undefined> {
+  return (await database()).get("jobs", photoId);
+}
+
 export async function allJobs(): Promise<Job[]> {
   return (await database()).getAll("jobs");
 }

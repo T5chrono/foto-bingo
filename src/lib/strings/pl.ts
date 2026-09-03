@@ -183,6 +183,8 @@ export const pl = {
       "poczekają. Na iPhonie rusza je dopiero „Wyślij teraz”.",
     queueVideos: (n: number) => `${count(n, FILMY_CZEKAJA)} na Wi-Fi`,
     sendVideosNow: "Wyślij filmy teraz",
+    /** Nazwa kafelka w środku, więc bez dwukropka na końcu zdania. */
+    sendingNow: (co: string) => `Wysyłam: ${co}`,
     yourPhotos: "Twoje zdjęcia",
   },
 

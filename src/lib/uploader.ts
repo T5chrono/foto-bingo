@@ -49,26 +49,82 @@ export type Progress = {
 
 let running = false;
 
+/**
+ * Postęp wysyłki jako stan **aplikacji**, nie stan ekranu.
+ *
+ * Dotąd raport szedł wyłącznie do funkcji przekazanej do `drain`, czyli do
+ * komponentu, który akurat zaczął wysyłkę. Gość wychodził z kafelka na planszę,
+ * wracał — i paska nie było, mimo że film dalej leciał: komponent się odmontował
+ * razem ze swoim `useState`. Kolejka jest jedna na całą aplikację, więc jej stan
+ * też ma być jeden, a ekrany mają go **czytać**, a nie trzymać.
+ *
+ * `null` znaczy „nic nie leci". Ekran, który dostanie `null`, ma wtedy wrócić do
+ * tego, co zapisane w kolejce (`originalOffset`) — to przeżywa nawet zamknięcie
+ * aplikacji, czego żaden strumień zdarzeń nie potrafi.
+ */
+let latest: Progress | null = null;
+const watchers = new Set<(p: Progress | null) => void>();
+
+/** Zwraca funkcję odpinającą — do sprzątania w useEffect. Odbiornik dostaje
+ *  bieżący stan od razu, a nie dopiero przy następnym kawałku. */
+export function watchProgress(fn: (p: Progress | null) => void): () => void {
+  watchers.add(fn);
+  fn(latest);
+  return () => void watchers.delete(fn);
+}
+
+function publish(p: Progress | null): void {
+  latest = p;
+  for (const fn of watchers) fn(p);
+}
+
 export async function drain(onProgress?: (p: Progress) => void): Promise<void> {
   if (running) return;
   running = true;
+  // Każdy raport idzie w dwa miejsca: do wołającego, który go zamówił,
+  // i do wszystkich ekranów, które akurat patrzą.
+  const report = (p: Progress) => {
+    publish(p);
+    onProgress?.(p);
+  };
   try {
     for (const job of await queue.previewPending()) {
-      await sendPreview(job, onProgress);
+      await sendPreview(job, report);
     }
     for (const job of await queue.originalPending()) {
       if (!originalAllowed(job)) {
         // Nie błąd, nie ponowienie — zadanie zostaje w kolejce i ruszy, gdy
         // zmieni się sieć albo gość dotknie „wyślij teraz". Ekran kategorii
         // ma o tym wiedzieć, więc mówimy, zamiast po cichu pomijać.
-        onProgress?.({ photoId: job.photoId, phase: "original", state: "queued", waiting: "wifi" });
+        report({ photoId: job.photoId, phase: "original", state: "queued", waiting: "wifi" });
         continue;
       }
-      await sendOriginal(job, onProgress);
+      await sendOriginal(job, report);
     }
   } finally {
     running = false;
+    // Kolejka pusta albo wstrzymana — pasek ma zniknąć, a nie zamarznąć
+    // na ostatniej wartości. Wcześniejszy `return` przy `running` nie
+    // przechodzi przez ten blok, więc nie gasi cudzej wysyłki.
+    publish(null);
   }
+}
+
+/**
+ * Czy zadanie wciąż jest w kolejce.
+ *
+ * Gość może zdjąć kafelek w środku wysyłki — i wtedy wszystko, co jeszcze
+ * poleci, **cofa jego decyzję**: `finalize` wstawia zdjęcie z powrotem na
+ * planszę, a kolejny kawałek dokłada plik do folderu na Dysku. Skasowanie
+ * zadania z IndexedDB samo w sobie tego nie zatrzymuje, bo `sendPreview`
+ * i `sendOriginal` trzymają je już w pamięci i lecą dalej po swojemu.
+ *
+ * Dlatego pytamy bazę przed każdym krokiem, który zostawia ślad po stronie
+ * serwera. Kawałek, który jest już w locie, dojdzie do Google — przerywamy
+ * na najbliższej granicy, a nie w środku żądania.
+ */
+async function stillQueued(photoId: string): Promise<boolean> {
+  return Boolean(await queue.jobById(photoId));
 }
 
 async function sendPreview(job: queue.Job, onProgress?: (p: Progress) => void): Promise<void> {
@@ -84,6 +140,13 @@ async function sendPreview(job: queue.Job, onProgress?: (p: Progress) => void): 
 
     await putSigned(targets.bucket, targets.preview, queue.toBlob(job.preview, job.mime));
     await putSigned(targets.bucket, targets.thumb, queue.toBlob(job.thumb, job.mime));
+
+    // Kafelek mógł zostać zwolniony, kiedy bajty szły w górę. `finalize`
+    // postawiłby zdjęcie z powrotem na planszy — czyli zrobił dokładnie to,
+    // czego gość przed chwilą kazał nie robić. Podgląd zostaje wtedy
+    // w bucketcie jako sierota: 350 KB w rzadkim przypadku brzegowym jest
+    // tańsze niż kafelek, który wraca sam.
+    if (!(await stillQueued(job.photoId))) return;
 
     await api.finalize({
       photoId: job.photoId,
@@ -112,6 +175,7 @@ async function sendPreview(job: queue.Job, onProgress?: (p: Progress) => void): 
 
 async function sendOriginal(job: queue.Job, onProgress?: (p: Progress) => void): Promise<void> {
   if (job.originalChunks === 0) return void (await queue.remove(job.photoId));
+  if (!(await stillQueued(job.photoId))) return;
 
   const total = job.originalBytes;
   await queue.patch(job.photoId, { state: "uploading" });
@@ -137,6 +201,11 @@ async function sendOriginal(job: queue.Job, onProgress?: (p: Progress) => void):
     let stalled = 0;
 
     while (offset < total) {
+      // Zwolniony kafelek przerywa wysyłkę tutaj, na granicy kawałka.
+      // Bez tego `readOriginal` rzuciłby „brak kawałka" — bo `queue.remove`
+      // zabrało też bajty — i wyglądałoby to na awarię, a nie na wykonanie
+      // polecenia gościa.
+      if (!(await stillQueued(job.photoId))) return;
       // Z magazynu, nie z pamięci: w RAM-ie jest w tej chwili dokładnie jeden
       // kawałek filmu, a nie cały film.
       const chunk = await queue.readOriginal(job.photoId, offset, Math.min(offset + chunkSize, total));

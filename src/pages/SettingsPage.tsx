@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 
 import * as queue from "../lib/queue";
-import { drain, originalAllowed, setWifiOnly, wifiOnly } from "../lib/uploader";
-import { useT } from "../hooks/useLocale";
+import { drain, originalAllowed, setWifiOnly, watchProgress, wifiOnly } from "../lib/uploader";
+import { categoryById, categoryLabel } from "../lib/board";
+import { useLocale } from "../hooks/useLocale";
 import { BackButton } from "../components/BackButton";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { MeadowBand } from "../components/wedding/Meadow";
 
 export default function SettingsPage() {
-  const t = useT();
+  const { locale, t } = useLocale();
   const [onlyWifi, setOnlyWifi] = useState(wifiOnly);
   const [jobs, setJobs] = useState<queue.Job[]>([]);
 
-  useEffect(() => {
-    void queue.allJobs().then(setJobs);
-  }, []);
+  // Kolejka odczytywana na nowo przy każdym kawałku, żeby licznik i pasek
+  // szły do przodu na oczach gościa — to jest ten ekran, na który wchodzi
+  // się z pytaniem „czy to w ogóle jeszcze idzie?".
+  useEffect(() => watchProgress(() => void queue.allJobs().then(setJobs)), []);
 
   const czekaPodglad = jobs.filter((j) => !j.previewDone).length;
   const czekaOryginal = jobs.filter((j) => j.previewDone && j.originalChunks > 0).length;
@@ -22,6 +24,18 @@ export default function SettingsPage() {
   const czekajaFilmy = jobs.filter(
     (j) => j.kind === "video" && j.previewDone && j.originalChunks > 0 && !originalAllowed(j),
   );
+
+  // Co leci w tej chwili. Bierzemy z kolejki, nie ze zdarzeń: po wejściu
+  // w ustawienia w środku wysyłki pasek ma być od razu, a nie po pierwszym
+  // kawałku, który przy 3 MB na słabym zasięgu potrafi iść minutę.
+  const wysylany = jobs.find(
+    (j) => j.previewDone && j.originalChunks > 0 && (j.state === "uploading" || j.originalOffset > 0),
+  );
+  const wysylanyRatio =
+    wysylany && wysylany.originalBytes > 0
+      ? Math.min(1, wysylany.originalOffset / wysylany.originalBytes)
+      : 0;
+  const wysylanaKategoria = wysylany ? categoryById(wysylany.categoryId) : undefined;
 
   async function wyslijFilmy() {
     for (const j of czekajaFilmy) await queue.patch(j.photoId, { sendNow: true });
@@ -101,6 +115,25 @@ export default function SettingsPage() {
               )}
             </ul>
           )}
+          {/* Co idzie TERAZ — z nazwą kafelka, bo „oryginał w drodze" bez
+              wskazania którego nie daje się z niczym zestawić. */}
+          {wysylany && wysylanaKategoria && (
+            <div className="mt-1.5">
+              <p className="flex items-baseline justify-between gap-2 text-xs text-brand-800/75">
+                <span className="truncate">
+                  {t.settings.sendingNow(categoryLabel(wysylanaKategoria, locale))}
+                </span>
+                <span className="shrink-0 tabular-nums">{Math.round(wysylanyRatio * 100)}%</span>
+              </p>
+              <div className="mt-1 h-1 overflow-hidden rounded-full bg-brand-100">
+                <div
+                  className="h-full bg-brand-600 transition-[width]"
+                  style={{ width: `${Math.round(wysylanyRatio * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {czekajaFilmy.length > 0 && (
             <button
               type="button"
@@ -110,9 +143,14 @@ export default function SettingsPage() {
               {t.settings.sendVideosNow}
             </button>
           )}
-          <p className="mt-1.5 text-[0.7rem] leading-snug text-brand-800/55">
-            {t.settings.queueHint}
-          </p>
+          {/* Podpowiedź odpowiada na „czemu to nie rusza?", więc w trakcie
+              wysyłki nie ma czego tłumaczyć — i zwalnia miejsce dokładnie
+              wtedy, gdy zajmuje je pasek. Ekran zostaje bez przewijania. */}
+          {!wysylany && (
+            <p className="mt-1.5 text-[0.7rem] leading-snug text-brand-800/55">
+              {t.settings.queueHint}
+            </p>
+          )}
         </section>
 
         {/* Zasady nagród na stałe. Pasek pod planszą gość zamyka raz i już

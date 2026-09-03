@@ -140,6 +140,7 @@ export const en: Strings = {
       "time wait too. On iPhones only “Send now” starts them.",
     queueVideos: (count: number) => `${n(count, "video", "videos")} waiting for Wi-Fi`,
     sendVideosNow: "Send videos now",
+    sendingNow: (what: string) => `Sending: ${what}`,
     yourPhotos: "Your photos",
   },
 

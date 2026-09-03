@@ -7,7 +7,7 @@ import { categoryById, categoryLabel } from "../lib/board";
 import { errorText } from "../lib/errors";
 import { prepare } from "../lib/image";
 import * as queue from "../lib/queue";
-import { drain, originalAllowed, type Progress } from "../lib/uploader";
+import { drain, originalAllowed, watchProgress, type Progress } from "../lib/uploader";
 import { useBoard } from "../hooks/useBoard";
 import { useLocale } from "../hooks/useLocale";
 import type { Strings } from "../lib/strings/pl";
@@ -93,6 +93,24 @@ export default function CategoryPage() {
       ? job
       : null;
 
+  /**
+   * Oryginał, który JEST w drodze — z kolejki, nie ze stanu tego ekranu.
+   *
+   * `originalOffset` zapisuje się po każdym kawałku, więc pasek odtwarza się
+   * po wyjściu na planszę, po zamknięciu aplikacji i po restarcie telefonu.
+   * Warunek na `state`/`offset` jest po to, żeby nie pokazywać „w drodze" nad
+   * zadaniem, które stoi bez zasięgu i nie ruszyło się ani o bajt.
+   */
+  const sending =
+    job && job.previewDone && job.originalChunks > 0 && !waitingVideo &&
+    (job.originalOffset > 0 || job.state === "uploading")
+      ? job
+      : null;
+  const sentRatio =
+    sending && sending.originalBytes > 0
+      ? Math.min(1, sending.originalOffset / sending.originalBytes)
+      : 0;
+
   /** Jeden odbiornik postępu dla wysyłki po wyborze pliku i po „wyślij teraz". */
   function track(p: Progress) {
     if (p.waiting === "wifi") {
@@ -117,6 +135,14 @@ export default function CategoryPage() {
       setError(errorText(p, t, t.category.sendFailed));
     }
   }
+
+  /**
+   * Wysyłka mogła zacząć się gdzie indziej — na planszy przez `autoDrain`,
+   * w ustawieniach przez „wyślij filmy teraz", albo w poprzednim uruchomieniu
+   * aplikacji. Ekran tylko słucha i dolicza się do kolejki, zamiast zakładać,
+   * że sam ją uruchomił.
+   */
+  useEffect(() => watchProgress(() => void refreshJobs()), [refreshJobs]);
 
   async function handleFile(file: File) {
     setError(null);
@@ -359,11 +385,14 @@ export default function CategoryPage() {
         }}
       />
 
+      {/* Świeża wysyłka z tego ekranu wygrywa, bo niesie też etapy, których
+          kolejka nie zapisuje („przetwarzanie"). Gdy ekranu nie było przy
+          starcie — gość wrócił z planszy — pasek odtwarza się z kolejki. */}
       <StatusLine
-        phase={phase}
+        phase={phase !== "idle" ? phase : sending ? "originalOnTheWay" : "idle"}
         error={error}
         sizeInfo={sizeInfo}
-        originalRatio={originalRatio}
+        originalRatio={phase !== "idle" ? originalRatio : sentRatio}
         t={t}
       />
 
@@ -443,12 +472,19 @@ function StatusLine({
       {error && <p className="mt-1 text-xs">{error}</p>}
       {sizeInfo && !error && <p className="mt-1 text-xs opacity-60">{sizeInfo}</p>}
       {phase === "originalOnTheWay" && (
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-brand-100">
-          <div
-            className="h-full bg-brand-600 transition-[width]"
-            style={{ width: `${Math.round(originalRatio * 100)}%` }}
-          />
-        </div>
+        <>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-brand-100">
+            <div
+              className="h-full bg-brand-600 transition-[width]"
+              style={{ width: `${Math.round(originalRatio * 100)}%` }}
+            />
+          </div>
+          {/* Procent słowem, bo sam pasek przy dużym filmie stoi w miejscu
+              tak długo, że wygląda na zawieszony. */}
+          <p className="mt-1 text-right text-xs tabular-nums opacity-60">
+            {Math.round(originalRatio * 100)}%
+          </p>
+        </>
       )}
     </div>
   );
