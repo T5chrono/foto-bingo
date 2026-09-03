@@ -514,7 +514,7 @@ Numeracja `R{wiersz}K{kolumna}`, kolumny zgodnie z oryginalną listą Pary Młod
 
 | | K1 | K2 | K3 | K4 | K5 |
 |---|---|---|---|---|---|
-|**R1**| Selfie z parą młodą | Ktoś w saunie albo w balii | Ognisko z iskrami | Widok na Beskid Niski o wschodzie słońca | Selfie z osobą, której nie znałeś przed tym weekendem |
+|**R1**| Selfie z parą młodą | Ktoś w saunie albo w balii | Ogień i iskry | Widok na Beskid Niski o wschodzie słońca | Selfie z osobą, której nie znałeś przed tym weekendem |
 |**R2**| Zdjęcie zrobione z ziemi, od dołu | Najgorsze możliwe zdjęcie grupowe | Bukiet panny młodej z bliska | Zdjęcie z obiema mamami | Ktoś, kto zasnął |
 |**R3**| Trzy pokolenia na jednym zdjęciu | Moment ceremonii | Pierwszy taniec | Uchwycona wpadka | Ktoś tańczący z zamkniętymi oczami |
 |**R4**| Ktoś owinięty kocem | Tort przed pokrojeniem | Świadkowie razem | Zdjęcie z basenu | Najlepszy widok z tarasu |
@@ -535,7 +535,7 @@ nie widzi reszty Dysku Pary Młodej.
 FotoBingo/                               ← folder root, tworzony przez aplikację
 ├── Anna Kowalska/
 │   ├── R1K1_selfie-z-para-mloda__anna-kowalska__20260815-193045.jpg
-│   ├── R1K3_ognisko-z-iskrami__anna-kowalska__20260815-201233.heic
+│   ├── R1K3_ogien-i-iskry__anna-kowalska__20260815-201233.heic
 │   └── R3K2_moment-ceremonii__anna-kowalska__20260816-141002.jpg
 └── Marek Nowak/
     └── …

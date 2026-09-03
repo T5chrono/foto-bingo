@@ -19,7 +19,7 @@ describe("plansza", () => {
 
   it("zachowuje wiersze z tabeli Pary Młodej", () => {
     expect(categoryById(1)?.label).toBe("Selfie z parą młodą");
-    expect(categoryById(3)?.label).toBe("Ognisko z iskrami");
+    expect(categoryById(3)?.label).toBe("Ogień i iskry");
     expect(categoryById(11)?.label).toBe("Trzy pokolenia na jednym zdjęciu");
     expect(categoryById(25)?.label).toBe("Cała drużyna z gry weselnej");
   });
@@ -48,7 +48,7 @@ describe("plansza", () => {
     expect(BOARD.map((c) => c.slug)).toEqual([
       "selfie-z-para-mloda",
       "ktos-w-saunie-albo-w-balii",
-      "ognisko-z-iskrami",
+      "ogien-i-iskry",
       "widok-na-beskid-niski-o-wschodzie-slonca",
       "selfie-z-osoba-ktorej-nie-znales-przed-tym-weekendem",
       "zdjecie-zrobione-z-ziemi-od-dolu",

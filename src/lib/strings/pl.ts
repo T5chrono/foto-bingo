@@ -1,4 +1,14 @@
-import { FILMY, GOSCIE, NOWE_ZGLOSZENIA, ORYGINALY, ZDJECIA, count } from "../plural.js";
+import {
+  FILMY,
+  FILMY_CZEKAJA,
+  GOSCIE,
+  LINIE,
+  NOWE_ZGLOSZENIA,
+  ORYGINALY,
+  ZDJECIA,
+  ZDJECIA_CZEKAJA,
+  count,
+} from "../plural.js";
 
 /**
  * Polskie teksty aplikacji — **źródło prawdy**.
@@ -45,7 +55,7 @@ export const pl = {
     fullCard: "Pełna karta!",
     line: "Bingo!",
     allTiles: "Wszystkie 25 pól.",
-    manyLines: (n: number) => `Masz ${n} linie — zgłaszasz tę pierwszą.`,
+    manyLines: (n: number) => `Masz ${count(n, LINIE)} — zgłaszasz tę pierwszą.`,
     submit: "Zgłoś bingo!",
     submitting: "Zgłaszam…",
     submitFailed: "Nie udało się zgłosić",
@@ -75,11 +85,11 @@ export const pl = {
       "Za każdy wiersz, każdą kolumnę i każdą przekątną jest nagroda — dla tego, " +
       "kto zgłosi ją pierwszy. Na koniec czeka jeszcze nagroda główna.",
     lines:
-      "Każdy wiersz, każda kolumna i każda przekątna to osobna nagroda. Dostaje ją " +
-      "ten, kto zgłosi daną linię jako pierwszy.",
+      "Każdy wiersz, kolumna i przekątna to osobna nagroda — dla tego, kto zgłosi " +
+      "daną linię jako pierwszy.",
     main:
-      "Nagroda główna czeka na osobę, która zbierze wszystkie zdjęcia z planszy — " +
-      "a jeśli nikomu nie uda się skompletować całej, na tę z największą liczbą pól.",
+      "Nagroda główna: cała plansza, a jeśli nikt jej nie skompletuje — " +
+      "największa liczba pól.",
     hide: "Ukryj informację o nagrodach",
   },
 
@@ -128,6 +138,17 @@ export const pl = {
     waitingWifiHint:
       "Klatka jest już na planszy i liczy się do bingo. Sam film wyślę, gdy telefon " +
       "złapie Wi-Fi — albo dotknij niżej, żeby wysłać go teraz przez dane komórkowe.",
+    /**
+     * Ostrzeżenie o koszcie, nie o błędzie. Wysyłka idzie po jednym zadaniu
+     * naraz (`drain` w `uploader.ts`), więc film trzyma kolejkę na wyłączność
+     * przez cały czas swojej wysyłki — i zdjęcie wybrane w międzyczasie zostaje
+     * na kafelku jako „w kolejce", zamiast się pokazać. Gość ma to wiedzieć
+     * ZANIM dotknie, bo potem nie ma jak przerwać.
+     */
+    waitingWifiCost:
+      "Film jedzie dużo dłużej niż zdjęcie — przy dużym pliku nawet kilkadziesiąt minut. " +
+      "Kolejka jest wtedy zajęta tylko nim: zdjęcia wybrane w międzyczasie zostaną " +
+      "w telefonie i wskoczą na planszę dopiero, gdy film dojdzie do końca.",
     sendNow: (size: string) => `Wyślij teraz (${size})`,
     /** Etapy wysyłki — pokazywane z wielokropkiem, więc bez kropki na końcu. */
     phase: {
@@ -148,17 +169,19 @@ export const pl = {
     title: "Ustawienia",
     wifiOnly: "Oryginały tylko przez Wi-Fi",
     wifiOnlyHint:
-      "Zdjęcia pojawią się na planszy tak samo szybko — w tle poczeka tylko wersja " +
-      "pełnej jakości. Około 4 MB na zdjęcie.",
+      "Plansza zapełnia się tak samo szybko — w tle czeka tylko pełna jakość, " +
+      "około 4 MB na zdjęcie.",
     queue: "Kolejka",
     queueEmpty: "Wszystko wysłane.",
-    queueWaiting: (n: number) => `${count(n, ZDJECIA)} czeka na wysłanie`,
+    queueWaiting: (n: number) => `${count(n, ZDJECIA_CZEKAJA)} na wysłanie`,
     queueOriginals: (n: number) => `${count(n, ORYGINALY)} w drodze na Dysk`,
-    queueHint: "Kolejka rusza sama, gdy wróci zasięg. Nie trzeba nic klikać.",
+    queueHint: "Kolejka rusza sama, gdy wróci zasięg.",
+    /** Krótko, bo ekran ustawień ma się mieścić bez przewijania. Pełna wersja
+     *  stoi tam, gdzie zapada decyzja — na karcie filmu w `CategoryPage`. */
     videosHint:
-      "Filmy zawsze czekają na Wi-Fi. iPhone nie mówi aplikacji, jaka to sieć, więc tam " +
-      "film rusza dopiero po dotknięciu „Wyślij teraz” — na jego kafelku albo tutaj.",
-    queueVideos: (n: number) => `${count(n, FILMY)} czeka na Wi-Fi`,
+      "Filmy czekają na Wi-Fi i długo zajmują kolejkę — zdjęcia z tego czasu też " +
+      "poczekają. Na iPhonie rusza je dopiero „Wyślij teraz”.",
+    queueVideos: (n: number) => `${count(n, FILMY_CZEKAJA)} na Wi-Fi`,
     sendVideosNow: "Wyślij filmy teraz",
     yourPhotos: "Twoje zdjęcia",
   },
@@ -183,8 +206,7 @@ export const pl = {
     /** Zdanie, które musi dać się przeczytać w dwie sekundy przy ognisku. */
     short: "Zdjęcia trafiają na prywatny Dysk Pary Młodej. Nikt inny ich nie zobaczy.",
     removal:
-      "Chcesz, żeby jakieś zdjęcie zniknęło? Usuń je na jego kafelku — zejdzie z planszy " +
-      "i z Dysku Pary Młodej.",
+      "Zdjęcie zniknie z planszy i z Dysku Pary Młodej, gdy usuniesz je na jego kafelku.",
     accept: "Rozumiem, gramy",
   },
 

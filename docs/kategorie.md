@@ -12,7 +12,7 @@ z językiem aplikacji — patrz **D14** w [specyfikacji](../FotoBingo%20-%20spec
 
 |  | **Kolumna 1** | **Kolumna 2** | **Kolumna 3** | **Kolumna 4** | **Kolumna 5** |
 | --- | --- | --- | --- | --- | --- |
-| **Wiersz 1** | Selfie z parą młodą | Ktoś w saunie albo w balii | Ognisko z iskrami | Widok na Beskid Niski o wschodzie słońca | Selfie z osobą, której nie znałeś przed tym weekendem |
+| **Wiersz 1** | Selfie z parą młodą | Ktoś w saunie albo w balii | Ogień i iskry | Widok na Beskid Niski o wschodzie słońca | Selfie z osobą, której nie znałeś przed tym weekendem |
 | **Wiersz 2** | Zdjęcie zrobione z ziemi, od dołu | Najgorsze możliwe zdjęcie grupowe | Bukiet panny młodej z bliska | Zdjęcie z obiema mamami | Ktoś, kto zasnął |
 | **Wiersz 3** | Trzy pokolenia na jednym zdjęciu | Moment ceremonii ślubnej | Pierwszy taniec | Uchwycona wpadka | Ktoś tańczący z zamkniętymi oczami |
 | **Wiersz 4** | Ktoś owinięty kocem | Tort przed pokrojeniem | Świadkowie razem | Kreatywne zdjęcie z basenu | Najlepszy widok z tarasu |
@@ -22,7 +22,7 @@ z językiem aplikacji — patrz **D14** w [specyfikacji](../FotoBingo%20-%20spec
 
 |  | **Kolumna 1** | **Kolumna 2** | **Kolumna 3** | **Kolumna 4** | **Kolumna 5** |
 | --- | --- | --- | --- | --- | --- |
-| **Wiersz 1** | Selfie with the newlyweds | Someone in the sauna or hot tub | The bonfire, sparks and all | The Beskid Niski at sunrise | Selfie with someone you hadn't met before this weekend |
+| **Wiersz 1** | Selfie with the newlyweds | Someone in the sauna or hot tub | Fire and sparks | The Beskid Niski at sunrise | Selfie with someone you hadn't met before this weekend |
 | **Wiersz 2** | A photo taken from the ground, looking up | The worst possible group photo | The bride's bouquet, up close | A photo with both mums | Someone who fell asleep |
 | **Wiersz 3** | Three generations in one photo | A moment from the wedding ceremony | The first dance | A mishap caught on camera | Someone dancing with their eyes closed |
 | **Wiersz 4** | Someone wrapped in a blanket | The cake before it's cut | The witnesses together | A creative shot from the pool | The best view from the terrace |
@@ -32,7 +32,7 @@ z językiem aplikacji — patrz **D14** w [specyfikacji](../FotoBingo%20-%20spec
 
 |  | **Kolumna 1** | **Kolumna 2** | **Kolumna 3** | **Kolumna 4** | **Kolumna 5** |
 | --- | --- | --- | --- | --- | --- |
-| **Wiersz 1** | Selfi sa mladencima | Neko u sauni ili u kaci | Logorska vatra sa varnicama | Beskid Niski u svitanje | Selfi s nekim koga nisi znao pre ovog vikenda |
+| **Wiersz 1** | Selfi sa mladencima | Neko u sauni ili u kaci | Vatra i varnice | Beskid Niski u svitanje | Selfi s nekim koga nisi znao pre ovog vikenda |
 | **Wiersz 2** | Fotografija sa zemlje, odozdo | Najgora moguća grupna fotografija | Mladin buket izbliza | Fotografija sa obe mame | Neko ko je zaspao |
 | **Wiersz 3** | Tri generacije na jednoj fotografiji | Trenutak sa venčanja | Prvi ples | Uhvaćen gaf | Neko ko pleše zatvorenih očiju |
 | **Wiersz 4** | Neko umotan u ćebe | Torta pre sečenja | Kum i kuma zajedno | Kreativna fotografija sa bazena | Najbolji pogled sa terase |
@@ -42,7 +42,7 @@ z językiem aplikacji — patrz **D14** w [specyfikacji](../FotoBingo%20-%20spec
 
 |  | **Kolumna 1** | **Kolumna 2** | **Kolumna 3** | **Kolumna 4** | **Kolumna 5** |
 | --- | --- | --- | --- | --- | --- |
-| **Wiersz 1** | Selfie mit dem Brautpaar | Jemand in der Sauna oder im Zuber | Das Lagerfeuer mit Funkenflug | Der Beskid Niski im Sonnenaufgang | Selfie mit jemandem, den du vorher nicht kanntest |
+| **Wiersz 1** | Selfie mit dem Brautpaar | Jemand in der Sauna oder im Zuber | Feuer und Funken | Der Beskid Niski im Sonnenaufgang | Selfie mit jemandem, den du vorher nicht kanntest |
 | **Wiersz 2** | Ein Foto vom Boden aus, nach oben | Das schlechtestmögliche Gruppenfoto | Der Brautstrauß aus der Nähe | Ein Foto mit beiden Müttern | Jemand, der eingeschlafen ist |
 | **Wiersz 3** | Drei Generationen auf einem Foto | Ein Moment der Trauung | Der erste Tanz | Eine Panne im Bild | Jemand, der mit geschlossenen Augen tanzt |
 | **Wiersz 4** | Jemand in eine Decke gewickelt | Die Torte, bevor sie angeschnitten wird | Die Trauzeugen zusammen | Ein kreatives Foto aus dem Pool | Der beste Blick von der Terrasse |
@@ -56,7 +56,7 @@ Slug wchodzi w nazwę pliku na Dysku — `R3K2_moment-ceremonii-slubnej__anna-ko
 | --- | --- | --- | --- | --- | --- |
 | 1 | R1K1 | Selfie z parą młodą | Selfie with the newlyweds | Selfi sa mladencima | Selfie mit dem Brautpaar | `selfie-z-para-mloda` |
 | 2 | R1K2 | Ktoś w saunie albo w balii | Someone in the sauna or hot tub | Neko u sauni ili u kaci | Jemand in der Sauna oder im Zuber | `ktos-w-saunie-albo-w-balii` |
-| 3 | R1K3 | Ognisko z iskrami | The bonfire, sparks and all | Logorska vatra sa varnicama | Das Lagerfeuer mit Funkenflug | `ognisko-z-iskrami` |
+| 3 | R1K3 | Ogień i iskry | Fire and sparks | Vatra i varnice | Feuer und Funken | `ogien-i-iskry` |
 | 4 | R1K4 | Widok na Beskid Niski o wschodzie słońca | The Beskid Niski at sunrise | Beskid Niski u svitanje | Der Beskid Niski im Sonnenaufgang | `widok-na-beskid-niski-o-wschodzie-slonca` |
 | 5 | R1K5 | Selfie z osobą, której nie znałeś przed tym weekendem | Selfie with someone you hadn't met before this weekend | Selfi s nekim koga nisi znao pre ovog vikenda | Selfie mit jemandem, den du vorher nicht kanntest | `selfie-z-osoba-ktorej-nie-znales-przed-tym-weekendem` |
 | 6 | R2K1 | Zdjęcie zrobione z ziemi, od dołu | A photo taken from the ground, looking up | Fotografija sa zemlje, odozdo | Ein Foto vom Boden aus, nach oben | `zdjecie-zrobione-z-ziemi-od-dolu` |

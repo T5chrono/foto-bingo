@@ -90,12 +90,27 @@ describe("słowniki", () => {
 });
 
 describe("liczebniki", () => {
-  it("odmienia po polsku przez trzy formy", () => {
+  /**
+   * Polski odmienia rzeczownik I czasownik naraz, i to jest cała treść tego
+   * testu. Stała `ZDJECIA` daje poprawne „2 zdjęcia", ale doklejone z zewnątrz
+   * „czeka" robiło z tego „2 zdjęcia czeka" — po polsku źle, a stało w kolejce
+   * w ustawieniach przez cały weekend. Dlatego frazy z czasownikiem mają
+   * własne stałe (`ZDJECIA_CZEKAJA`), tak samo jak w `de.ts` i `sr.ts`.
+   */
+  it("odmienia po polsku przez trzy formy, razem z czasownikiem", () => {
     expect(pl.settings.queueWaiting(1)).toBe("1 zdjęcie czeka na wysłanie");
-    expect(pl.settings.queueWaiting(2)).toBe("2 zdjęcia czeka na wysłanie");
+    expect(pl.settings.queueWaiting(2)).toBe("2 zdjęcia czekają na wysłanie");
     expect(pl.settings.queueWaiting(5)).toBe("5 zdjęć czeka na wysłanie");
     // 12 kończy się dwójką, ale „12 zdjęcia" to błąd.
     expect(pl.settings.queueWaiting(12)).toBe("12 zdjęć czeka na wysłanie");
+
+    expect(pl.settings.queueVideos(1)).toBe("1 film czeka na Wi-Fi");
+    expect(pl.settings.queueVideos(2)).toBe("2 filmy czekają na Wi-Fi");
+    expect(pl.settings.queueVideos(5)).toBe("5 filmów czeka na Wi-Fi");
+
+    // „Masz 5 linie" było tym samym błędem w pasku bingo.
+    expect(pl.bingo.manyLines(2)).toBe("Masz 2 linie — zgłaszasz tę pierwszą.");
+    expect(pl.bingo.manyLines(5)).toBe("Masz 5 linii — zgłaszasz tę pierwszą.");
   });
 
   it("odmienia po angielsku przez dwie", () => {

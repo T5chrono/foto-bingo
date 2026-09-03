@@ -49,7 +49,7 @@ const LABELS: Record<Locale, readonly (readonly string[])[]> = {
     [
       "Selfie z parą młodą",
       "Ktoś w saunie albo w balii",
-      "Ognisko z iskrami",
+      "Ogień i iskry",
       "Widok na Beskid Niski o wschodzie słońca",
       "Selfie z osobą, której nie znałeś przed tym weekendem",
     ],
@@ -87,7 +87,7 @@ const LABELS: Record<Locale, readonly (readonly string[])[]> = {
     [
       "Selfie with the newlyweds",
       "Someone in the sauna or hot tub",
-      "The bonfire, sparks and all",
+      "Fire and sparks",
       "The Beskid Niski at sunrise",
       "Selfie with someone you hadn't met before this weekend",
     ],
@@ -125,7 +125,7 @@ const LABELS: Record<Locale, readonly (readonly string[])[]> = {
     [
       "Selfi sa mladencima",
       "Neko u sauni ili u kaci",
-      "Logorska vatra sa varnicama",
+      "Vatra i varnice",
       "Beskid Niski u svitanje",
       "Selfi s nekim koga nisi znao pre ovog vikenda",
     ],
@@ -163,7 +163,7 @@ const LABELS: Record<Locale, readonly (readonly string[])[]> = {
     [
       "Selfie mit dem Brautpaar",
       "Jemand in der Sauna oder im Zuber",
-      "Das Lagerfeuer mit Funkenflug",
+      "Feuer und Funken",
       "Der Beskid Niski im Sonnenaufgang",
       "Selfie mit jemandem, den du vorher nicht kanntest",
     ],
