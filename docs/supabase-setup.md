@@ -36,10 +36,23 @@ Projekt wstaje ~2 minuty.
 |---|---|
 | Name | `fotobingo` |
 | Public bucket | **wyłączone** |
+| Allowed MIME types | `image/webp`, `image/jpeg` |
 
 Nazwa bez myślnika, bo wchodzi w ścieżki plików. Bucket publiczny oznaczałby, że każdy, kto
 zgadnie adres, obejrzy zdjęcia z wesela — zostaje prywatny, a aplikacja wydaje podpisane linki
 o krótkiej ważności.
+
+**Lista typów MIME nie jest ozdobą — to czwarte sito i jedyne, jakie ma bucket.** Podgląd
+i miniatura idą z telefonu **prosto do Storage** podpisanym linkiem, więc serwer nigdy nie
+widzi tych bajtów i nie ma gdzie ich sprawdzić; jedyne, co je pilnuje, to ta lista. Bez niej
+ktoś z kodem z winietki mógł położyć pod ścieżką `…-p.webp` plik HTML z nagłówkiem
+`text/html`, a potem dostać do niego podpisany link ważny sześć godzin — wystawiony przez
+naszą własną aplikację.
+
+Lista jest tak wąska, jak się da, i taka ma zostać: `image.ts` zawsze oddaje WebP, a JPEG
+tylko tam, gdzie przeglądarka nie umie WebP. **Filmy tu nie wchodzą** — do bucketa trafia
+wyłącznie klatka z filmu jako WebP, sam film jedzie prosto na Dysk. Jeśli kiedyś dojdzie tu
+`video/*`, to znaczy, że ktoś obszedł architekturę, a nie że dodał funkcję.
 
 ## 3. Klucze
 

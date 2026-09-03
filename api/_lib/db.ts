@@ -45,6 +45,8 @@ export type Photo = {
   drive_status: "pending" | "ok" | "failed";
   drive_error: string | null;
   original_bytes: number | null;
+  kind: "photo" | "video";
+  duration_ms: number | null;
   is_active: boolean;
   created_at: string;
 };

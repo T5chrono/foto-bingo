@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, type ClaimTile } from "../lib/api";
 import { useT } from "../hooks/useLocale";
+import { PlayBadge } from "../components/PlayBadge";
 import type { Strings } from "../lib/strings/pl";
 import { describe } from "./PanelPage";
 
@@ -68,7 +69,12 @@ export default function ClaimPage() {
         {data.tiles.map((tile) => (
           <figure key={tile.categoryId} className="overflow-hidden rounded-lg border border-brand-200 bg-paper">
             {tile.url ? (
-              <img src={tile.url} alt={tile.label} className="aspect-square w-full object-cover" />
+              <div className="relative">
+                <img src={tile.url} alt={tile.label} className="aspect-square w-full object-cover" />
+                {tile.kind === "video" && (
+                  <PlayBadge className="absolute top-1.5 left-1.5 size-6" title={t.panel.video} />
+                )}
+              </div>
             ) : (
               <div className="flex aspect-square w-full items-center justify-center bg-clay-50 text-xs text-clay-900">
                 {t.panel.noPhoto}

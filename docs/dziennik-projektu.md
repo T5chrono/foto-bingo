@@ -626,8 +626,29 @@ od decyzji.
 | Angielski dla wszystkich spoza Polski | osobny serbski i niemiecki | Angielski jako drugi język to nie to samo, co ekran zgody na zdjęcia we własnym |
 | Osobna stała `LABELS_EN` obok polskich etykiet | `Record<Locale, …>` w `board.ts` | Przy trzecim języku osobne stałe przepuszczają planszę bez kompletu podpisów |
 | Etapy wysyłki trzymane jako polskie zdania | jako kody stanu | Stan aplikacji wyświetlany wprost nie da się przetłumaczyć |
+| Oryginał w jednym `ArrayBuffer` w zadaniu | pokrojony po 3 MB w osobnym magazynie | Film 4K to 350 MB; `file.arrayBuffer()` ubijał kartę na starszym iPhonie |
+| Rozszerzenie na Dysku przepisywane z nazwy pliku | tylko z whitelisty (`media.ts`) | `wesele.exe` lądował na Dysku jako `.exe` — nazwa to była cała „walidacja" |
+| „Filmy tylko przez Wi-Fi" jako gwarancja | Wi-Fi tam, gdzie da się je wykryć, plus „wyślij teraz" | Safari na iOS nie mówi aplikacji, jaka to sieć — gwarancji nie da się dotrzymać |
 
 ---
+
+## Rollback filmów na produkcji
+
+Migracja `video_tiles` jest **wyłącznie dodatkowa** — dwie kolumny z wartościami
+domyślnymi. Kod sprzed filmów (tag `przed-filmami`) działa z tym schematem bez zmian:
+`insert` bez `kind` dostaje `photo`, a `select` nie widzi kolumn, o które nie pyta.
+Dlatego cofnięcie na produkcji to jeden ruch, bez dotykania bazy:
+
+1. Vercel → Deployments → ostatni deployment sprzed tagu `filmy-v1` → **Promote to
+   Production** (albo `git checkout przed-filmami` i deploy z tego miejsca).
+2. Bazy **nie ruszać**. Gdyby kiedyś naprawdę trzeba było zdjąć kolumny:
+   `alter table public.photos drop column duration_ms, drop column kind;` — ale to
+   kasuje informację, które wiersze były filmami, i nie ma po co tego robić dla rollbacku.
+
+Telefony z kolejką w wersji 2 IndexedDB po powrocie starego kodu **nie** zobaczą
+swoich zadań (stary kod otwiera bazę w wersji 1, a przeglądarka odmawia otwarcia
+niższej wersji). To jedyny realny koszt rollbacku i dotyczy tylko zdjęć, które w tej
+chwili wiszą w kolejce na telefonach.
 
 ## Czego nadal nie sprawdziliśmy
 
@@ -664,6 +685,17 @@ w checkliście przedweselnej w specyfikacji.
   trzeba zrozumieć.
 - **Zachowanie przy naprawdę słabym zasięgu.** Symulacja w DevTools to nie to samo,
   co jeden maszt i czterdzieści telefonów.
+- **Klatka z filmu na prawdziwym iPhonie i Androidzie.** `video.ts` przewija ukryte
+  `<video>` na pierwszą sekundę i rysuje je na canvasie. Sprawdzone 03.09.2026 w Chromie
+  na biurku, na WebM nagranym w locie — z ciemnym startem, żeby wykluczyć klatkę zerową.
+  jsdom nie ma dekodera wideo, więc **żaden test tego nie pokryje**. Na telefonie trzeba
+  zobaczyć trzy rzeczy: czy `.mov` z iPhone'a (HEVC) w ogóle się dekoduje, czy klatka
+  jest obrócona zgodnie z tym, jak trzymano telefon, i czy 350-megabajtowy film nie
+  ubija karty przy krojeniu na kawałki.
+- **Bramka Wi-Fi dla filmów na Androidzie.** `navigator.connection.type` bywa `undefined`
+  nawet w Chromie — wtedy film czeka na dotknięcie, tak jak na iOS. Sprawdź na prawdziwym
+  telefonie, czy po przejściu z komórki na Wi-Fi w pensjonacie film rusza sam (nasłuch
+  na zdarzeniu `change`), czy trzeba otworzyć aplikację.
 
 ---
 

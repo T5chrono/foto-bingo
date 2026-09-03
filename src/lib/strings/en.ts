@@ -35,6 +35,7 @@ export const en: Strings = {
     tileFailed: "upload failed",
     sending: "sending…",
     failedTap: "failed — tap",
+    tileVideo: "video",
   },
 
   bingo: {
@@ -85,10 +86,12 @@ export const en: Strings = {
     board: "← Board",
     chosenPhoto: "Chosen photo",
     yourPhoto: "Your photo on this square",
-    pick: "Choose a photo",
-    replace: "Replace photo",
-    remove: "Delete photo",
-    removeAsk: "Delete this photo?",
+    chosenVideo: "Chosen video",
+    yourVideo: "Your video on this square",
+    pick: "Choose a photo or video",
+    replace: "Replace",
+    remove: "Delete",
+    removeAsk: "Delete this from the square?",
     removeNote: "It leaves your board and Karolina & Tomek's Drive folder.",
     removeYes: "Delete",
     removeNo: "Keep it",
@@ -99,11 +102,17 @@ export const en: Strings = {
     failed: "Didn't work",
     sendFailed: "Couldn't send it",
     unknownError: "Something went wrong",
+    waitingWifi: "The video is waiting for Wi-Fi",
+    waitingWifiHint:
+      "The still frame is already on your board and counts toward bingo. The video itself " +
+      "will go once your phone is on Wi-Fi — or tap below to send it now over mobile data.",
+    sendNow: (size: string) => `Send now (${size})`,
     phase: {
       processing: "processing",
       queued: "queued",
       uploading: "sending",
       originalOnTheWay: "full size on the way",
+      waitingWifi: "waiting for Wi-Fi",
     },
   },
 
@@ -123,6 +132,11 @@ export const en: Strings = {
     queueWaiting: (count: number) => `${n(count, "photo", "photos")} waiting to send`,
     queueOriginals: (count: number) => `${n(count, "full-size photo", "full-size photos")} on the way to Drive`,
     queueHint: "The queue starts by itself when the signal comes back. Nothing to tap.",
+    videosHint:
+      "Videos always wait for Wi-Fi. iPhones don't tell the app which network they're on, " +
+      "so there a video only goes after you tap “Send now” — on its square or here.",
+    queueVideos: (count: number) => `${n(count, "video", "videos")} waiting for Wi-Fi`,
+    sendVideosNow: "Send videos now",
     yourPhotos: "Your photos",
   },
 
@@ -155,6 +169,8 @@ export const en: Strings = {
     server: "The server isn't answering. We'll try again shortly.",
     imageRead: "Couldn't read that photo. Try picking it again.",
     imageEncode: "Couldn't prepare that photo for sending.",
+    unsupportedFile: "Tiles take photos and videos — this file is something else.",
+    videoRead: "Couldn't read that video. Try picking it again.",
     uploadStalled: "The full-size upload has stalled — we'll try again later.",
     lineIncomplete: "That line isn't complete yet. Refresh the board and try again.",
   },
@@ -181,6 +197,9 @@ export const en: Strings = {
     pendingOriginals: "Full-size photos on the way",
     pendingCount: (count: number) => n(count, "full-size photo", "full-size photos"),
     pendingHint: "Ask these people to open the app — the photos will arrive by themselves.",
+    pendingVideos: (count: number) => `including ${n(count, "video", "videos")}`,
+    pendingVideosHint:
+      "Videos only go over Wi-Fi — and on iPhones only after tapping “Send now” on the square.",
     lineWinners: "Lines completed",
     lineWinnersHint:
       "Who was first to collect all five photos of a line. The time is the moment the " +
@@ -197,6 +216,7 @@ export const en: Strings = {
     categoryEmpty: "Nobody has sent a photo in this category yet.",
     photoCount: (count: number) => n(count, "photo", "photos"),
     originalPending: "Full-size photo hasn't arrived yet",
+    video: "video",
     noClaim: "No such claim.",
     missingTiles: (missing: number, total: number) =>
       `${missing} of ${total} photos in this line are missing.`,

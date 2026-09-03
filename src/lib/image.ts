@@ -15,8 +15,17 @@
  */
 
 import { AppError } from "./errors.js";
+import { HEAD_BYTES, sniff, type MediaKind } from "./media.js";
+import { firstFrame } from "./video.js";
 
 export type Budget = { maxEdge: number; maxBytes: number };
+
+/**
+ * Cokolwiek, co canvas umie narysować, a my umiemy zmierzyć. Film wchodzi tu
+ * jako `<video>` przewinięte na pierwszą sekundę (`video.ts`) i od tego
+ * miejsca jest nie do odróżnienia od zdjęcia.
+ */
+export type Frame = ImageBitmap | HTMLImageElement | HTMLVideoElement;
 
 export type Encoded = {
   blob: Blob;
@@ -107,12 +116,8 @@ function decodeViaElement(source: Blob): Promise<HTMLImageElement> {
  * uzyskany. Lepiej przyjąć zdjęcie odrobinę za duże niż odmówić gościowi
  * wysłania pierwszego tańca.
  */
-export async function encodeToBudget(
-  bitmap: ImageBitmap | HTMLImageElement,
-  budget: Budget,
-): Promise<Encoded> {
-  const srcW = "width" in bitmap ? bitmap.width : 0;
-  const srcH = "height" in bitmap ? bitmap.height : 0;
+export async function encodeToBudget(frame: Frame, budget: Budget): Promise<Encoded> {
+  const { width: srcW, height: srcH } = frameSize(frame);
   const type = (await supportsWebp()) ? "image/webp" : "image/jpeg";
   const ext = type === "image/webp" ? "webp" : "jpeg";
 
@@ -126,7 +131,7 @@ export async function encodeToBudget(
       | OffscreenCanvasRenderingContext2D
       | null;
     if (!ctx) throw new Error("Brak kontekstu 2D");
-    ctx.drawImage(bitmap as CanvasImageSource, 0, 0, width, height);
+    ctx.drawImage(frame as CanvasImageSource, 0, 0, width, height);
 
     for (const quality of QUALITIES) {
       const blob = await toBlob(canvas, type, quality);
@@ -141,22 +146,72 @@ export async function encodeToBudget(
   return smallest;
 }
 
-/** Podgląd i miniatura z jednego dekodowania — dekodowanie 12-megapikselowego
- *  zdjęcia dwa razy na starszym telefonie to sekundy, nie milisekundy. */
+export type Prepared = {
+  preview: Encoded;
+  thumb: Encoded;
+  originalBytes: number;
+  kind: MediaKind;
+  /** Długość filmu w milisekundach; zero dla zdjęcia. */
+  durationMs: number;
+};
+
+/**
+ * Podgląd i miniatura z JEDNEGO odczytania pliku — dekodowanie
+ * 12-megapikselowego zdjęcia dwa razy na starszym telefonie to sekundy,
+ * nie milisekundy. Dla filmu ten sam argument waży jeszcze więcej.
+ *
+ * Tu stoi drugie sito: zanim cokolwiek zaczniemy dekodować, czytamy
+ * szesnaście pierwszych bajtów i pytamy `media.ts`, czy to w ogóle jest
+ * zdjęcie albo film. Plik, który nie przejdzie, wypada z własnym komunikatem
+ * — a nie jako „nie udało się odczytać zdjęcia", które gościowi z PDF-em
+ * w ręku nie mówi nic.
+ */
 export async function prepare(
   file: Blob,
   budgets: { preview: Budget; thumb: Budget },
-): Promise<{ preview: Encoded; thumb: Encoded; originalBytes: number }> {
+): Promise<Prepared> {
+  const media = sniff(await file.slice(0, HEAD_BYTES).arrayBuffer());
+  if (!media) {
+    throw new AppError("unsupportedFile", "To nie jest ani zdjęcie, ani film");
+  }
+
+  if (media.kind === "video") {
+    const { frame, durationMs, release } = await firstFrame(file);
+    try {
+      return {
+        preview: await encodeToBudget(frame, budgets.preview),
+        thumb: await encodeToBudget(frame, budgets.thumb),
+        originalBytes: file.size,
+        kind: "video",
+        durationMs,
+      };
+    } finally {
+      release();
+    }
+  }
+
   const bitmap = await decode(file);
   try {
     return {
       preview: await encodeToBudget(bitmap, budgets.preview),
       thumb: await encodeToBudget(bitmap, budgets.thumb),
       originalBytes: file.size,
+      kind: "photo",
+      durationMs: 0,
     };
   } finally {
     if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
   }
+}
+
+/**
+ * Wymiary klatki. `<video>` ma `width` i `height` — ale to atrybuty elementu,
+ * czyli zwykle zera. Prawdziwy rozmiar obrazu siedzi w `videoWidth`,
+ * i pomylenie jednego z drugim daje canvas 0×0 bez śladu błędu.
+ */
+function frameSize(frame: Frame): { width: number; height: number } {
+  if ("videoWidth" in frame) return { width: frame.videoWidth, height: frame.videoHeight };
+  return { width: frame.width, height: frame.height };
 }
 
 function makeCanvas(width: number, height: number): HTMLCanvasElement | OffscreenCanvas {

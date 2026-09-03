@@ -31,13 +31,20 @@ export function useBoard() {
 
   const tiles = new Map<number, TileView>();
   for (const tile of me.data?.tiles ?? []) {
-    tiles.set(tile.categoryId, { thumbUrl: tile.thumbUrl, previewUrl: tile.previewUrl });
+    tiles.set(tile.categoryId, {
+      thumbUrl: tile.thumbUrl,
+      previewUrl: tile.previewUrl,
+      kind: tile.kind,
+    });
   }
   for (const job of jobs) {
     if (job.state === "done") continue;
     const existing = tiles.get(job.categoryId) ?? {};
     tiles.set(job.categoryId, {
       ...existing,
+      // Zadanie z telefonu jest świeższe niż odpowiedź serwera — gość mógł
+      // właśnie zamienić zdjęcie na film i znaczek ma się zgadzać od razu.
+      kind: job.kind,
       pending: job.state !== "failed",
       failed: job.state === "failed",
     });

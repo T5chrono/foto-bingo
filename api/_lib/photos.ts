@@ -7,6 +7,8 @@ export type TileState = {
   previewPath: string;
   thumbPath: string;
   driveStatus: Photo["drive_status"];
+  kind: Photo["kind"];
+  durationMs: number;
   createdAt: string;
 };
 
@@ -14,7 +16,7 @@ export type TileState = {
 export async function boardState(guestId: string): Promise<TileState[]> {
   const { data, error } = await db()
     .from("photos")
-    .select("id, category_id, preview_path, thumb_path, drive_status, created_at")
+    .select("id, category_id, preview_path, thumb_path, drive_status, kind, duration_ms, created_at")
     .eq("guest_id", guestId)
     .eq("is_active", true)
     .order("category_id");
@@ -27,6 +29,8 @@ export async function boardState(guestId: string): Promise<TileState[]> {
     previewPath: row.preview_path as string,
     thumbPath: row.thumb_path as string,
     driveStatus: row.drive_status as Photo["drive_status"],
+    kind: (row.kind as Photo["kind"] | null) ?? "photo",
+    durationMs: (row.duration_ms as number | null) ?? 0,
     createdAt: row.created_at as string,
   }));
 }
@@ -41,6 +45,8 @@ export type FinalizeInput = {
   width: number | null;
   height: number | null;
   originalBytes: number | null;
+  kind: Photo["kind"];
+  durationMs: number | null;
 };
 
 export type FinalizeResult = {
@@ -111,6 +117,8 @@ export async function finalizePhoto(input: FinalizeInput): Promise<FinalizeResul
     width: input.width,
     height: input.height,
     original_bytes: input.originalBytes,
+    kind: input.kind,
+    duration_ms: input.durationMs,
   });
 
   if (insertError) {

@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useT } from "../hooks/useLocale";
+import { PlayBadge } from "../components/PlayBadge";
 
 /**
  * Wszystkie zdjęcia jednej kategorii, od wszystkich gości.
@@ -43,12 +44,17 @@ export default function PanelCategoryPage() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {photos.map((p) => (
           <figure key={p.photoId} className="overflow-hidden rounded-lg border border-brand-200 bg-paper">
-            <img
-              src={p.url}
-              alt={`${label} — ${p.guestName}`}
-              loading="lazy"
-              className="aspect-square w-full object-cover"
-            />
+            <div className="relative">
+              <img
+                src={p.url}
+                alt={`${label} — ${p.guestName}`}
+                loading="lazy"
+                className="aspect-square w-full object-cover"
+              />
+              {p.kind === "video" && (
+                <PlayBadge className="absolute top-1.5 left-1.5 size-6" title={t.panel.video} />
+              )}
+            </div>
             <figcaption className="flex items-center justify-between px-2 py-1.5 text-[0.65rem] text-brand-800/70">
               <span className="truncate">{p.guestName}</span>
               {p.driveStatus !== "ok" && (
