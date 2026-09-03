@@ -92,11 +92,10 @@ export const sr: Strings = {
       "Za svaki red, svaku kolonu i svaku dijagonalu ide nagrada — onome ko je prvi " +
       "prijavi. A na kraju čeka i glavna nagrada.",
     lines:
-      "Svaki red, svaka kolona i svaka dijagonala je posebna nagrada. Dobija je onaj " +
-      "ko tu liniju prvi prijavi.",
+      "Svaki red, kolona i dijagonala je posebna nagrada — za onoga ko tu liniju " +
+      "prvi prijavi.",
     main:
-      "Glavna nagrada čeka onoga ko sakupi sve fotografije sa table — a ako niko ne " +
-      "popuni celu, onoga ko ima najpuniju tablu.",
+      "Glavna nagrada: cela tabla, a ako je niko ne popuni — najpunija.",
     hide: "Sakrij obaveštenje o nagradama",
   },
 
@@ -136,6 +135,10 @@ export const sr: Strings = {
     waitingWifiHint:
       "Kadar je već na tabli i računa se za bingo. Sam snimak ću poslati čim telefon uhvati " +
       "Wi-Fi — ili dodirni ispod da ga pošalješ odmah preko mobilnih podataka.",
+    waitingWifiCost:
+      "Snimak ide mnogo duže od fotografije — kod velikog fajla i po nekoliko desetina " +
+      "minuta. Red je sve to vreme zauzet samo njime: fotografije izabrane u međuvremenu " +
+      "ostaju u telefonu i stižu na tablu tek kad se snimak završi.",
     sendNow: (size: string) => `Pošalji odmah (${size})`,
     phase: {
       processing: "obrada",
@@ -155,8 +158,8 @@ export const sr: Strings = {
     title: "Podešavanja",
     wifiOnly: "Originali samo preko Wi-Fi-ja",
     wifiOnlyHint:
-      "Fotografije se pojavljuju na tabli isto tako brzo — u pozadini čeka samo " +
-      "verzija u punom kvalitetu. Oko 4 MB po fotografiji.",
+      "Tabla se puni isto tako brzo — u pozadini čeka samo pun kvalitet, " +
+      "oko 4 MB po fotografiji.",
     queue: "Red čekanja",
     queueEmpty: "Sve je poslato.",
     queueWaiting: (n: number) =>
@@ -173,10 +176,10 @@ export const sr: Strings = {
         "originala su na putu ka Disku",
         "originala je na putu ka Disku",
       ),
-    queueHint: "Red kreće sam čim se signal vrati. Ne treba ništa da diraš.",
+    queueHint: "Red kreće sam čim se signal vrati.",
     videosHint:
-      "Snimci uvek čekaju Wi-Fi. iPhone ne govori aplikaciji na kojoj je mreži, pa tamo " +
-      "snimak kreće tek kad dodirneš „Pošalji odmah” — na njegovom polju ili ovde.",
+      "Snimci čekaju Wi-Fi i dugo drže red — fotografije iz tog vremena takođe čekaju. " +
+      "Na iPhone-u kreću tek posle „Pošalji odmah”.",
     queueVideos: (n: number) => `${count(n, "snimak čeka", "snimka čekaju", "snimaka čeka")} Wi-Fi`,
     sendVideosNow: "Pošalji snimke odmah",
     yourPhotos: "Tvoje fotografije",
@@ -200,8 +203,7 @@ export const sr: Strings = {
     ],
     short: "Fotografije idu na privatni Disk Karoline i Tomeka. Niko drugi ih neće videti.",
     removal:
-      "Želiš da neka fotografija nestane? Obriši je na njenom polju — silazi sa table " +
-      "i sa Diska Karoline i Tomeka.",
+      "Fotografija silazi sa table i sa Diska kad je obrišeš na njenom polju.",
     accept: "Jasno, igramo",
   },
 

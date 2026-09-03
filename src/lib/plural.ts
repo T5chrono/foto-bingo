@@ -32,6 +32,19 @@ export function count(n: number, forms: Forms): string {
 }
 
 export const ZDJECIA: Forms = ["zdjęcie", "zdjęcia", "zdjęć"];
+
+/**
+ * Rzeczownik **razem z czasownikiem**, bo polski odmienia oba naraz:
+ * „1 zdjęcie czeka", ale „2 zdjęcia czekają" i znowu „5 zdjęć czeka".
+ *
+ * Sam rzeczownik nie wystarczy: doklejone z zewnątrz „czeka" daje „2 zdjęcia
+ * czeka" — zdanie, które gość ma przed oczami przez cały weekend. Niemiecki
+ * i serbski słownik rozwiązały to tak samo, przekazując całą frazę.
+ */
+export const ZDJECIA_CZEKAJA: Forms = ["zdjęcie czeka", "zdjęcia czekają", "zdjęć czeka"];
+export const FILMY_CZEKAJA: Forms = ["film czeka", "filmy czekają", "filmów czeka"];
+/** „Masz 2 linie", ale „Masz 5 linii" — biernik, bo „masz co?". */
+export const LINIE: Forms = ["linię", "linie", "linii"];
 // „gości" w obu formach mnogich — „2 goście" brzmi tu sztucznie w liczniku.
 export const GOSCIE: Forms = ["gościa", "gości", "gości"];
 export const ORYGINALY: Forms = ["oryginał", "oryginały", "oryginałów"];

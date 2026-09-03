@@ -392,6 +392,10 @@ function WifiCard({
     <section className="rounded-2xl border border-brand-300 bg-brand-50 px-4 py-3">
       <p className="font-medium text-brand-800">{t.category.waitingWifi}</p>
       <p className="mt-1 text-xs text-brand-800/70">{t.category.waitingWifiHint}</p>
+      {/* Koszt osobnym akapitem i mocniejszym kolorem: pierwszy mówi „poczekaj",
+          ten mówi „to potrwa i zablokuje resztę". Zlane w jeden czyta się jak
+          uspokajanie, a to jest ostrzeżenie. */}
+      <p className="mt-2 text-xs text-clay-900/80">{t.category.waitingWifiCost}</p>
       <button
         type="button"
         onClick={() => void onSendNow(job)}

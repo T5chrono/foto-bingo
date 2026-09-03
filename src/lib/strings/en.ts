@@ -62,11 +62,10 @@ export const en: Strings = {
       "Every row, every column and every diagonal wins a prize — for whoever claims " +
       "it first. And there's a grand prize waiting at the end.",
     lines:
-      "Every row, every column and every diagonal is a prize of its own. It goes to " +
-      "whoever claims that line first.",
+      "Every row, column and diagonal is its own prize — for whoever claims that " +
+      "line first.",
     main:
-      "The grand prize is waiting for whoever collects every photo on the board — " +
-      "or, if nobody fills it completely, for the fullest board of all.",
+      "The grand prize: the whole board, or the fullest one if nobody fills it.",
     hide: "Hide the note about prizes",
   },
 
@@ -106,6 +105,10 @@ export const en: Strings = {
     waitingWifiHint:
       "The still frame is already on your board and counts toward bingo. The video itself " +
       "will go once your phone is on Wi-Fi — or tap below to send it now over mobile data.",
+    waitingWifiCost:
+      "A video takes far longer than a photo — tens of minutes for a big file. The queue " +
+      "is busy with it the whole time: photos you pick meanwhile stay on your phone and " +
+      "only reach the board once the video is through.",
     sendNow: (size: string) => `Send now (${size})`,
     phase: {
       processing: "processing",
@@ -125,16 +128,16 @@ export const en: Strings = {
     title: "Settings",
     wifiOnly: "Full-size photos on Wi-Fi only",
     wifiOnlyHint:
-      "Photos still appear on the board just as fast — only the full-quality version " +
-      "waits in the background. Around 4 MB per photo.",
+      "The board fills just as fast — only the full-quality version waits, " +
+      "around 4 MB per photo.",
     queue: "Queue",
     queueEmpty: "Everything sent.",
     queueWaiting: (count: number) => `${n(count, "photo", "photos")} waiting to send`,
     queueOriginals: (count: number) => `${n(count, "full-size photo", "full-size photos")} on the way to Drive`,
-    queueHint: "The queue starts by itself when the signal comes back. Nothing to tap.",
+    queueHint: "The queue starts by itself when the signal returns.",
     videosHint:
-      "Videos always wait for Wi-Fi. iPhones don't tell the app which network they're on, " +
-      "so there a video only goes after you tap “Send now” — on its square or here.",
+      "Videos wait for Wi-Fi and hold the queue for a long time — photos from that " +
+      "time wait too. On iPhones only “Send now” starts them.",
     queueVideos: (count: number) => `${n(count, "video", "videos")} waiting for Wi-Fi`,
     sendVideosNow: "Send videos now",
     yourPhotos: "Your photos",
@@ -159,8 +162,7 @@ export const en: Strings = {
     ],
     short: "Photos go to Karolina & Tomek's private Drive. Nobody else will see them.",
     removal:
-      "Want a photo gone? Delete it on its square — it leaves the board and the Drive " +
-      "folder alike.",
+      "A photo leaves the board and the Drive folder when you delete it on its square.",
     accept: "Got it, let's play",
   },
 

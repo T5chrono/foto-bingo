@@ -71,11 +71,10 @@ export const de: Strings = {
       "Für jede Reihe, jede Spalte und jede Diagonale gibt es einen Preis — für den, " +
       "der sie zuerst meldet. Und am Ende wartet noch der Hauptpreis.",
     lines:
-      "Jede Reihe, jede Spalte und jede Diagonale ist ein eigener Preis. Er geht an " +
-      "den, der die Linie zuerst meldet.",
+      "Jede Reihe, Spalte und Diagonale ist ein eigener Preis — für den, der die " +
+      "Linie zuerst meldet.",
     main:
-      "Der Hauptpreis wartet auf die Person, die alle Fotos der Karte zusammenbekommt " +
-      "— und wenn es niemand ganz schafft, auf die vollste Karte.",
+      "Der Hauptpreis: die ganze Karte, sonst die vollste.",
     hide: "Hinweis zu den Preisen ausblenden",
   },
 
@@ -120,6 +119,11 @@ export const de: Strings = {
     waitingWifiHint:
       "Das Standbild ist schon auf der Karte und zählt fürs Bingo. Das Video selbst geht los, " +
       "sobald das Handy im WLAN ist — oder tipp unten, um es jetzt über mobile Daten zu senden.",
+    waitingWifiCost:
+      "Ein Video dauert viel länger als ein Foto — bei einer großen Datei auch mal " +
+      "Dutzende Minuten. Die Warteschlange ist so lange nur damit beschäftigt: Fotos, die " +
+      "du zwischendurch aussuchst, bleiben auf dem Handy und kommen erst auf die Karte, " +
+      "wenn das Video durch ist.",
     sendNow: (size: string) => `Jetzt senden (${size})`,
     phase: {
       processing: "verarbeiten",
@@ -139,20 +143,18 @@ export const de: Strings = {
     title: "Einstellungen",
     wifiOnly: "Originale nur über WLAN",
     wifiOnlyHint:
-      "Die Fotos erscheinen genauso schnell auf der Karte — nur die Version in voller " +
-      "Qualität wartet im Hintergrund. Rund 4 MB pro Foto.",
+      "Die Karte füllt sich genauso schnell — nur die volle Qualität wartet, " +
+      "rund 4 MB pro Foto.",
     queue: "Warteschlange",
     queueEmpty: "Alles gesendet.",
     queueWaiting: (count: number) =>
       n(count, "Foto wartet aufs Senden", "Fotos warten aufs Senden"),
     queueOriginals: (count: number) =>
       n(count, "Original ist auf dem Weg zu Drive", "Originale sind auf dem Weg zu Drive"),
-    queueHint:
-      "Die Warteschlange läuft von selbst weiter, sobald der Empfang zurück ist. " +
-      "Du musst nichts antippen.",
+    queueHint: "Die Warteschlange läuft weiter, sobald der Empfang zurück ist.",
     videosHint:
-      "Videos warten immer auf WLAN. iPhones verraten der App nicht, in welchem Netz sie " +
-      "sind — dort geht ein Video erst los, wenn du auf „Jetzt senden“ tippst, auf seinem Feld oder hier.",
+      "Videos warten auf WLAN und belegen die Warteschlange lange — Fotos aus der Zeit " +
+      "warten mit. Auf dem iPhone startet sie erst „Jetzt senden“.",
     queueVideos: (count: number) => `${n(count, "Video wartet", "Videos warten")} auf WLAN`,
     sendVideosNow: "Videos jetzt senden",
     yourPhotos: "Deine Fotos",
@@ -177,8 +179,8 @@ export const de: Strings = {
     ],
     short: "Die Fotos gehen auf das private Drive von Karolina & Tomek. Sonst sieht sie niemand.",
     removal:
-      "Soll ein Foto wieder weg? Lösch es auf seinem Feld — es verschwindet von der Karte " +
-      "und aus dem Drive-Ordner.",
+      "Ein Foto verschwindet von der Karte und aus dem Drive-Ordner, wenn du es auf " +
+      "seinem Feld löschst.",
     accept: "Alles klar, los geht's",
   },
 
