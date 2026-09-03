@@ -374,6 +374,7 @@ function Stats({ stats, t }: { stats: PanelStats; t: Strings }) {
             {stats.pendingOriginals.map((p) => (
               <li key={p.guestName}>
                 {p.guestName} — {t.panel.pendingCount(p.count)}
+                {p.videos > 0 && `, ${t.panel.pendingVideos(p.videos)}`}
               </li>
             ))}
           </ul>
@@ -381,6 +382,7 @@ function Stats({ stats, t }: { stats: PanelStats; t: Strings }) {
               Jedyne, co da sie zrobic, to poprosic czlowieka. */}
           <p className="mt-2 text-xs text-brand-800/55">
             {t.panel.pendingHint}
+            {stats.pendingOriginals.some((p) => p.videos > 0) && ` ${t.panel.pendingVideosHint}`}
           </p>
         </div>
       )}

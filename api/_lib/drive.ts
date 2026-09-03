@@ -239,21 +239,3 @@ export async function trashFile(fileId: string): Promise<void> {
     throw new Error(`Kosz dla ${fileId}: ${res.status} ${await res.text()}`);
   }
 }
-
-/**
- * Rozszerzenie oryginalu. Najpierw z nazwy pliku, bo tylko ona odroznia
- * .heic od .heif; typ MIME jest zapasem, gdy galeria nie poda nazwy.
- * Na Dysku ma lezec dokladnie to, co wyszlo z aparatu.
- */
-export function extensionFor(filename: string, mime: string): string {
-  const fromName = /\.([a-z0-9]{1,5})$/i.exec(filename)?.[1];
-  if (fromName) return fromName.toLowerCase();
-  const map: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/heic": "heic",
-    "image/heif": "heif",
-    "image/webp": "webp",
-  };
-  return map[mime.toLowerCase()] ?? "jpg";
-}

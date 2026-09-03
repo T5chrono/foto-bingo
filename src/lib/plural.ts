@@ -35,4 +35,5 @@ export const ZDJECIA: Forms = ["zdjęcie", "zdjęcia", "zdjęć"];
 // „gości" w obu formach mnogich — „2 goście" brzmi tu sztucznie w liczniku.
 export const GOSCIE: Forms = ["gościa", "gości", "gości"];
 export const ORYGINALY: Forms = ["oryginał", "oryginały", "oryginałów"];
+export const FILMY: Forms = ["film", "filmy", "filmów"];
 export const NOWE_ZGLOSZENIA: Forms = ["nowe", "nowe", "nowych"];

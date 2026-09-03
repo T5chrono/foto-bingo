@@ -44,6 +44,7 @@ export const de: Strings = {
     tileFailed: "Senden fehlgeschlagen",
     sending: "senden…",
     failedTap: "fehlgeschlagen — tippen",
+    tileVideo: "Video",
   },
 
   bingo: {
@@ -96,10 +97,12 @@ export const de: Strings = {
     board: "← Karte",
     chosenPhoto: "Ausgewähltes Foto",
     yourPhoto: "Dein Foto auf diesem Feld",
-    pick: "Foto auswählen",
-    replace: "Foto austauschen",
-    remove: "Foto löschen",
-    removeAsk: "Dieses Foto löschen?",
+    chosenVideo: "Ausgewähltes Video",
+    yourVideo: "Dein Video auf diesem Feld",
+    pick: "Foto oder Video auswählen",
+    replace: "Austauschen",
+    remove: "Löschen",
+    removeAsk: "Von diesem Feld löschen?",
     removeNote:
       "Es verschwindet von der Karte und aus dem Google-Drive-Ordner von Karolina & Tomek.",
     removeYes: "Löschen",
@@ -113,11 +116,17 @@ export const de: Strings = {
     failed: "Hat nicht geklappt",
     sendFailed: "Senden hat nicht geklappt",
     unknownError: "Da ist etwas schiefgelaufen",
+    waitingWifi: "Das Video wartet auf WLAN",
+    waitingWifiHint:
+      "Das Standbild ist schon auf der Karte und zählt fürs Bingo. Das Video selbst geht los, " +
+      "sobald das Handy im WLAN ist — oder tipp unten, um es jetzt über mobile Daten zu senden.",
+    sendNow: (size: string) => `Jetzt senden (${size})`,
     phase: {
       processing: "verarbeiten",
       queued: "in der Warteschlange",
       uploading: "senden",
       originalOnTheWay: "Original unterwegs",
+      waitingWifi: "wartet auf WLAN",
     },
   },
 
@@ -141,6 +150,11 @@ export const de: Strings = {
     queueHint:
       "Die Warteschlange läuft von selbst weiter, sobald der Empfang zurück ist. " +
       "Du musst nichts antippen.",
+    videosHint:
+      "Videos warten immer auf WLAN. iPhones verraten der App nicht, in welchem Netz sie " +
+      "sind — dort geht ein Video erst los, wenn du auf „Jetzt senden“ tippst, auf seinem Feld oder hier.",
+    queueVideos: (count: number) => `${n(count, "Video wartet", "Videos warten")} auf WLAN`,
+    sendVideosNow: "Videos jetzt senden",
     yourPhotos: "Deine Fotos",
   },
 
@@ -173,6 +187,8 @@ export const de: Strings = {
     server: "Der Server antwortet nicht. Wir versuchen es gleich noch einmal.",
     imageRead: "Dieses Foto lässt sich nicht lesen. Wähl es bitte noch einmal aus.",
     imageEncode: "Dieses Foto lässt sich nicht zum Senden vorbereiten.",
+    unsupportedFile: "Auf ein Feld kommen Fotos und Videos — diese Datei ist etwas anderes.",
+    videoRead: "Dieses Video lässt sich nicht lesen. Wähl es bitte noch einmal aus.",
     uploadStalled: "Das Senden des Originals steht still — wir versuchen es später.",
     lineIncomplete:
       "Diese Reihe ist noch nicht vollständig. Lade die Karte neu und versuch es noch einmal.",
@@ -200,6 +216,9 @@ export const de: Strings = {
     pendingOriginals: "Originale unterwegs",
     pendingCount: (count: number) => n(count, "Original", "Originale"),
     pendingHint: "Bitte diese Leute, die App zu öffnen — die Fotos kommen dann von selbst.",
+    pendingVideos: (count: number) => `davon ${n(count, "Video", "Videos")}`,
+    pendingVideosHint:
+      "Videos gehen nur über WLAN — und auf iPhones erst nach „Jetzt senden“ auf dem Feld.",
     lineWinners: "Geschaffte Linien",
     lineWinnersHint:
       "Wer zuerst alle fünf Fotos einer Linie beisammen hatte. Die Uhrzeit ist der " +
@@ -216,6 +235,7 @@ export const de: Strings = {
     categoryEmpty: "In dieser Kategorie hat noch niemand ein Foto geschickt.",
     photoCount: (count: number) => n(count, "Foto", "Fotos"),
     originalPending: "Das Original ist noch nicht da",
+    video: "Video",
     noClaim: "Diese Meldung gibt es nicht.",
     missingTiles: (missing: number, total: number) =>
       `${missing} von ${total} Fotos dieser Reihe fehlen.`,

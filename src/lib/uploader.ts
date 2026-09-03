@@ -43,6 +43,8 @@ export type Progress = {
   error?: string;
   /** Kod do przetłumaczenia. Brak = błąd, dla którego nie mamy własnego zdania. */
   code?: ErrorCode;
+  /** Oryginał celowo nie ruszył — film czeka na Wi-Fi albo na dotknięcie gościa. */
+  waiting?: "wifi";
 };
 
 let running = false;
@@ -54,10 +56,15 @@ export async function drain(onProgress?: (p: Progress) => void): Promise<void> {
     for (const job of await queue.previewPending()) {
       await sendPreview(job, onProgress);
     }
-    if (originalsAllowed()) {
-      for (const job of await queue.originalPending()) {
-        await sendOriginal(job, onProgress);
+    for (const job of await queue.originalPending()) {
+      if (!originalAllowed(job)) {
+        // Nie błąd, nie ponowienie — zadanie zostaje w kolejce i ruszy, gdy
+        // zmieni się sieć albo gość dotknie „wyślij teraz". Ekran kategorii
+        // ma o tym wiedzieć, więc mówimy, zamiast po cichu pomijać.
+        onProgress?.({ photoId: job.photoId, phase: "original", state: "queued", waiting: "wifi" });
+        continue;
       }
+      await sendOriginal(job, onProgress);
     }
   } finally {
     running = false;
@@ -86,11 +93,13 @@ async function sendPreview(job: queue.Job, onProgress?: (p: Progress) => void): 
       width: job.width,
       height: job.height,
       originalBytes: job.originalBytes,
+      kind: job.kind,
+      durationMs: job.durationMs,
     });
 
     // Od tej chwili zdjęcie jest bezpieczne po stronie serwera i liczy się
     // do bingo. Zadanie zostaje w kolejce wyłącznie dla oryginału.
-    if (job.original) {
+    if (job.originalChunks > 0) {
       await queue.patch(job.photoId, { previewDone: true, state: "queued", lastError: null });
     } else {
       await queue.remove(job.photoId);
@@ -102,9 +111,9 @@ async function sendPreview(job: queue.Job, onProgress?: (p: Progress) => void): 
 }
 
 async function sendOriginal(job: queue.Job, onProgress?: (p: Progress) => void): Promise<void> {
-  if (!job.original) return void (await queue.remove(job.photoId));
+  if (job.originalChunks === 0) return void (await queue.remove(job.photoId));
 
-  const total = job.original.byteLength;
+  const total = job.originalBytes;
   await queue.patch(job.photoId, { state: "uploading" });
 
   try {
@@ -128,7 +137,9 @@ async function sendOriginal(job: queue.Job, onProgress?: (p: Progress) => void):
     let stalled = 0;
 
     while (offset < total) {
-      const chunk = job.original.slice(offset, Math.min(offset + chunkSize, total));
+      // Z magazynu, nie z pamięci: w RAM-ie jest w tej chwili dokładnie jeden
+      // kawałek filmu, a nie cały film.
+      const chunk = await queue.readOriginal(job.photoId, offset, Math.min(offset + chunkSize, total));
       const res = await api.originalChunk({ photoId: job.photoId, offset, total }, chunk);
 
       if (res.done) break;
@@ -231,21 +242,48 @@ export function setWifiOnly(on: boolean): void {
   }
 }
 
+export type Connection = "wifi" | "cellular" | "unknown";
+
 /**
- * Czy wolno teraz wysyłać oryginały.
+ * Jaką sieć widzi telefon.
  *
  * `navigator.connection` istnieje tylko w przeglądarkach opartych na Chromium —
- * na iOS nie ma go wcale. Dlatego przy braku informacji **wysyłamy**: gość,
- * który świadomie włączył „tylko Wi-Fi", woli żeby oryginały czasem poszły
- * przez sieć komórkową, niż żeby nie poszły nigdy. Podgląd i tak leci zawsze,
- * bo od niego zależy bingo.
+ * na iOS nie ma go wcale, i **nie da się tego obejść**: Safari po prostu nie
+ * mówi, czy to Wi-Fi. Dlatego są trzy odpowiedzi, nie dwie, a co zrobić
+ * z „nie wiem", decyduje osobno każdy rodzaj pliku — patrz `originalAllowed`.
  */
-export function originalsAllowed(): boolean {
-  if (!wifiOnly()) return true;
+export function connectionKind(): Connection {
   const conn = (navigator as { connection?: { type?: string; saveData?: boolean } }).connection;
-  if (!conn) return true;
-  if (conn.saveData) return false;
-  return conn.type !== "cellular";
+  if (!conn) return "unknown";
+  // Oszczędzanie danych to deklaracja gościa, nie rodzaj sieci — ale znaczy
+  // dokładnie to samo, co „jestem na komórce i liczę megabajty".
+  if (conn.saveData) return "cellular";
+  if (conn.type === "wifi" || conn.type === "ethernet") return "wifi";
+  if (conn.type === "cellular") return "cellular";
+  return "unknown";
+}
+
+/**
+ * Czy wolno teraz wysyłać ten oryginał.
+ *
+ * Zdjęcie i film odpowiadają na „nie wiem, jaka sieć" odwrotnie, i to jest
+ * cała treść tej funkcji:
+ *
+ * - **Zdjęcie (4 MB)** przy braku informacji **jedzie**. Gość, który włączył
+ *   „tylko Wi-Fi", woli żeby oryginały czasem poszły przez komórkę, niż żeby
+ *   nie poszły nigdy. Domyślnie bramka jest wyłączona.
+ * - **Film (350 MB)** przy braku informacji **czeka**. Tu pomyłka kosztuje
+ *   gościa pakiet danych na cały miesiąc, więc rusza wyłącznie na potwierdzonym
+ *   Wi-Fi albo po tym, jak sam dotknie „wyślij teraz" — na iPhonie to jedyna
+ *   droga, i ekran kategorii mówi mu to wprost.
+ *
+ * Podgląd i tak leci zawsze, bo od niego zależy bingo.
+ */
+export function originalAllowed(job: Pick<queue.Job, "kind" | "sendNow">): boolean {
+  const kind = connectionKind();
+  if (job.kind === "video") return job.sendNow || kind === "wifi";
+  if (!wifiOnly()) return true;
+  return kind !== "cellular";
 }
 
 /**
@@ -259,12 +297,18 @@ export function autoDrain(onProgress?: (p: Progress) => void): () => void {
     if (document.visibilityState === "visible") go();
   };
 
+  // Zmiana sieci bez utraty połączenia — komórka → Wi-Fi w pensjonacie —
+  // nie budzi `online`, a to jest dokładnie moment, w którym film ma ruszyć.
+  const conn = (navigator as { connection?: EventTarget }).connection;
+
   window.addEventListener("online", go);
   document.addEventListener("visibilitychange", onVisible);
+  conn?.addEventListener("change", go);
   go();
 
   return () => {
     window.removeEventListener("online", go);
     document.removeEventListener("visibilitychange", onVisible);
+    conn?.removeEventListener("change", go);
   };
 }

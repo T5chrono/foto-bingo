@@ -17,6 +17,8 @@ export type ErrorCode =
   | "server"
   | "imageRead"
   | "imageEncode"
+  | "unsupportedFile"
+  | "videoRead"
   | "uploadStalled"
   | "lineIncomplete";
 

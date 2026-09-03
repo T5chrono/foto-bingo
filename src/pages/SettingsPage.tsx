@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import * as queue from "../lib/queue";
-import { setWifiOnly, wifiOnly } from "../lib/uploader";
+import { drain, originalAllowed, setWifiOnly, wifiOnly } from "../lib/uploader";
 import { useT } from "../hooks/useLocale";
 import { BackButton } from "../components/BackButton";
 import { LanguagePicker } from "../components/LanguagePicker";
@@ -17,7 +17,17 @@ export default function SettingsPage() {
   }, []);
 
   const czekaPodglad = jobs.filter((j) => !j.previewDone).length;
-  const czekaOryginal = jobs.filter((j) => j.previewDone && j.original).length;
+  const czekaOryginal = jobs.filter((j) => j.previewDone && j.originalChunks > 0).length;
+  // Filmy, które nie ruszą same: bez Wi-Fi, a na iPhonie — bez palca gościa.
+  const czekajaFilmy = jobs.filter(
+    (j) => j.kind === "video" && j.previewDone && j.originalChunks > 0 && !originalAllowed(j),
+  );
+
+  async function wyslijFilmy() {
+    for (const j of czekajaFilmy) await queue.patch(j.photoId, { sendNow: true });
+    setJobs(await queue.allJobs());
+    void drain();
+  }
 
   return (
     <main className="mx-auto flex h-dvh max-w-md flex-col gap-2 overflow-hidden px-4 pt-3 pb-[var(--meadow-h)]">
@@ -56,6 +66,10 @@ export default function SettingsPage() {
               </span>
             </span>
           </label>
+          {/* Przełącznik wyżej dotyczy zdjęć. Filmy nie mają przełącznika —
+              zawsze czekają — i to zdanie ma o tym powiedzieć, zanim gość
+              zacznie szukać, gdzie to wyłączyć. */}
+          <p className="mt-2 text-xs text-brand-800/55">{t.settings.videosHint}</p>
         </section>
 
         <section className="rounded-2xl border border-brand-200 bg-paper px-4 py-2.5">
@@ -74,7 +88,19 @@ export default function SettingsPage() {
               {czekaOryginal > 0 && (
                 <li>{t.settings.queueOriginals(czekaOryginal)}</li>
               )}
+              {czekajaFilmy.length > 0 && (
+                <li>{t.settings.queueVideos(czekajaFilmy.length)}</li>
+              )}
             </ul>
+          )}
+          {czekajaFilmy.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void wyslijFilmy()}
+              className="mt-2 w-full rounded-xl border border-brand-400 bg-paper px-4 py-2 text-sm font-medium text-brand-800"
+            >
+              {t.settings.sendVideosNow}
+            </button>
           )}
           <p className="mt-2 text-xs text-brand-800/55">
             {t.settings.queueHint}

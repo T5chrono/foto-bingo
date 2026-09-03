@@ -20,10 +20,10 @@ import {
   sessionOffset,
   startResumable,
   trashFile,
-  extensionFor,
 } from "./_lib/drive.js";
 import { categoryById } from "../src/lib/board.js";
 import { driveFileName } from "../src/lib/slug.js";
+import { HEAD_BYTES, mediaFor, sniff } from "../src/lib/media.js";
 import {
   createClaim,
   guestClaims,
@@ -91,6 +91,8 @@ app.get("/me", requireGuest, async (c) => {
       driveStatus: tile.driveStatus,
       thumbUrl: signedUrl(urls, tile.thumbPath),
       previewUrl: signedUrl(urls, tile.previewPath),
+      kind: tile.kind,
+      durationMs: tile.durationMs,
     })),
     budget: await currentBudget(),
   });
@@ -153,6 +155,9 @@ app.post("/photos/finalize", requireGuest, async (c) => {
   }
 
   const ext = String(body?.ext ?? "webp").replace(/[^a-z0-9]/gi, "").toLowerCase();
+  // Bez `kind` zostaje zdjecie — tak wysyla kazdy telefon sprzed filmow,
+  // a kolejka z piatku ma dojsc w sobote bez zmiany kodu po swojej stronie.
+  const kind = body?.kind === "video" ? "video" : "photo";
 
   const result = await finalizePhoto({
     guestId: guest.id,
@@ -164,6 +169,8 @@ app.post("/photos/finalize", requireGuest, async (c) => {
     width: toIntOrNull(body?.width),
     height: toIntOrNull(body?.height),
     originalBytes: toIntOrNull(body?.originalBytes),
+    kind,
+    durationMs: kind === "video" ? toIntOrNull(body?.durationMs) : null,
   });
 
   return c.json(result);
@@ -196,6 +203,15 @@ app.post("/photos/original/start", requireGuest, async (c) => {
   const category = categoryById(photo.category_id);
   if (!category) return c.json({ error: "Nieznana kategoria" }, 400);
 
+  // Trzecie sito, czesc pierwsza. Bajtow jeszcze nie widzielismy — sesja
+  // resumable wymaga nazwy pliku, zanim cokolwiek poleci — wiec na tym etapie
+  // ufamy deklaracji telefonu, ale WYLACZNIE w granicach whitelisty.
+  // Wczesniej rozszerzenie bylo przepisywane z nazwy znak w znak, wiec plik
+  // nazwany `wesele.exe` ladowal na Dysku jako `.exe`. Bajty sprawdzamy przy
+  // pierwszym kawalku, nizej.
+  const media = mediaFor(String(body?.filename ?? ""), String(body?.mime ?? ""));
+  if (!media) return c.json({ error: "Na kafelek wchodza tylko zdjecia i filmy" }, 400);
+
   const folderId = await ensureGuestFolder(guest);
   const name = driveFileName({
     row: category.row,
@@ -203,13 +219,13 @@ app.post("/photos/original/start", requireGuest, async (c) => {
     categorySlug: category.slug,
     guestSlug: guest.slug,
     takenAt: new Date(photo.created_at),
-    extension: extensionFor(String(body?.filename ?? ""), String(body?.mime ?? "")),
+    extension: media.ext,
   });
 
   const sessionUri = await startResumable({
     name,
     parentId: folderId,
-    mimeType: String(body?.mime ?? "application/octet-stream"),
+    mimeType: media.mime,
     size,
     description: category.label,
     appProperties: {
@@ -248,6 +264,18 @@ app.post("/photos/original/chunk", requireGuest, async (c) => {
 
   const bytes = await c.req.arrayBuffer();
   if (bytes.byteLength === 0) return c.json({ error: "Pusty kawalek" }, 400);
+
+  // Trzecie sito, czesc druga — i jedyne miejsce w calej aplikacji, gdzie
+  // serwer oglada bajty oryginalu. Podglad i miniatura ida z telefonu prosto
+  // do bucketa podpisanym linkiem, wiec ich pilnuje wylacznie lista typow MIME
+  // ustawiona na bucketcie (czwarte sito). Tutaj patrzymy sami.
+  //
+  // Odrzucenie musi byc NIEPONAWIALNE (400), inaczej kolejka w telefonie
+  // dobijalaby sie tym samym plikiem do konca wesela — `recordFailure`
+  // w `uploader.ts` rozroznia jedno od drugiego po kodzie odpowiedzi.
+  if (offset === 0 && !sniff(bytes.slice(0, HEAD_BYTES))) {
+    return c.json({ error: "Ten plik nie jest ani zdjeciem, ani filmem" }, 400);
+  }
 
   const result = await putChunk({
     sessionUri: photo.drive_session_uri,
@@ -444,7 +472,7 @@ app.get("/panel/claims/:id", requirePanel, async (c) => {
   const ids = lineCategories(claim.kind as ClaimKind, claim.line_index as number | null);
   const { data: photos } = await db()
     .from("photos")
-    .select("category_id, preview_path, drive_status")
+    .select("category_id, preview_path, drive_status, kind")
     .eq("guest_id", claim.guest_id as string)
     .eq("is_active", true)
     .in("category_id", ids);
@@ -466,6 +494,7 @@ app.get("/panel/claims/:id", requirePanel, async (c) => {
       position: category ? `R${category.row}K${category.col}` : "",
       driveStatus: photo?.drive_status ?? null,
       url: photo ? signedUrl(urls, photo.preview_path as string) : null,
+      kind: photo ? ((photo.kind as string | null) ?? "photo") : null,
     };
   });
 
@@ -500,7 +529,7 @@ app.get("/panel/category/:id", requirePanel, async (c) => {
 
   const { data, error } = await db()
     .from("photos")
-    .select("id, preview_path, created_at, drive_status, guests(name)")
+    .select("id, preview_path, created_at, drive_status, kind, guests(name)")
     .eq("category_id", categoryId)
     .eq("is_active", true)
     .order("created_at");
@@ -514,6 +543,7 @@ app.get("/panel/category/:id", requirePanel, async (c) => {
     guestName: guestName(row.guests),
     driveStatus: row.drive_status,
     url: signedUrl(urls, row.preview_path as string),
+    kind: (row.kind as string | null) ?? "photo",
   }));
 
   const category = categoryById(categoryId);
@@ -551,14 +581,20 @@ app.get("/panel/stats", requirePanel, async (c) => {
 
   const { data } = await db()
     .from("photos")
-    .select("guests(name)")
+    .select("kind, guests(name)")
     .eq("is_active", true)
     .neq("drive_status", "ok");
 
-  const pending = new Map<string, number>();
+  // Filmy liczone osobno: to one utykaja najczesciej, bo czekaja na Wi-Fi,
+  // a na iPhonie ruszaja dopiero po dotknieciu goscia. Para Mloda ma wiedziec,
+  // do kogo podejsc z haslem do Wi-Fi, a nie tylko "cos jeszcze nie doszlo".
+  const pending = new Map<string, { count: number; videos: number }>();
   for (const row of data ?? []) {
     const name = guestName(row.guests);
-    pending.set(name, (pending.get(name) ?? 0) + 1);
+    const entry = pending.get(name) ?? { count: 0, videos: 0 };
+    entry.count++;
+    if (row.kind === "video") entry.videos++;
+    pending.set(name, entry);
   }
 
   const { count: photoCount } = await db()
@@ -576,7 +612,7 @@ app.get("/panel/stats", requirePanel, async (c) => {
     photos: photoCount ?? 0,
     guests: guestCount ?? 0,
     pendingOriginals: [...pending.entries()]
-      .map(([guestName, count]) => ({ guestName, count }))
+      .map(([guestName, { count, videos }]) => ({ guestName, count, videos }))
       .sort((a, b) => b.count - a.count),
   });
 });

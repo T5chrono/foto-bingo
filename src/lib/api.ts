@@ -1,6 +1,7 @@
 import type { ErrorCode } from "./errors.js";
 import { readToken } from "./guest.js";
 import type { Budget } from "./image.js";
+import type { MediaKind } from "./media.js";
 import type { Results } from "./results.js";
 
 const BASE = import.meta.env.VITE_API_URL ?? "/api";
@@ -13,6 +14,9 @@ export type Tile = {
   /** Ta sama fotografia w wersji na cały ekran — ekran kategorii pokazuje ją
    *  gościowi, gdy wraca na zdobyty kafelek. */
   previewUrl: string;
+  /** Film dostaje na kafelku znaczek; obrazek pod spodem jest taki sam. */
+  kind: MediaKind;
+  durationMs: number;
 };
 
 export type Me = {
@@ -122,6 +126,7 @@ export type ClaimTile = {
   driveStatus: "pending" | "ok" | "failed" | null;
   /** null = gosc nie ma zdjecia na tym polu; panel ma to pokazac wprost. */
   url: string | null;
+  kind: MediaKind | null;
 };
 
 export type ClaimDetail = PanelClaim & { tiles: ClaimTile[] };
@@ -130,7 +135,13 @@ export type CategoryView = {
   categoryId: number;
   label: string;
   position: string;
-  photos: { photoId: string; guestName: string; driveStatus: string; url: string }[];
+  photos: {
+    photoId: string;
+    guestName: string;
+    driveStatus: string;
+    url: string;
+    kind: MediaKind;
+  }[];
 };
 
 export type { Results, LineStanding, Finisher, Leader } from "./results.js";
@@ -140,7 +151,8 @@ export type PanelStats = {
   limitBytes: number;
   photos: number;
   guests: number;
-  pendingOriginals: { guestName: string; count: number }[];
+  /** `videos` to część `count` — filmy utykają najczęściej, bo czekają na Wi-Fi. */
+  pendingOriginals: { guestName: string; count: number; videos: number }[];
 };
 
 export const api = {
@@ -169,6 +181,8 @@ export const api = {
     width: number;
     height: number;
     originalBytes: number;
+    kind: MediaKind;
+    durationMs: number;
   }) =>
     request<{ photoId: string; replaced: boolean; alreadyExisted: boolean }>(
       "/photos/finalize",

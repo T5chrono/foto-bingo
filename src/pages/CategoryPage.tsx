@@ -7,11 +7,12 @@ import { categoryById, categoryLabel } from "../lib/board";
 import { errorText } from "../lib/errors";
 import { prepare } from "../lib/image";
 import * as queue from "../lib/queue";
-import { drain } from "../lib/uploader";
+import { drain, originalAllowed, type Progress } from "../lib/uploader";
 import { useBoard } from "../hooks/useBoard";
 import { useLocale } from "../hooks/useLocale";
 import type { Strings } from "../lib/strings/pl";
 import { BackButton } from "../components/BackButton";
+import { PlayBadge } from "../components/PlayBadge";
 import { MeadowBand } from "../components/wedding/Meadow";
 import { Sprig } from "../components/wedding/Sprig";
 
@@ -27,6 +28,7 @@ type Phase =
   | "uploading"
   | "saved"
   | "originalOnTheWay"
+  | "waitingWifi"
   | "failed";
 
 /**
@@ -46,7 +48,7 @@ export default function CategoryPage() {
   const client = useQueryClient();
   const { locale, t } = useLocale();
   const fileInput = useRef<HTMLInputElement>(null);
-  const { tiles, refreshJobs } = useBoard();
+  const { tiles, jobs, refreshJobs } = useBoard();
 
   const category = categoryById(Number(id));
   const tile = category ? tiles.get(category.id) : undefined;
@@ -79,6 +81,42 @@ export default function CategoryPage() {
   // Zablokowany kafelek (nieudana wysyłka) też da się zwolnić — inaczej gość
   // zostaje z polem, którego nie umie ani wysłać, ani wyczyścić.
   const canRemove = Boolean(shown || tile?.pending || tile?.failed);
+  const isVideo = tile?.kind === "video";
+
+  // Film, którego klatka już stoi na planszy, a oryginał leży w telefonie
+  // i czeka na Wi-Fi. Na iPhonie czeka na palec gościa, bo Safari nie mówi,
+  // jaka to sieć — i właśnie dlatego ten stan dostaje własną kartę z guzikiem,
+  // a nie pasek postępu, który nigdy nie ruszy.
+  const job = jobs.find((j) => j.categoryId === category.id && j.state !== "done");
+  const waitingVideo =
+    job && job.kind === "video" && job.previewDone && job.originalChunks > 0 && !originalAllowed(job)
+      ? job
+      : null;
+
+  /** Jeden odbiornik postępu dla wysyłki po wyborze pliku i po „wyślij teraz". */
+  function track(p: Progress) {
+    if (p.waiting === "wifi") {
+      setPhase("waitingWifi");
+      return;
+    }
+    if (p.phase === "preview") {
+      if (p.state === "uploading") setPhase("uploading");
+      // Podglad doszedl — kafelek jest zapelniony i zdjecie liczy sie do
+      // bingo. Oryginal idzie dalej w tle i nikt na niego nie czeka.
+      if (p.state === "done") setPhase("saved");
+    } else if (p.state === "uploading") {
+      setPhase("originalOnTheWay");
+      setOriginalRatio(p.ratio ?? 0);
+    } else if (p.state === "done") {
+      setPhase("saved");
+      setOriginalRatio(1);
+    }
+    if (p.state === "failed") {
+      setPhase("failed");
+      // `p.code` jest przetłumaczalny; `p.error` to polski zapis awaryjny.
+      setError(errorText(p, t, t.category.sendFailed));
+    }
+  }
 
   async function handleFile(file: File) {
     setError(null);
@@ -99,7 +137,8 @@ export default function CategoryPage() {
       setPreview(URL.createObjectURL(encoded.preview.blob));
       setSizeInfo(
         `${kb(encoded.originalBytes)} → ${kb(encoded.preview.blob.size)} · ` +
-          `${encoded.preview.width}×${encoded.preview.height}`,
+          `${encoded.preview.width}×${encoded.preview.height}` +
+          (encoded.kind === "video" ? ` · ${seconds(encoded.durationMs)}` : ""),
       );
 
       await queue.enqueue({
@@ -109,9 +148,13 @@ export default function CategoryPage() {
         mime: encoded.preview.blob.type,
         preview: await encoded.preview.blob.arrayBuffer(),
         thumb: await encoded.thumb.blob.arrayBuffer(),
-        // Oryginal czeka na Etap 3. Trzymamy go od razu, bo galeria telefonu
-        // moze go do tego czasu przemielic — a drugi raz gosc go nie wybierze.
-        original: await file.arrayBuffer(),
+        kind: encoded.kind,
+        durationMs: encoded.durationMs,
+        // Oryginal czeka na Etap 3. Kolejka kopiuje go od razu, kawalek po
+        // kawalku, bo galeria telefonu moze go do tego czasu przemielic —
+        // a drugi raz gosc go nie wybierze. Sam plik nie idzie do pamieci
+        // w calosci: przy filmie to bylby koniec karty na starszym iPhonie.
+        original: file,
         originalMime: file.type || "image/jpeg",
         originalName: file.name || null,
         width: encoded.preview.width,
@@ -120,26 +163,8 @@ export default function CategoryPage() {
       });
 
       setPhase("queued");
-
-      await drain((p) => {
-        if (p.phase === "preview") {
-          if (p.state === "uploading") setPhase("uploading");
-          // Podglad doszedl — kafelek jest zapelniony i zdjecie liczy sie do
-          // bingo. Oryginal idzie dalej w tle i nikt na niego nie czeka.
-          if (p.state === "done") setPhase("saved");
-        } else if (p.state === "uploading") {
-          setPhase("originalOnTheWay");
-          setOriginalRatio(p.ratio ?? 0);
-        } else if (p.state === "done") {
-          setPhase("saved");
-          setOriginalRatio(1);
-        }
-        if (p.state === "failed") {
-          setPhase("failed");
-          // `p.code` jest przetłumaczalny; `p.error` to polski zapis awaryjny.
-          setError(errorText(p, t, t.category.sendFailed));
-        }
-      });
+      await refreshJobs();
+      await drain(track);
 
       await client.invalidateQueries({ queryKey: ["me"] });
       if (navigator.onLine) await api.me().catch(() => null);
@@ -147,6 +172,15 @@ export default function CategoryPage() {
       setPhase("failed");
       setError(errorText(err, t, t.category.unknownError));
     }
+  }
+
+  /** „Wyślij teraz" — gość bierze na siebie dane komórkowe za ten jeden film. */
+  async function handleSendNow(j: queue.Job) {
+    setError(null);
+    await queue.patch(j.photoId, { sendNow: true });
+    await refreshJobs();
+    setPhase("queued");
+    await drain(track);
   }
 
   /**
@@ -263,11 +297,28 @@ export default function CategoryPage() {
               Działa tak samo dla zdjęć pionowych i poziomych. Przy poziomych
               zapas zostaje pod guzikami, czyli tam, gdzie i tak rośnie łąka. */}
           <div className="flex min-h-0 flex-1 flex-col gap-3">
-            <img
-              src={shown}
-              alt={preview ? t.category.chosenPhoto : t.category.yourPhoto}
-              className="mx-auto max-h-full max-w-full min-h-0 rounded-2xl object-contain"
-            />
+            {/* Pudełko wokół obrazka istnieje tylko po to, żeby znaczek filmu
+                miał do czego się przykleić — poza tym ma być niewidoczne,
+                więc bierze dokładnie wymiary obrazka i ani piksela więcej. */}
+            <div className="relative mx-auto flex min-h-0 max-w-full shrink justify-center">
+              <img
+                src={shown}
+                alt={
+                  isVideo
+                    ? preview
+                      ? t.category.chosenVideo
+                      : t.category.yourVideo
+                    : preview
+                      ? t.category.chosenPhoto
+                      : t.category.yourPhoto
+                }
+                className="max-h-full max-w-full min-h-0 rounded-2xl object-contain"
+              />
+              {isVideo && (
+                <PlayBadge className="absolute top-2 left-2 size-8" title={t.board.tileVideo} />
+              )}
+            </div>
+            {waitingVideo && <WifiCard job={waitingVideo} onSendNow={handleSendNow} t={t} />}
             {akcje}
           </div>
         </>
@@ -277,15 +328,28 @@ export default function CategoryPage() {
               tuż pod nazwą kategorii, bo między jednym a drugim nie ma nic do
               przeczytania — ale z odstępem, żeby nie wyglądał jak część
               nagłówka i żeby kciuk nie sięgał po niego w biegu. */}
-          <div className="mt-6">{akcje}</div>
+          {/* Karta Wi-Fi także tutaj: klatka jest już na serwerze, ale bez
+              zasięgu plansza nie dostała jej adresu i nie ma czego pokazać —
+              a guzik „wyślij teraz" ma być tam, gdzie gość go szuka. */}
+          {waitingVideo && <WifiCard job={waitingVideo} onSendNow={handleSendNow} t={t} />}
+          <div className={waitingVideo ? "" : "mt-6"}>{akcje}</div>
           <p className="text-center text-sm text-brand-800/55">{t.category.offline}</p>
         </>
       )}
 
+      {/* PIERWSZE SITO — i jedyne, które gość widzi.
+          Podpowiedź dla okna wyboru pliku, nie zabezpieczenie: w każdym
+          systemie da się przełączyć na „wszystkie pliki". Prawdziwe sita
+          stoją dalej — `prepare()` czyta pierwsze bajty, a serwer sprawdza je
+          jeszcze raz przy pierwszym kawałku oryginału.
+
+          Filmy wchodzą tą samą drogą: `prepare()` wycina klatkę z pierwszej
+          sekundy, kolejka kroi oryginał na kawałki, a na Dysk jedzie dopiero
+          po Wi-Fi albo po „wyślij teraz". */}
       <input
         ref={fileInput}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -305,6 +369,37 @@ export default function CategoryPage() {
 
       <MeadowBand />
     </main>
+  );
+}
+
+/**
+ * Karta „film czeka na Wi-Fi".
+ *
+ * Stoi między klatką a guzikami, bo to jest informacja o TYM filmie, a nie
+ * o stanie wysyłki. Rozmiar w guziku jest celowy: gość ma wiedzieć, na ile
+ * megabajtów się zgadza, zanim dotknie — to jego pakiet, nie nasz.
+ */
+function WifiCard({
+  job,
+  onSendNow,
+  t,
+}: {
+  job: queue.Job;
+  onSendNow: (job: queue.Job) => Promise<void>;
+  t: Strings;
+}) {
+  return (
+    <section className="rounded-2xl border border-brand-300 bg-brand-50 px-4 py-3">
+      <p className="font-medium text-brand-800">{t.category.waitingWifi}</p>
+      <p className="mt-1 text-xs text-brand-800/70">{t.category.waitingWifiHint}</p>
+      <button
+        type="button"
+        onClick={() => void onSendNow(job)}
+        className="mt-3 w-full rounded-xl border border-brand-400 bg-paper px-4 py-2.5 font-medium text-brand-800"
+      >
+        {t.category.sendNow(kb(job.originalBytes))}
+      </button>
+    </section>
   );
 }
 
@@ -359,4 +454,10 @@ function kb(bytes: number): string {
   return bytes >= 1024 * 1024
     ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
     : `${Math.round(bytes / 1024)} KB`;
+}
+
+/** `1:07` — długość filmu przy rozmiarze, żeby gość widział, co wybrał. */
+function seconds(ms: number): string {
+  const total = Math.round(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }

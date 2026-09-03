@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CHUNK_SIZE,
   __setToken,
-  extensionFor,
   putChunk,
   sessionOffset,
   trashFile,
@@ -109,26 +108,6 @@ describe("pytanie o postęp przy wznowieniu", () => {
   it("bez nagłówka Range zaczyna od zera", async () => {
     stubFetch(new Response(null, { status: 308 }));
     expect(await sessionOffset("https://x", 777)).toBe(0);
-  });
-});
-
-describe("rozszerzenie oryginału", () => {
-  // Na Dysku ma lezec dokladnie to, co wyszlo z aparatu — .heic z iPhone'a
-  // zostaje .heic, bo tylko nazwa odroznia je od .heif.
-  it("bierze rozszerzenie z nazwy pliku", () => {
-    expect(extensionFor("IMG_0042.HEIC", "image/jpeg")).toBe("heic");
-    expect(extensionFor("wakacje.2026.jpg", "")).toBe("jpg");
-  });
-
-  it("spada na typ MIME, gdy galeria nie poda nazwy", () => {
-    expect(extensionFor("", "image/heic")).toBe("heic");
-    expect(extensionFor("", "image/png")).toBe("png");
-    expect(extensionFor("bez-kropki", "image/webp")).toBe("webp");
-  });
-
-  it("przy zupełnie nieznanym wejściu daje jpg zamiast pliku bez rozszerzenia", () => {
-    expect(extensionFor("", "application/octet-stream")).toBe("jpg");
-    expect(extensionFor("", "")).toBe("jpg");
   });
 });
 

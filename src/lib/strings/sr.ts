@@ -64,6 +64,7 @@ export const sr: Strings = {
     tileFailed: "greška pri slanju",
     sending: "šalje se…",
     failedTap: "greška — dodirni",
+    tileVideo: "snimak",
   },
 
   bingo: {
@@ -115,10 +116,12 @@ export const sr: Strings = {
     board: "← Tabla",
     chosenPhoto: "Izabrana fotografija",
     yourPhoto: "Tvoja fotografija na ovom polju",
-    pick: "Izaberi fotografiju",
-    replace: "Zameni fotografiju",
-    remove: "Obriši fotografiju",
-    removeAsk: "Obrisati ovu fotografiju?",
+    chosenVideo: "Izabrani snimak",
+    yourVideo: "Tvoj snimak na ovom polju",
+    pick: "Izaberi fotografiju ili snimak",
+    replace: "Zameni",
+    remove: "Obriši",
+    removeAsk: "Obrisati sa ovog polja?",
     removeNote: "Nestaje sa table i iz foldera na Google Disku Karoline i Tomeka.",
     removeYes: "Obriši",
     removeNo: "Ostavi",
@@ -129,11 +132,17 @@ export const sr: Strings = {
     failed: "Nije uspelo",
     sendFailed: "Slanje nije uspelo",
     unknownError: "Nešto je pošlo naopako",
+    waitingWifi: "Snimak čeka Wi-Fi",
+    waitingWifiHint:
+      "Kadar je već na tabli i računa se za bingo. Sam snimak ću poslati čim telefon uhvati " +
+      "Wi-Fi — ili dodirni ispod da ga pošalješ odmah preko mobilnih podataka.",
+    sendNow: (size: string) => `Pošalji odmah (${size})`,
     phase: {
       processing: "obrada",
       queued: "u redu čekanja",
       uploading: "slanje",
       originalOnTheWay: "original je na putu",
+      waitingWifi: "čeka Wi-Fi",
     },
   },
 
@@ -165,6 +174,11 @@ export const sr: Strings = {
         "originala je na putu ka Disku",
       ),
     queueHint: "Red kreće sam čim se signal vrati. Ne treba ništa da diraš.",
+    videosHint:
+      "Snimci uvek čekaju Wi-Fi. iPhone ne govori aplikaciji na kojoj je mreži, pa tamo " +
+      "snimak kreće tek kad dodirneš „Pošalji odmah” — na njegovom polju ili ovde.",
+    queueVideos: (n: number) => `${count(n, "snimak čeka", "snimka čekaju", "snimaka čeka")} Wi-Fi`,
+    sendVideosNow: "Pošalji snimke odmah",
     yourPhotos: "Tvoje fotografije",
   },
 
@@ -196,6 +210,8 @@ export const sr: Strings = {
     server: "Server ne odgovara. Pokušaćemo ponovo za koji trenutak.",
     imageRead: "Ne mogu da pročitam ovu fotografiju. Probaj da je izabereš ponovo.",
     imageEncode: "Ne mogu da pripremim ovu fotografiju za slanje.",
+    unsupportedFile: "Na polje idu fotografije i snimci — ovaj fajl je nešto drugo.",
+    videoRead: "Ne mogu da pročitam ovaj snimak. Probaj da ga izabereš ponovo.",
     uploadStalled: "Slanje originala je stalo — pokušaćemo kasnije.",
     lineIncomplete: "Ova linija još nije kompletna. Osveži tablu i pokušaj ponovo.",
   },
@@ -224,6 +240,9 @@ export const sr: Strings = {
     pendingOriginals: "Originali na putu",
     pendingCount: (n: number) => count(n, "original", "originala", "originala"),
     pendingHint: "Zamoli ove ljude da otvore aplikaciju — fotografije će stići same.",
+    pendingVideos: (n: number) => `od toga ${count(n, "snimak", "snimka", "snimaka")}`,
+    pendingVideosHint:
+      "Snimci kreću samo preko Wi-Fi-ja — a na iPhone-u tek posle „Pošalji odmah” na polju.",
     lineWinners: "Osvojene linije",
     lineWinnersHint:
       "Ko je prvi sakupio svih pet fotografija jedne linije. Vreme je trenutak kada je " +
@@ -241,6 +260,7 @@ export const sr: Strings = {
     categoryEmpty: "Još niko nije poslao fotografiju u ovoj kategoriji.",
     photoCount: (n: number) => count(n, "fotografija", "fotografije", "fotografija"),
     originalPending: "Original još nije stigao",
+    video: "snimak",
     noClaim: "Nema takve prijave.",
     missingTiles: (missing: number, total: number) =>
       `Nedostaje ${missing} od ${total} fotografija ove linije.`,

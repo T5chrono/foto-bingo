@@ -1,4 +1,4 @@
-import { GOSCIE, NOWE_ZGLOSZENIA, ORYGINALY, ZDJECIA, count } from "../plural.js";
+import { FILMY, GOSCIE, NOWE_ZGLOSZENIA, ORYGINALY, ZDJECIA, count } from "../plural.js";
 
 /**
  * Polskie teksty aplikacji — **źródło prawdy**.
@@ -37,6 +37,8 @@ export const pl = {
     tileFailed: "błąd wysyłki",
     sending: "wysyłanie…",
     failedTap: "błąd — dotknij",
+    /** Do aria-label kafelka — na ekranie mówi o tym znaczek. */
+    tileVideo: "film",
   },
 
   bingo: {
@@ -98,11 +100,14 @@ export const pl = {
     board: "← Plansza",
     chosenPhoto: "Wybrane zdjęcie",
     yourPhoto: "Twoje zdjęcie na tym polu",
-    pick: "Wybierz zdjęcie",
-    replace: "Zamień zdjęcie",
-    remove: "Usuń zdjęcie",
+    chosenVideo: "Wybrany film",
+    yourVideo: "Twój film na tym polu",
+    pick: "Wybierz zdjęcie lub film",
+    /** Bez „zdjęcie" w guziku — pod spodem może stać film, a guzik jest jeden. */
+    replace: "Zamień",
+    remove: "Usuń",
     /** Pytanie przed skasowaniem — jedno zdanie, bo pada w środku zabawy. */
-    removeAsk: "Usunąć to zdjęcie?",
+    removeAsk: "Usunąć z tego pola?",
     removeNote: "Zniknie z planszy i z folderu na Dysku Pary Młodej.",
     removeYes: "Usuń",
     removeNo: "Zostaw",
@@ -113,12 +118,24 @@ export const pl = {
     failed: "Nie wyszło",
     sendFailed: "Nie udało się wysłać",
     unknownError: "Coś poszło nie tak",
+    /**
+     * Film czeka na Wi-Fi. To nie jest komunikat o błędzie, tylko o decyzji:
+     * klatka już liczy się do bingo, a 350 MB nie pójdzie po komórce bez
+     * wyraźnej zgody. Na iPhonie to jedyna droga, bo Safari nie mówi
+     * aplikacji, jaka to sieć.
+     */
+    waitingWifi: "Film czeka na Wi-Fi",
+    waitingWifiHint:
+      "Klatka jest już na planszy i liczy się do bingo. Sam film wyślę, gdy telefon " +
+      "złapie Wi-Fi — albo dotknij niżej, żeby wysłać go teraz przez dane komórkowe.",
+    sendNow: (size: string) => `Wyślij teraz (${size})`,
     /** Etapy wysyłki — pokazywane z wielokropkiem, więc bez kropki na końcu. */
     phase: {
       processing: "przetwarzanie",
       queued: "w kolejce",
       uploading: "wysyłanie",
       originalOnTheWay: "oryginał w drodze",
+      waitingWifi: "czeka na Wi-Fi",
     },
   },
 
@@ -138,6 +155,11 @@ export const pl = {
     queueWaiting: (n: number) => `${count(n, ZDJECIA)} czeka na wysłanie`,
     queueOriginals: (n: number) => `${count(n, ORYGINALY)} w drodze na Dysk`,
     queueHint: "Kolejka rusza sama, gdy wróci zasięg. Nie trzeba nic klikać.",
+    videosHint:
+      "Filmy zawsze czekają na Wi-Fi. iPhone nie mówi aplikacji, jaka to sieć, więc tam " +
+      "film rusza dopiero po dotknięciu „Wyślij teraz” — na jego kafelku albo tutaj.",
+    queueVideos: (n: number) => `${count(n, FILMY)} czeka na Wi-Fi`,
+    sendVideosNow: "Wyślij filmy teraz",
     yourPhotos: "Twoje zdjęcia",
   },
 
@@ -175,6 +197,8 @@ export const pl = {
     server: "Serwer nie odpowiada. Spróbujemy jeszcze raz za chwilę.",
     imageRead: "Nie udało się odczytać tego zdjęcia. Spróbuj wybrać je jeszcze raz.",
     imageEncode: "Nie udało się przygotować tego zdjęcia do wysyłki.",
+    unsupportedFile: "Na kafelek wchodzą zdjęcia i filmy — ten plik jest czymś innym.",
+    videoRead: "Nie udało się odczytać tego filmu. Spróbuj wybrać go jeszcze raz.",
     uploadStalled: "Wysyłka oryginału stanęła w miejscu — spróbujemy później.",
     lineIncomplete: "Ta linia nie jest jeszcze kompletna. Odśwież planszę i spróbuj ponownie.",
   },
@@ -202,6 +226,10 @@ export const pl = {
     pendingCount: (n: number) => count(n, ORYGINALY),
     /** Serwer nie dośle oryginału — leży na telefonie gościa. Zostaje poprosić człowieka. */
     pendingHint: "Poproś te osoby o otwarcie aplikacji — zdjęcia dojdą same.",
+    pendingVideos: (n: number) => `w tym ${count(n, FILMY)}`,
+    /** Film nie dojdzie sam przez komórkę — trzeba Wi-Fi albo palca gościa. */
+    pendingVideosHint:
+      "Filmy ruszają dopiero na Wi-Fi — a na iPhonie po dotknięciu „Wyślij teraz” na kafelku.",
     /**
      * Arkusz sędziowski. Liczy się ze zdjęć, nie ze zgłoszeń — zgłoszenie mówi
      * tylko, kto zdążył kliknąć.
@@ -223,6 +251,7 @@ export const pl = {
     categoryEmpty: "Jeszcze nikt nie wysłał zdjęcia w tej kategorii.",
     photoCount: (n: number) => count(n, ZDJECIA),
     originalPending: "Oryginał jeszcze nie doszedł",
+    video: "film",
     noClaim: "Nie ma takiego zgłoszenia.",
     missingTiles: (missing: number, total: number) =>
       `Brakuje ${missing} z ${total} zdjęć tej linii.`,

@@ -1,8 +1,12 @@
 import { BOARD, SIZE, categoryLabel, type Category } from "../lib/board";
 import { highlightedIds } from "../lib/bingo";
 import { useLocale } from "../hooks/useLocale";
+import type { MediaKind } from "../lib/media";
+import { PlayBadge } from "./PlayBadge";
 
 export type TileView = {
+  /** Zdjęcie czy film — na miniaturze różni je tylko znaczek. */
+  kind?: MediaKind;
   /** Miniatura z serwera; brak = kafelek jeszcze nie ma zdjęcia u nas. */
   thumbUrl?: string;
   /** Ta sama fotografia w wersji na cały ekran — potrzebna dopiero na ekranie
@@ -70,6 +74,7 @@ export function BoardGrid({ tiles, onPick, className = "" }: Props) {
         const done = Boolean(tile?.thumbUrl);
         const pending = Boolean(tile?.pending);
         const failed = Boolean(tile?.failed);
+        const video = tile?.kind === "video";
         const inLine = highlighted.has(cat.id);
         const label = categoryLabel(cat, locale);
 
@@ -88,7 +93,11 @@ export function BoardGrid({ tiles, onPick, className = "" }: Props) {
             role="gridcell"
             onClick={() => onPick?.(cat)}
             title={label}
-            aria-label={`R${cat.row}K${cat.col} — ${label}` + (state ? ` — ${state}` : "")}
+            aria-label={
+              `R${cat.row}K${cat.col} — ${label}` +
+              (state ? ` — ${state}` : "") +
+              (video ? ` — ${t.board.tileVideo}` : "")
+            }
             className={[
               "relative h-full w-full overflow-hidden rounded-lg border transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700",
@@ -131,6 +140,14 @@ export function BoardGrid({ tiles, onPick, className = "" }: Props) {
               // bywa jasna, a znacznik musi być widoczny na obu.
               <span className="absolute right-1 bottom-1">
                 <Kolko state="done" />
+              </span>
+            )}
+
+            {/* Znaczek filmu w przeciwległym rogu niż kółko — na 65 pikselach
+                dwa znaczki obok siebie zlewają się w jeden. */}
+            {video && (done || pending) && (
+              <span className="absolute top-1 left-1">
+                <PlayBadge className="size-4" />
               </span>
             )}
           </button>
