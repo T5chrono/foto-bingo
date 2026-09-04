@@ -696,6 +696,13 @@ w checkliście przedweselnej w specyfikacji.
   nawet w Chromie — wtedy film czeka na dotknięcie, tak jak na iOS. Sprawdź na prawdziwym
   telefonie, czy po przejściu z komórki na Wi-Fi w pensjonacie film rusza sam (nasłuch
   na zdarzeniu `change`), czy trzeba otworzyć aplikację.
+- **Blokada ekranu w trakcie wysyłki.** `holdScreen` trzyma ekran zapalony przez
+  całe opróżnianie kolejki, ale Screen Wake Lock jest w Safari dopiero od 16.4,
+  a system potrafi odmówić przy siadającej baterii. Na telefonie trzeba zobaczyć
+  dwie rzeczy: czy ekran naprawdę nie gaśnie przez cały film i czy po zerknięciu
+  na powiadomienie blokada wraca sama po powrocie na wierzch. Ręcznej blokady
+  przyciskiem nie obejdzie nic — wtedy wysyłka wznawia się przy następnym
+  otwarciu aplikacji, od przesunięcia zapisanego po stronie Google.
 
 ---
 

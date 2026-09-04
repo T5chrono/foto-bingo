@@ -304,3 +304,53 @@ describe("zwolnienie kafelka w trakcie wysyłki", () => {
     expect(originalStart).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Ekran gasnący w środku wysyłki.
+ *
+ * Telefon odłożony na stół gasi ekran po minucie, a razem z podświetleniem
+ * zasypia JavaScript karty — film staje w połowie i rusza dopiero wtedy, gdy
+ * ktoś znowu dotknie szkła. Blokada ekranu ma trwać dokładnie tyle, ile
+ * opróżnianie kolejki: ani chwili krócej, ani sekundy po pustej kolejce.
+ */
+describe("ekran nie gaśnie w trakcie wysyłki", () => {
+  /** Podstawia `navigator.wakeLock` — albo je zabiera, jak na starszym Safari. */
+  function budzik(request: (() => Promise<unknown>) | null) {
+    const value = request ? { request } : undefined;
+    Object.defineProperty(navigator, "wakeLock", { value, configurable: true });
+  }
+
+  afterEach(() => budzik(null));
+
+  it("trzyma blokadę przez całe opróżnianie i oddaje ją na końcu", async () => {
+    const release = vi.fn(async () => {});
+    const request = vi.fn(async () => ({ release, addEventListener: () => {} }));
+    budzik(request);
+
+    await zadanieZOryginalem(5000);
+    originalStart.mockResolvedValue({ done: false, offset: 0, chunkSize: 5000 });
+    originalChunk.mockImplementation(async () => {
+      // Sedno testu: w chwili, gdy bajty naprawdę idą w górę, blokada już jest
+      // i jeszcze nie została oddana.
+      expect(request).toHaveBeenCalledWith("screen");
+      expect(release).not.toHaveBeenCalled();
+      return { done: true };
+    });
+
+    await drain();
+
+    expect(originalChunk).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalled();
+  });
+
+  it("brak API nie przerywa wysyłki — na starszym Safari ekran po prostu gaśnie", async () => {
+    budzik(null);
+    await zadanieZOryginalem(5000);
+    originalStart.mockResolvedValue({ done: false, offset: 0, chunkSize: 5000 });
+    originalChunk.mockResolvedValue({ done: true });
+
+    await drain();
+
+    expect(await queue.allJobs()).toEqual([]);
+  });
+});

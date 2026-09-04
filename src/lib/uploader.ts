@@ -1,6 +1,7 @@
 import { ApiError, api } from "./api.js";
 import { AppError, type ErrorCode } from "./errors.js";
 import * as queue from "./queue.js";
+import { holdScreen } from "./wakelock.js";
 
 /**
  * Opróżnianie kolejki, w dwóch priorytetach.
@@ -81,6 +82,10 @@ function publish(p: Progress | null): void {
 export async function drain(onProgress?: (p: Progress) => void): Promise<void> {
   if (running) return;
   running = true;
+  // Ekran gasnący sam z siebie zabiera ze sobą wysyłkę: uśpiony telefon
+  // zamraża JavaScript karty w połowie kawałka. Blokada trzyma go obudzonym
+  // wyłącznie na czas opróżniania kolejki i znika razem z nią.
+  const wake = holdScreen();
   // Każdy raport idzie w dwa miejsca: do wołającego, który go zamówił,
   // i do wszystkich ekranów, które akurat patrzą.
   const report = (p: Progress) => {
@@ -102,6 +107,7 @@ export async function drain(onProgress?: (p: Progress) => void): Promise<void> {
       await sendOriginal(job, report);
     }
   } finally {
+    wake();
     running = false;
     // Kolejka pusta albo wstrzymana — pasek ma zniknąć, a nie zamarznąć
     // na ostatniej wartości. Wcześniejszy `return` przy `running` nie
