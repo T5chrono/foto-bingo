@@ -400,6 +400,49 @@ Android w trybie 50 MP potrafi dać 10 MB. Realistyczny przedział: **3–10 GB*
 wymagała wykupienia Google One 100 GB — to założenie było błędne i zostało wycofane.
 `drive:check` sam ostrzega, gdyby wolnego miejsca spadło poniżej potrzebnych ~4,8 GB.
 
+### Vercel — transfer przez funkcję, limit darmowy 10 GB
+
+Przez funkcję przechodzi **wyłącznie oryginał**, kawałkami po 3 MB (S1-C, sekcja 13).
+Podgląd i miniatura jadą podpisanym linkiem prosto do Supabase, a plansza i rzutnik
+czytają je stamtąd — Vercel nie ogląda ani jednego z tych bajtów.
+
+| Miara Vercela | Co mierzy | Hobby | Nasze zużycie |
+|---|---|---|---|
+| Fast Data Transfer | CDN ↔ telefon | 100 GB | ~4,8 GB |
+| **Fast Origin Transfer** | **CDN ↔ funkcja** | **10 GB** | **~4,8 GB** |
+| Invocations | wywołania funkcji | 1 000 000 | ~10 000 |
+| Provisioned Memory | pamięć × czas | 360 GB-h | < 40 GB-h |
+| Active CPU | sam procesor, bez czekania na I/O | 4 CPU-h | minuty |
+
+Te same bajty liczą się w dwóch pierwszych wierszach naraz — raz na drodze telefon → CDN,
+raz na drodze CDN → funkcja. Noga funkcja → Google **nie liczy się do żadnego z nich**:
+Fast Origin Transfer mierzy ruch między CDN a funkcją, a nie między funkcją a światem.
+
+**Wiążący jest Fast Origin Transfer i tylko on.** Naliczany jest w obie strony, a przy
+`POST` z plikiem naliczane jest całe ciało żądania. Wcześniejsza wersja tej specyfikacji
+porównywała zużycie ze 100 GB — to był zły limit, dziesięć razy za duży.
+
+**Zdjęcia mieszczą się: 1200 × 4 MB ≈ 4,8 GB z 10 GB. Pękają na tym filmy.** Film nie ma
+w kodzie żadnego sufitu, a 4K z iPhone'a to ~350 MB na minutę; czternaście takich filmów
+po pełnym komplecie zdjęć wyczerpuje limit. Plan Hobby nie ma przy tym wentyla — nie ma
+karty, którą można obciążyć, więc po przekroczeniu czeka się do końca 30-dniowego okna.
+W praktyce znaczy to jedno: **awaria wypada w środku wesela, a jedyną naprawą jest
+wykupienie planu Pro z telefonu.**
+
+Okno jest 30-dniowe i wspólne dla całego konta, więc **próba generalna z prawdziwymi
+plikami wydaje ten sam budżet co samo wesele**. Test „1200 sztucznych wierszy"
+z checklisty przedweselnej jest bezpieczny — pisze do bazy, nie przez funkcję.
+
+Trzy drogi wyjścia, w kolejności rosnącego ryzyka:
+
+1. **Plan Pro na miesiąc wesela** (~20 USD). Zamienia twardą pauzę na płatność za
+   nadwyżkę i nie wymaga zmiany ani jednej linijki kodu.
+2. **Sufit na oryginał filmu.** Powyżej ustalonego rozmiaru oryginał zostaje w kolejce
+   na telefonie i jedzie po weselu, do następnego okna. Klatka jest już na planszy
+   i liczy się do bingo, więc gra nie traci nic.
+3. **Oryginał prosto z telefonu do Google** (sekcja 13). Zdejmuje ten limit całkowicie,
+   ale przepisuje najważniejszą ścieżkę w aplikacji.
+
 ### Transfer po stronie gościa
 
 25 × (350 KB + 30 KB + ~4 MB) ≈ **110 MB** na osobę, w większości przez Wi-Fi ośrodka.
@@ -734,6 +777,52 @@ której nie da się odróżnić od prawdziwej — gorsza niż brak działania.
 
 Obejście przez `mode: "no-cors"` też odpada: ten tryb nie dopuszcza metody `PUT`.
 
+### Przyczyna S1-A, znaleziona miesiąc później (7.09.2026)
+
+Tabela wyżej mówi prawdę o tym, co widać, ale opisuje **objaw, nie przyczynę**. Google
+przypina CORS do sesji resumable **w chwili jej otwarcia**: o nagłówku
+`Access-Control-Allow-Origin` decyduje `Origin` z żądania otwierającego sesję, a nie
+z samego `PUT`. Nasza funkcja otwiera sesję po stronie serwera (`startResumable`
+w `api/_lib/drive.ts`) i `Origin` nie wysyła — sesja nie ma przypiętego żadnego
+pochodzenia, więc odpowiedź kończąca wraca bez nagłówka.
+
+Test A/B na żywym API, jedyna różnica to `Origin` przy otwarciu sesji:
+
+| Odpowiedź | Sesja bez `Origin` (jak dziś) | Sesja z `Origin` |
+|---|---|---|
+| Otwarcie sesji | 200, bez ACAO | 200, **z ACAO** |
+| Preflight `OPTIONS` | 200, `allow-methods: PUT` | 200, `allow-methods: PUT` |
+| Kawałek pośredni (308) | **z ACAO**, `Range` wystawiony | **z ACAO**, `Range` wystawiony |
+| **Kawałek kończący (200)** | **BEZ ACAO** — plik powstaje, przeglądarka go nie czyta | **z ACAO** — przeglądarka czyta `{id, name, size}` |
+
+Diagnoza była trudna dokładnie dlatego, że **wszystko dookoła wygląda zdrowo**: preflight
+przechodzi w obu wariantach, kawałki pośrednie mają komplet nagłówków w obu wariantach.
+Różni się jedna odpowiedź — ostatnia. Spike wysyłał mały plik jednym żądaniem, więc
+trafiał prosto w nią i nie miał z czym jej porównać.
+
+**Co to znaczy dla wyboru.** S1-A da się uruchomić: jeden nagłówek przy otwarciu sesji
+i oryginał jedzie z telefonu prosto do Google, z pominięciem naszej funkcji i limitu
+z sekcji 5. Wraca przy tym własność, dla której wybrano S1-C — przeglądarka czyta
+odpowiedź kończącą, więc **wie**, że plik powstał, i melduje to serwerowi razem
+z identyfikatorem pliku. Cichej awarii nie ma.
+
+Cena jest realna i trzeba ją zapłacić świadomie:
+
+- **Znika trzecie sito.** `sniff` przy pierwszym kawałku (`api/index.ts`) to jedyne
+  miejsce, w którym serwer ogląda bajty oryginału. Zostaje whitelista typów przy
+  otwarciu sesji, czyli deklaracja telefonu.
+- **Potwierdzenie idzie przez telefon**, nie przez funkcję. Telefon ubity między
+  odpowiedzią Google a naszym `finalize` zostawia wiersz „w drodze" przy pliku, który
+  już leży na Dysku. Da się to uzgodnić: `appProperties` niosą `photoId`, `guestId`
+  i `categoryId`, więc odtworzenie stanu jest zapytaniem do Dysku, a nie zgadywaniem.
+- **`Origin` musi pochodzić z żądania gościa** i przejść przez whitelistę, zamiast być
+  stałą w kodzie — inaczej przestaje działać `localhost:5173` w dev i deploymenty Preview.
+
+**Decyzja: S1-C zostaje do wesela.** Nie dlatego, że S1-A nie działa — działa — tylko
+dlatego, że jest to przepisanie najważniejszej ścieżki w aplikacji przed terminem,
+którego nie da się przesunąć, a plan Pro za ~20 USD zdejmuje ten sam problem bez
+dotykania kodu. Zmianę warto zrobić **po weselu**, z testem na prawdziwych telefonach.
+
 ### S1-B — przez Supabase. **Odrzucone: nie mieści się w limitach.**
 
 Oryginał ląduje w bucketcie, serwer pobiera go i przekłada na Dysk, po czym kasuje z bucketa.
@@ -750,7 +839,7 @@ do sesji resumable w Google. Supabase nigdy nie widzi oryginału.
 |---|---|---|
 | Supabase — miejsce | ~456 MB (bez zmian) | 1 GB |
 | Supabase — transfer | podglądy i rzutnik, ~1–2 GB | 5 GB |
-| Vercel — transfer | ~9,6 GB (w górę i do Google) | 100 GB |
+| Vercel — Fast Origin Transfer | ~4,8 GB (sam ruch w górę; noga do Google się nie liczy) | **10 GB**, sekcja 5 |
 
 Kawałek 3 MB mieści się pod limitem 4,5 MB z zapasem na narzuty, a Google wymaga, by kawałki
 poza ostatnim były wielokrotnością 256 KB — 3 MB to równe 12 × 256 KB.
