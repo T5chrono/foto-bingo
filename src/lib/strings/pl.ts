@@ -61,7 +61,7 @@ export const pl = {
     submitFailed: "Nie udało się zgłosić",
     accepted: "Uznane ✓",
     rejected: "Nie uznane — dopytaj Parę Młodą, które zdjęcie nie pasowało.",
-    pending: "Zgłoś się teraz do Państwa młodych.",
+    pending: "Zgłoś się teraz do Państwa Młodych.",
     /** Nazwy linii. Numeracja 1-based, zgodna z R1..R5 / K1..K5 na kafelkach. */
     row: (n: number) => `wiersz ${n}`,
     col: (n: number) => `kolumna ${n}`,
