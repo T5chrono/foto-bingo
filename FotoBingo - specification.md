@@ -1102,6 +1102,10 @@ runbook weekendowy, próba generalna.
 - [ ] Panel zalogowany na telefonie, który będzie pod ręką — ciasteczko żyje 30 dni,
       więc warto to zrobić przed weselem, a nie przy rzutniku.
 - [ ] Licznik miejsca w panelu sprawdzony i pokazujący sensowną wartość.
+- [ ] **Plansze wyczyszczone z prób: `npm run reset`, a potem `npm run reset -- --serio`.**
+      Bez tego pierwszy gość zastaje planszę pełną zdjęć z testów. Kasuje zdjęcia, filmy
+      i zgłoszenia; lista gości, kody i winietki zostają. Pliki na Dysku idą do **kosza** —
+      opróżnij go osobno, jeśli chcesz odzyskać miejsce przed weselem.
 - [ ] **W czwartek przed weselem: wejdź do aplikacji i sprawdź, że odpowiada.** Projekt Supabase
       na darmowym planie **pauzuje się po 7 dniach bez ruchu**, a wybudzenie jest ręczne i trwa
       kilka minut. Uspiona baza w piątek rano to jedyna awaria w tym projekcie, której nikt

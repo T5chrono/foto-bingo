@@ -69,6 +69,25 @@ języka aplikacji. Po zmianie etykiet odśwież zestawienie wszystkich wersji:
 npm run kategorie   # -> docs/kategorie.md
 ```
 
+### Czyszczenie danych z testów
+
+Między testami i **w czwartek przed weselem** — żeby goście zastali puste plansze:
+
+```bash
+npm run reset              # pokazuje, co zniknie, i nie kasuje nic
+npm run reset -- --serio   # kasuje naprawdę
+```
+
+Kasuje zdjęcia, filmy i zgłoszenia. **Lista gości, ich kody i winietki zostają nietknięte** —
+znika to, co goście przysłali, nie to, kim są. Idzie w kolejności Dysk → Storage → baza, tak
+samo jak usuwanie pojedynczego zdjęcia w aplikacji, żeby pad Google nie zostawił pustych
+plansz i plików, które dalej leżą w folderze.
+
+Pliki na Dysku lądują w **koszu**, nie znikają na dobre — opróżnienie kosza zostaje ręczne,
+bo to jedyny krok bez odwrotu. Skrypt czyta `.env`, więc działa na tej bazie, na którą
+wskazuje `SUPABASE_URL`; przy zwykłej konfiguracji jest to **produkcja** i dlatego bieg na
+sucho jest domyślny.
+
 ## Czego tu nie ma
 
 Listy gości, kodów z QR, zdjęć ani sekretów. Repozytorium jest publiczne — dane osobowe żyją
