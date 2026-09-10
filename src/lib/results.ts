@@ -9,6 +9,14 @@ import { LINES, type LineKind } from "./bingo.js";
  * Gość, któremu padła bateria, zanim zdążył zgłosić linię, nadal jest tu
  * widoczny — i to Para Młoda, nie serwer, decyduje, co z tym zrobić.
  *
+ * Jeden wyjątek: **odrzucone zgłoszenie wykreśla gościa z tej linii**. Nie jest
+ * to powrót do liczenia po zgłoszeniach — odrzucenie to jedyny moment, w którym
+ * Para Młoda mówi wprost „to zdjęcie tu nie pasuje", czyli obala komplet, który
+ * baza widziała jako pełny. Arkusz, który po takim werdykcie dalej wypisuje tę
+ * osobę jako pierwszą, kłóciłby się z decyzją, którą ktoś przed chwilą podjął.
+ * Wykreślenie jest wąskie: dotyczy dokładnie tej linii, nie reszty planszy
+ * i nie liczby zdjęć w nagrodzie głównej.
+ *
  * Funkcja jest czysta i nie zna bazy: dostaje płaską listę wierszy, oddaje
  * gotowe zestawienie. Dzięki temu da się ją przetestować na wymyślonych
  * danych, zamiast klikać po weselu w produkcyjny panel.
@@ -23,6 +31,22 @@ export type PhotoRow = {
   createdAt: string;
   /** `false` = zdjęcie usunięte albo podmienione; baza nic nie kasuje. */
   isActive: boolean;
+};
+
+/**
+ * Rozstrzygnięte zgłoszenie — tyle, ile potrzeba, żeby wykreślić linię.
+ *
+ * `full` nie ma tu nic do roboty: nagroda główna liczy się z liczby zdjęć,
+ * a nie z linii, więc odrzucenie całej planszy niczego nie wykreśla.
+ */
+export type ClaimRow = {
+  guestId: string;
+  kind: LineKind | "full";
+  /** Numer wiersza/kolumny/przekątnej; `null` dla całej planszy. */
+  index: number | null;
+  status: "new" | "accepted" | "rejected";
+  /** ISO 8601; `null`, dopóki zgłoszenie czeka na werdykt. */
+  resolvedAt: string | null;
 };
 
 export type Finisher = {
@@ -61,7 +85,10 @@ export type Results = { lines: LineStanding[]; leaders: Leader[] };
  */
 type TileState = { filled: boolean; firstAt: string };
 
-export function computeResults(rows: readonly PhotoRow[]): Results {
+export function computeResults(
+  rows: readonly PhotoRow[],
+  claims: readonly ClaimRow[] = [],
+): Results {
   const names = new Map<string, string>();
   const tiles = new Map<string, Map<number, TileState>>();
 
@@ -78,17 +105,53 @@ export function computeResults(rows: readonly PhotoRow[]): Results {
     });
   }
 
-  return { lines: standings(tiles, names), leaders: leaderboard(tiles, names) };
+  return {
+    lines: standings(tiles, names, wykreslone(claims)),
+    leaders: leaderboard(tiles, names),
+  };
+}
+
+/** Klucz „ten gość, ta linia" — wspólny dla zgłoszeń i dla ukończeń. */
+function lineKey(guestId: string, kind: LineKind, index: number | null): string {
+  return `${guestId}|${kind}|${index}`;
+}
+
+/**
+ * Linie wykreślone odrzuconym zgłoszeniem.
+ *
+ * Liczy się **ostatni** werdykt na daną linię, nie pierwszy: gość, któremu
+ * odrzucono zgłoszenie, dostaje w aplikacji zdanie „dopytaj, które zdjęcie nie
+ * pasowało", podmienia zdjęcie i zgłasza jeszcze raz. Gdyby wykreślenie było
+ * trwałe, poprawiona linia nie wróciłaby do arkusza już nigdy.
+ */
+function wykreslone(claims: readonly ClaimRow[]): Set<string> {
+  const ostatni = new Map<string, ClaimRow>();
+
+  for (const claim of claims) {
+    // `new` nie jest werdyktem, a `full` nie dotyczy żadnej pojedynczej linii.
+    if (claim.kind === "full" || claim.resolvedAt === null) continue;
+
+    const key = lineKey(claim.guestId, claim.kind, claim.index);
+    const seen = ostatni.get(key);
+    if (!seen || (seen.resolvedAt ?? "") <= claim.resolvedAt) ostatni.set(key, claim);
+  }
+
+  const out = new Set<string>();
+  for (const [key, claim] of ostatni) if (claim.status === "rejected") out.add(key);
+  return out;
 }
 
 function standings(
   tiles: Map<string, Map<number, TileState>>,
   names: Map<string, string>,
+  wykreslenia: Set<string>,
 ): LineStanding[] {
   return LINES.map((line) => {
     const finishers: Finisher[] = [];
 
     for (const [guestId, byCategory] of tiles) {
+      if (wykreslenia.has(lineKey(guestId, line.kind, line.index))) continue;
+
       const times: string[] = [];
       for (const id of line.ids) {
         const tile = byCategory.get(id);

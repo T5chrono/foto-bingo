@@ -48,7 +48,7 @@ export const en: Strings = {
     submitFailed: "Couldn't send the claim",
     accepted: "Approved ✓",
     rejected: "Not approved — ask Karolina & Tomek which photo didn't fit.",
-    pending: "Claimed — Karolina & Tomek will take a look in a moment.",
+    pending: "Go and see Karolina & Tomek now.",
     row: (count: number) => `row ${count}`,
     col: (count: number) => `column ${count}`,
     diagDown: "diagonal ↘",
@@ -77,6 +77,10 @@ export const en: Strings = {
     iosBefore: "Want Foto Bingo on your home screen? Tap",
     iosBetween: "at the bottom of the screen, then",
     hide: "Hide the install tip",
+    manualTitle: "Install the app",
+    manualIos: "On iPhone, tap",
+    manualAndroid: "On Android, open the browser menu and choose",
+    manualAndroidAction: "Install app",
   },
 
   category: {
@@ -206,7 +210,7 @@ export const en: Strings = {
     lineWinners: "Lines completed",
     lineWinnersHint:
       "Who was first to collect all five photos of a line. The time is the moment the " +
-      "last missing photo arrived.",
+      "last missing photo arrived. A rejected claim removes that guest from the line.",
     lineNobody: "nobody yet",
     moreFinishers: (count: number) => `${count} more`,
     mainPrize: "Grand prize",

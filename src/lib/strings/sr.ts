@@ -78,7 +78,7 @@ export const sr: Strings = {
     submitFailed: "Prijava nije poslata",
     accepted: "Priznato ✓",
     rejected: "Nije priznato — pitaj Karolinu i Tomeka koja fotografija nije odgovarala.",
-    pending: "Prijavljeno — Karolina i Tomek će uskoro pogledati.",
+    pending: "Javi se sada Karolini i Tomeku.",
     row: (n: number) => `red ${n}`,
     col: (n: number) => `kolona ${n}`,
     diagDown: "dijagonala ↘",
@@ -107,6 +107,10 @@ export const sr: Strings = {
     iosBefore: "Želiš Foto Bingo na početnom ekranu? Dodirni",
     iosBetween: "na dnu ekrana, pa",
     hide: "Sakrij savet o instalaciji",
+    manualTitle: "Instalacija",
+    manualIos: "Na iPhone-u dodirni",
+    manualAndroid: "Na Androidu otvori meni pregledača i izaberi",
+    manualAndroidAction: "Instaliraj aplikaciju",
   },
 
   category: {
@@ -249,7 +253,8 @@ export const sr: Strings = {
     lineWinners: "Osvojene linije",
     lineWinnersHint:
       "Ko je prvi sakupio svih pet fotografija jedne linije. Vreme je trenutak kada je " +
-      "stigla poslednja fotografija koja je nedostajala.",
+      "stigla poslednja fotografija koja je nedostajala. Odbijena prijava briše gosta " +
+      "iz te linije.",
     lineNobody: "još niko",
     moreFinishers: (n: number) => `još ${n}`,
     mainPrize: "Glavna nagrada",

@@ -61,7 +61,7 @@ export const pl = {
     submitFailed: "Nie udało się zgłosić",
     accepted: "Uznane ✓",
     rejected: "Nie uznane — dopytaj Parę Młodą, które zdjęcie nie pasowało.",
-    pending: "Zgłoszone — Para Młoda zaraz to obejrzy.",
+    pending: "Zgłoś się teraz do Państwa młodych.",
     /** Nazwy linii. Numeracja 1-based, zgodna z R1..R5 / K1..K5 na kafelkach. */
     row: (n: number) => `wiersz ${n}`,
     col: (n: number) => `kolumna ${n}`,
@@ -102,6 +102,18 @@ export const pl = {
     iosBefore: "Chcesz mieć Foto Bingo na ekranie głównym? Dotknij",
     iosBetween: "na dole ekranu, potem",
     hide: "Ukryj podpowiedź o instalacji",
+    /** Kafelek w ustawieniach. Baner pod planszą gość zamyka raz i na zawsze —
+     *  nie przywraca go nawet ponowny skan kodu QR, bo flaga siedzi w tym samym
+     *  `localStorage` — a pytanie „jak to w końcu zainstalować" wraca później.
+     *  Instrukcja stoi tu na stałe i zwinięta: zero wysokości, dopóki nikt nie pyta.
+     *
+     *  Bez przycisku, świadomie. Zaproszenie `beforeinstallprompt` jest jednorazowe
+     *  na wczytanie strony, więc przycisk w ustawieniach byłby martwy dokładnie
+     *  u tego gościa, który już raz odmówił — a to on tu wchodzi. */
+    manualTitle: "Instalacja",
+    manualIos: "Na iPhonie dotknij",
+    manualAndroid: "Na Androidzie otwórz menu przeglądarki i wybierz",
+    manualAndroidAction: "Zainstaluj aplikację",
   },
 
   category: {
@@ -256,12 +268,14 @@ export const pl = {
       "Filmy ruszają dopiero na Wi-Fi — a na iPhonie po dotknięciu „Wyślij teraz” na kafelku.",
     /**
      * Arkusz sędziowski. Liczy się ze zdjęć, nie ze zgłoszeń — zgłoszenie mówi
-     * tylko, kto zdążył kliknąć.
+     * tylko, kto zdążył kliknąć. Jedyny wyjątek to odrzucenie: ono wykreśla
+     * gościa z linii, bo Para Młoda właśnie orzekła, że komplet był pozorny.
      */
     lineWinners: "Zdobyte linie",
     lineWinnersHint:
       "Kto pierwszy skompletował wszystkie pięć zdjęć danej linii. Godzina to moment, " +
-      "w którym doszło ostatnie brakujące zdjęcie.",
+      "w którym doszło ostatnie brakujące zdjęcie. Odrzucone zgłoszenie wykreśla " +
+      "gościa z tej linii.",
     lineNobody: "jeszcze nikt",
     moreFinishers: (n: number) => `jeszcze ${count(n, GOSCIE)}`,
     mainPrize: "Nagroda główna",

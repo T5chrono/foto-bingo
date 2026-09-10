@@ -1,4 +1,9 @@
-import { computeResults, type PhotoRow, type Results } from "../../src/lib/results.js";
+import {
+  computeResults,
+  type ClaimRow,
+  type PhotoRow,
+  type Results,
+} from "../../src/lib/results.js";
 import { db } from "./db.js";
 
 /**
@@ -6,8 +11,9 @@ import { db } from "./db.js";
  *
  * Zestawienie liczy się **z całej historii zdjęć**, także z wierszy wygaszonych
  * (`is_active = false`), bo podmiana zdjęcia na kafelku nie może cofnąć komuś
- * ukończonej linii. Rozstrzyganie jest w `src/lib/results.ts`; tutaj zostaje
- * samo dowiezienie wierszy.
+ * ukończonej linii. Do tego dochodzą rozstrzygnięte zgłoszenia — odrzucone
+ * wykreślają gościa z linii, której dotyczyły. Rozstrzyganie jest
+ * w `src/lib/results.ts`; tutaj zostaje samo dowiezienie wierszy.
  */
 
 /**
@@ -56,5 +62,41 @@ export async function collectResults(): Promise<Results> {
     if ((data ?? []).length < PAGE) break;
   }
 
-  return computeResults(rows);
+  return computeResults(rows, await collectClaims());
+}
+
+/**
+ * Rozstrzygnięte zgłoszenia. Stronicowane z tego samego powodu, co zdjęcia:
+ * odrzucenie nie zamyka sprawy — gość podmienia zdjęcie i zgłasza linię jeszcze
+ * raz, więc wierszy przybywa przez cały weekend i tysiąc nie jest sufitem,
+ * na który można liczyć.
+ */
+async function collectClaims(): Promise<ClaimRow[]> {
+  const claims: ClaimRow[] = [];
+
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await db()
+      .from("claims")
+      .select("guest_id, kind, line_index, status, resolved_at")
+      // Czekające zgłoszenia nie niosą werdyktu, a jest ich najwięcej
+      // w trakcie zabawy — odsiewamy je w bazie, nie w pamięci funkcji.
+      .neq("status", "new")
+      .order("id")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+
+    for (const row of data ?? []) {
+      claims.push({
+        guestId: row.guest_id as string,
+        kind: row.kind as ClaimRow["kind"],
+        index: row.line_index as number | null,
+        status: row.status as ClaimRow["status"],
+        resolvedAt: row.resolved_at as string | null,
+      });
+    }
+
+    if ((data ?? []).length < PAGE) break;
+  }
+
+  return claims;
 }
