@@ -128,16 +128,16 @@ export const en: Strings = {
     title: "Settings",
     wifiOnly: "Full-size photos on Wi-Fi only",
     wifiOnlyHint:
-      "The board fills just as fast — only the full-quality version waits, " +
-      "around 4 MB per photo.",
+      "Photos appear on the board right away, while full-quality versions wait " +
+      "for a Wi-Fi connection.",
     queue: "Queue",
     queueEmpty: "Everything sent.",
     queueWaiting: (count: number) => `${n(count, "photo", "photos")} waiting to send`,
     queueOriginals: (count: number) => `${n(count, "full-size photo", "full-size photos")} on the way to Drive`,
     queueHint: "The queue starts by itself when the signal returns.",
     videosHint:
-      "Videos wait for Wi-Fi and hold the queue for a long time — photos from that " +
-      "time wait too. On iPhones only “Send now” starts them.",
+      "Videos always wait for Wi-Fi so they don’t hold up photo uploads. " +
+      "On iPhones, send them using the “Send now” button.",
     queueVideos: (count: number) => `${n(count, "video", "videos")} waiting for Wi-Fi`,
     sendVideosNow: "Send videos now",
     sendingNow: (what: string) => `Sending: ${what}`,

@@ -158,8 +158,8 @@ export const sr: Strings = {
     title: "Podešavanja",
     wifiOnly: "Originali samo preko Wi-Fi-ja",
     wifiOnlyHint:
-      "Tabla se puni isto tako brzo — u pozadini čeka samo pun kvalitet, " +
-      "oko 4 MB po fotografiji.",
+      "Fotografije se odmah pojavljuju na tabli, a verzije u punom kvalitetu " +
+      "čekaju Wi-Fi vezu.",
     queue: "Red čekanja",
     queueEmpty: "Sve je poslato.",
     queueWaiting: (n: number) =>
@@ -178,8 +178,8 @@ export const sr: Strings = {
       ),
     queueHint: "Red kreće sam čim se signal vrati.",
     videosHint:
-      "Snimci čekaju Wi-Fi i dugo drže red — fotografije iz tog vremena takođe čekaju. " +
-      "Na iPhone-u kreću tek posle „Pošalji odmah”.",
+      "Snimci uvek čekaju Wi-Fi kako ne bi usporavali slanje fotografija. " +
+      "Na iPhone-u ih šalješ dugmetom „Pošalji odmah”.",
     queueVideos: (n: number) => `${count(n, "snimak čeka", "snimka čekaju", "snimaka čeka")} Wi-Fi`,
     sendVideosNow: "Pošalji snimke odmah",
     sendingNow: (sta: string) => `Šaljem: ${sta}`,

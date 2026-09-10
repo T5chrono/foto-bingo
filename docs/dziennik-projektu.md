@@ -133,6 +133,36 @@ Obejście przez `mode: "no-cors"` też odpada: ten tryb nie dopuszcza metody `PU
 Przy kolejce, która nie ma prawa zgubić zdjęcia, ta druga jest ważniejsza — dlatego
 oryginał idzie kawałkami przez naszą funkcję, mimo że to więcej kodu i więcej transferu.
 
+### Ciąg dalszy: przyczyna znalazła się miesiąc później
+
+**7.09.2026.** Tabela wyżej mówi prawdę o tym, co widać, ale nie o tym, dlaczego. Google
+**przypina CORS do sesji resumable w chwili jej otwarcia** — o nagłówku
+`Access-Control-Allow-Origin` decyduje `Origin` z żądania otwierającego, a nie z `PUT`.
+`startResumable` otwiera sesję z serwera i `Origin` nie wysyła, więc sesja nie ma
+przypiętego żadnego pochodzenia.
+
+Ten sam test, jedyna różnica to jeden nagłówek przy otwarciu:
+
+| Odpowiedź | Sesja bez `Origin` | Sesja z `Origin` |
+|---|---|---|
+| Preflight `OPTIONS` | ACAO jest | ACAO jest |
+| Kawałek pośredni (308) | ACAO jest | ACAO jest |
+| **Kawałek kończący (200)** | **ACAO BRAK** | **ACAO jest** |
+
+**Dlaczego było to tak trudne do zobaczenia:** wszystko dookoła wygląda zdrowo. Preflight
+przechodzi w obu wariantach, kawałki pośrednie mają komplet nagłówków w obu wariantach.
+Kłamie jedna odpowiedź — ostatnia, ta z metadanymi pliku. Spike wysyłał mały plik jednym
+żądaniem, więc trafiał prosto w nią i nie miał z czym jej porównać.
+
+**Pułapka do zapamiętania:** przy wysyłce kawałkami odpowiedzi pośrednie i kończąca
+wychodzą z różnych warstw Google i mogą mieć **różny CORS**. „308 ma ACAO, czyli jest
+dobrze" jest fałszywie uspokajające.
+
+Skutki opisuje specyfikacja (sekcja 13): S1-A da się uruchomić jednym nagłówkiem, ale
+kosztuje trzecie sito i przenosi potwierdzenie na telefon. **Do wesela zostaje S1-C** —
+nie z powodu techniki, tylko dlatego, że nie przepisuje się najważniejszej ścieżki przed
+terminem, którego nie da się przesunąć.
+
 ---
 
 ## Supabase
@@ -482,6 +512,24 @@ Ta ostatnia była najbardziej myląca: build zielony, żadnego błędu w logach 
 tylko timeout. **Przy 504 na funkcji zaczynaj od `vercel logs`** — Vercel podpowiada
 tam wprost, co jest nie tak.
 
+### Darmowy limit, który wiąże, to nie ten, który widać najpierw
+
+Vercel liczy transfer dwiema miarami i łatwo wziąć niewłaściwą:
+
+- **Fast Data Transfer** — CDN ↔ telefon. Hobby: **100 GB**. Tę liczbę widać wszędzie.
+- **Fast Origin Transfer** — CDN ↔ funkcja. Hobby: **10 GB**. Ta wiąże.
+
+Oryginał jadący kawałkami przez funkcję liczy się do obu, bo Fast Origin Transfer nalicza
+się **w obie strony**, a przy `POST` z plikiem jest to całe ciało żądania. Przy 1200
+zdjęciach po 4 MB zjadamy ~4,8 GB z 10 GB — zdjęcia się mieszczą, filmy nie muszą.
+
+Specyfikacja przez cały projekt porównywała zużycie ze 100 GB, czyli z limitem dziesięć
+razy za dużym. Poprawione w sekcji 5, razem z rachunkiem na filmy i drogami wyjścia.
+
+**Plan Hobby nie ma wentyla.** Nie ma karty do obciążenia, więc po przekroczeniu limitu
+czeka się do końca 30-dniowego okna. Okno jest wspólne dla całego konta — **próba
+generalna z prawdziwymi plikami wydaje ten sam budżet co wesele.**
+
 ### `X-Vercel-Id` ma dwa człony i łatwo je pomylić
 
 ```
@@ -685,6 +733,11 @@ w checkliście przedweselnej w specyfikacji.
   trzeba zrozumieć.
 - **Zachowanie przy naprawdę słabym zasięgu.** Symulacja w DevTools to nie to samo,
   co jeden maszt i czterdzieści telefonów.
+- **Wysyłka prosto do Google z prawdziwej przeglądarki.** Test A/B z 7.09.2026 pokazał,
+  jakie nagłówki oddaje Google, ale szedł z Node'a — a Node CORS-u nie egzekwuje. Że
+  przeglądarka naprawdę przepuści `PUT` na sesję z przypiętym `Origin`, wznowi po
+  `Range` i odczyta odpowiedź kończącą, **wie dopiero prawdziwy Chrome i Safari**.
+  Do sprawdzenia razem z resztą tej zmiany, po weselu.
 - **Klatka z filmu na prawdziwym iPhonie i Androidzie.** `video.ts` przewija ukryte
   `<video>` na pierwszą sekundę i rysuje je na canvasie. Sprawdzone 03.09.2026 w Chromie
   na biurku, na WebM nagranym w locie — z ciemnym startem, żeby wykluczyć klatkę zerową.
