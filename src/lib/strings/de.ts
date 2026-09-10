@@ -57,7 +57,7 @@ export const de: Strings = {
     submitFailed: "Die Meldung ging nicht raus",
     accepted: "Anerkannt ✓",
     rejected: "Nicht anerkannt — frag Karolina & Tomek, welches Foto nicht gepasst hat.",
-    pending: "Gemeldet — Karolina & Tomek schauen gleich drauf.",
+    pending: "Melde dich jetzt bei Karolina & Tomek.",
     row: (count: number) => `Reihe ${count}`,
     col: (count: number) => `Spalte ${count}`,
     diagDown: "Diagonale ↘",
@@ -88,6 +88,10 @@ export const de: Strings = {
     iosBefore: "Foto Bingo auf dem Startbildschirm? Tippe auf",
     iosBetween: "unten am Bildschirm, dann",
     hide: "Installationshinweis ausblenden",
+    manualTitle: "Installation",
+    manualIos: "Tippe auf dem iPhone auf",
+    manualAndroid: "Öffne auf Android das Browser-Menü und wähle",
+    manualAndroidAction: "App installieren",
   },
 
   category: {
@@ -225,7 +229,8 @@ export const de: Strings = {
     lineWinners: "Geschaffte Linien",
     lineWinnersHint:
       "Wer zuerst alle fünf Fotos einer Linie beisammen hatte. Die Uhrzeit ist der " +
-      "Moment, in dem das letzte fehlende Foto ankam.",
+      "Moment, in dem das letzte fehlende Foto ankam. Eine abgelehnte Meldung " +
+      "streicht den Gast aus dieser Linie.",
     lineNobody: "noch niemand",
     moreFinishers: (count: number) => `noch ${count}`,
     mainPrize: "Hauptpreis",

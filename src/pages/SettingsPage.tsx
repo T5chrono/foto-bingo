@@ -4,6 +4,7 @@ import * as queue from "../lib/queue";
 import { drain, originalAllowed, setWifiOnly, watchProgress, wifiOnly } from "../lib/uploader";
 import { categoryById, categoryLabel } from "../lib/board";
 import { useLocale } from "../hooks/useLocale";
+import { isInstalled } from "../lib/install";
 import { BackButton } from "../components/BackButton";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { MeadowBand } from "../components/wedding/Meadow";
@@ -152,6 +153,39 @@ export default function SettingsPage() {
             </p>
           )}
         </section>
+
+        {/* Instalacja ręczna, zwinięta. Baner pod planszą gość zamyka raz
+          i na zawsze — nie przywraca go nawet ponowny skan kodu QR — więc to
+          jedyne miejsce, w którym instrukcja czeka bez końca. Zwinięta kosztuje
+          jeden wiersz, a ekran ma się mieścić bez przewijania.
+
+          `<details>` zamiast stanu w Reakcie: sam obsługuje klawiaturę i czytnik
+          ekranu, a zwijanie nie jest niczym, co warto pisać drugi raz.
+
+          Obie platformy naraz, bez `isIos()`: wykrycie po `userAgent` myli się na
+          iPadzie w trybie pulpitu, a kafelek jest właśnie tym, po co gość sięga,
+          gdy reszta zawiodła — pokazanie mu jednej, złej instrukcji zabierałoby
+          mu ostatnie wyjście. */}
+        {!isInstalled() && (
+          <details className="group rounded-2xl border border-brand-200 bg-paper px-3.5 py-1.5">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-brand-800/60 [&::-webkit-details-marker]:hidden">
+              {t.install.manualTitle}
+              <span
+                aria-hidden
+                className="text-brand-800/40 transition-transform group-open:rotate-90"
+              >
+                ›
+              </span>
+            </summary>
+            <p className="mt-1 text-xs leading-snug text-brand-800/75">
+              {t.install.manualIos} <strong>{t.install.iosShare}</strong> {t.install.iosBetween}{" "}
+              <strong>{t.install.iosAdd}</strong>.
+            </p>
+            <p className="mt-1 text-xs leading-snug text-brand-800/75">
+              {t.install.manualAndroid} <strong>{t.install.manualAndroidAction}</strong>.
+            </p>
+          </details>
+        )}
 
         {/* Zasady nagród na stałe. Pasek pod planszą gość zamyka raz i już
           nie wraca, a pytanie „to za co właściwie są te nagrody" pada w sobotę
