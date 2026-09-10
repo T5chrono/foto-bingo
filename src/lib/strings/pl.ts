@@ -169,8 +169,8 @@ export const pl = {
     title: "Ustawienia",
     wifiOnly: "Oryginały tylko przez Wi-Fi",
     wifiOnlyHint:
-      "Plansza zapełnia się tak samo szybko — w tle czeka tylko pełna jakość, " +
-      "około 4 MB na zdjęcie.",
+      "Zdjęcia od razu pojawią się na planszy, a ich wersje w pełnej jakości " +
+      "poczekają na połączenie z Wi-Fi.",
     queue: "Kolejka",
     queueEmpty: "Wszystko wysłane.",
     queueWaiting: (n: number) => `${count(n, ZDJECIA_CZEKAJA)} na wysłanie`,
@@ -179,8 +179,8 @@ export const pl = {
     /** Krótko, bo ekran ustawień ma się mieścić bez przewijania. Pełna wersja
      *  stoi tam, gdzie zapada decyzja — na karcie filmu w `CategoryPage`. */
     videosHint:
-      "Filmy czekają na Wi-Fi i długo zajmują kolejkę — zdjęcia z tego czasu też " +
-      "poczekają. Na iPhonie rusza je dopiero „Wyślij teraz”.",
+      "Filmy zawsze czekają na Wi-Fi, aby nie blokować przesyłania zdjęć. " +
+      "Na telefonach iPhone wyślesz je przyciskiem „Wyślij teraz”.",
     queueVideos: (n: number) => `${count(n, FILMY_CZEKAJA)} na Wi-Fi`,
     sendVideosNow: "Wyślij filmy teraz",
     /** Nazwa kafelka w środku, więc bez dwukropka na końcu zdania. */

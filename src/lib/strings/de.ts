@@ -143,8 +143,8 @@ export const de: Strings = {
     title: "Einstellungen",
     wifiOnly: "Originale nur über WLAN",
     wifiOnlyHint:
-      "Die Karte füllt sich genauso schnell — nur die volle Qualität wartet, " +
-      "rund 4 MB pro Foto.",
+      "Fotos erscheinen sofort auf der Karte, während die Versionen in voller " +
+      "Qualität auf eine WLAN-Verbindung warten.",
     queue: "Warteschlange",
     queueEmpty: "Alles gesendet.",
     queueWaiting: (count: number) =>
@@ -153,8 +153,8 @@ export const de: Strings = {
       n(count, "Original ist auf dem Weg zu Drive", "Originale sind auf dem Weg zu Drive"),
     queueHint: "Die Warteschlange läuft weiter, sobald der Empfang zurück ist.",
     videosHint:
-      "Videos warten auf WLAN und belegen die Warteschlange lange — Fotos aus der Zeit " +
-      "warten mit. Auf dem iPhone startet sie erst „Jetzt senden“.",
+      "Videos warten immer auf WLAN, um das Senden von Fotos nicht zu blockieren. " +
+      "Auf dem iPhone sendest du sie mit dem Button „Jetzt senden“.",
     queueVideos: (count: number) => `${n(count, "Video wartet", "Videos warten")} auf WLAN`,
     sendVideosNow: "Videos jetzt senden",
     sendingNow: (was: string) => `Wird gesendet: ${was}`,
